@@ -2,92 +2,77 @@ package com.company.cavitrack.presentation.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.company.cavitrack.data.remote.api.CaviTrackApi
-import com.company.cavitrack.data.remote.dto.LoginRequestDto
-import com.company.cavitrack.data.remote.dto.RegisterRequestDto
 import com.company.cavitrack.util.TokenManager
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+
+sealed class AuthState {
+    object Idle : AuthState()
+    object Unauthenticated : AuthState()
+    object Loading : AuthState()
+    object Authenticated : AuthState()
+    data class Error(val message: String) : AuthState()
+}
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val api: CaviTrackApi,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val firebaseAuth: FirebaseAuth
 ) : ViewModel() {
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
-    val authState: StateFlow<AuthState> = _authState
+    private val _authState = MutableStateFlow<AuthState>(if (tokenManager.hasValidToken()) AuthState.Authenticated else AuthState.Unauthenticated)
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    init {
-        checkAuthStatus()
+    fun login(email: String, password: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                firebaseAuth.signInWithEmailAndPassword(email, password).await()
+                _authState.value = AuthState.Authenticated
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.message ?: "Login failed")
+            }
+        }
+    }
+
+    fun register(name: String, email: String, password: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                // Firebase creates the user and signs them in
+                firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+                
+                // Optionally save the 'name' to the User profile
+                val user = firebaseAuth.currentUser
+                val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                    .setDisplayName(name)
+                    .build()
+                user?.updateProfile(profileUpdates)?.await()
+                
+                _authState.value = AuthState.Authenticated
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.message ?: "Registration failed")
+            }
+        }
     }
 
     fun checkAuthStatus() {
-        val token = tokenManager.getAccessToken()
-        if (token != null) {
+        if (tokenManager.hasValidToken()) {
             _authState.value = AuthState.Authenticated
         } else {
             _authState.value = AuthState.Unauthenticated
         }
     }
 
-    fun login(email: String, pass: String) {
-        _authState.value = AuthState.Loading
-        viewModelScope.launch {
-            try {
-                val response = api.login(LoginRequestDto(email, pass))
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body != null) {
-                        tokenManager.saveTokens(body.token, body.refreshToken ?: "")
-                        _authState.value = AuthState.Authenticated
-                    } else {
-                        _authState.value = AuthState.Error("Empty response")
-                    }
-                } else {
-                    _authState.value = AuthState.Error("Invalid credentials")
-                }
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Network error")
-            }
-        }
-    }
-
-    fun register(name: String, email: String, pass: String) {
-        _authState.value = AuthState.Loading
-        viewModelScope.launch {
-            try {
-                val response = api.register(RegisterRequestDto(name, email, pass))
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body != null) {
-                        tokenManager.saveTokens(body.token, body.refreshToken ?: "")
-                        _authState.value = AuthState.Authenticated
-                    } else {
-                        _authState.value = AuthState.Error("Empty response")
-                    }
-                } else {
-                    _authState.value = AuthState.Error("Registration failed")
-                }
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Network error")
-            }
-        }
-    }
-
     fun logout() {
-        tokenManager.clearTokens()
-        _authState.value = AuthState.Unauthenticated
+        tokenManager.clearToken()
+        _authState.value = AuthState.Idle
     }
 }
 
-sealed class AuthState {
-    object Idle : AuthState()
-    object Loading : AuthState()
-    object Authenticated : AuthState()
-    object Unauthenticated : AuthState()
-    data class Error(val message: String) : AuthState()
-}

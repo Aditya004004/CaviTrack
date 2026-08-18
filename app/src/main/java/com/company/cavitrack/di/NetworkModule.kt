@@ -2,24 +2,17 @@ package com.company.cavitrack.di
 
 import android.content.Context
 import androidx.room.Room
-import com.company.cavitrack.BuildConfig
 import com.company.cavitrack.data.local.AppDatabase
 import com.company.cavitrack.data.local.dao.InventoryDao
-import com.company.cavitrack.data.remote.api.CaviTrackApi
-import com.company.cavitrack.data.remote.interceptor.AuthInterceptor
-import com.company.cavitrack.data.remote.interceptor.TokenAuthenticator
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -28,35 +21,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(authInterceptor: AuthInterceptor, tokenAuthenticator: TokenAuthenticator): OkHttpClient {
-        val logging = HttpLoggingInterceptor().apply { 
-            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE 
-        }
-        return OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(logging)
-            .addInterceptor(authInterceptor)
-            .authenticator(tokenAuthenticator)
-            .build()
+    fun provideFirebaseAuth(): FirebaseAuth {
+        return FirebaseAuth.getInstance()
     }
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-        val json = Json { ignoreUnknownKeys = true }
-        return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideCaviTrackApi(retrofit: Retrofit): CaviTrackApi {
-        return retrofit.create(CaviTrackApi::class.java)
+    fun provideFirebaseFirestore(): FirebaseFirestore {
+        return Firebase.firestore
     }
 
     @Provides
@@ -75,4 +47,3 @@ object NetworkModule {
         return db.inventoryDao
     }
 }
-

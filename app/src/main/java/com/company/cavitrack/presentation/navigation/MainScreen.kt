@@ -75,12 +75,18 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 }
             },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { navController.navigate(Route.AddUpdateAction(null)) },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Filled.Add, "Add Update")
+                val showFab = currentDestination?.hierarchy?.any { 
+                    it.hasRoute(Route.Home::class) || it.hasRoute(Route.Inventory::class) 
+                } == true
+                
+                if (showFab) {
+                    FloatingActionButton(
+                        onClick = { navController.navigate(Route.AddUpdateAction(null)) },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        Icon(Icons.Filled.Add, "Add Update")
+                    }
                 }
             }
         ) { innerPadding ->
@@ -98,3 +104,4 @@ data class BottomNavItem(
     val routeObj: Any, 
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
+

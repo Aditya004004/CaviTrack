@@ -4,14 +4,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LoginRequestDto(
-    val email: String,
+    val email: String = "",
     val password: String
 )
 
 @Serializable
 data class RegisterRequestDto(
-    val name: String,
-    val email: String,
+    val name: String = "",
+    val email: String = "",
     val password: String,
     val role: String = "Viewer"
 )
@@ -35,8 +35,9 @@ data class RefreshTokenResponseDto(
 
 @Serializable
 data class UserDto(
-    val id: String,
-    val name: String,
-    val email: String,
+    val id: String = "",
+    val name: String = "",
+    val email: String = "",
     val role: String
 )
+

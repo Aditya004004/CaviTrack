@@ -8,11 +8,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.company.cavitrack.presentation.auth.AuthViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun SettingsScreen() {
-    var isDarkMode by remember { mutableStateOf(false) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
+fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
+    val userEmail = currentUser?.email ?: "No Email"
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
@@ -21,8 +25,8 @@ fun SettingsScreen() {
             Icon(Icons.Filled.Person, contentDescription = "Profile", modifier = Modifier.size(64.dp))
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text("Jane Doe", style = MaterialTheme.typography.headlineMedium)
-                Text("Warehouse Manager", style = MaterialTheme.typography.bodyMedium)
+                Text(userName, style = MaterialTheme.typography.headlineMedium)
+                Text(userEmail, style = MaterialTheme.typography.bodyMedium)
             }
         }
 
@@ -35,22 +39,13 @@ fun SettingsScreen() {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Dark Mode", style = MaterialTheme.typography.bodyLarge)
-            Switch(checked = isDarkMode, onCheckedChange = { isDarkMode = it })
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Push Notifications", style = MaterialTheme.typography.bodyLarge)
-            Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it })
+            Text("Dark Mode (System Default)", style = MaterialTheme.typography.bodyLarge)
+            Switch(checked = androidx.compose.foundation.isSystemInDarkTheme(), onCheckedChange = {  }, enabled = false)
         }
 
         Spacer(modifier = Modifier.weight(1f))
         Button(
-            onClick = { /* TODO */ },
+            onClick = { authViewModel.logout() },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {

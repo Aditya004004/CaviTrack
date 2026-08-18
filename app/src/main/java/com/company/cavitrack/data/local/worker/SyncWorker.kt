@@ -5,64 +5,60 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.company.cavitrack.data.local.dao.InventoryDao
-import com.company.cavitrack.data.remote.api.CaviTrackApi
 import com.company.cavitrack.data.remote.dto.*
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
 
 @HiltWorker
 class SyncWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted workerParams: WorkerParameters,
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
     private val dao: InventoryDao,
-    private val api: CaviTrackApi
-) : CoroutineWorker(appContext, workerParams) {
+    private val firestore: FirebaseFirestore
+) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        try {
-            val pendingActions = dao.getPendingActions()
-            if (pendingActions.isEmpty()) {
-                return@withContext Result.success()
-            }
+    override suspend fun doWork(): Result {
+        val pendingActions = dao.getPendingActions()
+        if (pendingActions.isEmpty()) return Result.success()
 
-            var allSuccess = true
-            for (action in pendingActions) {
-                try {
-                    val response = when (action.entityType) {
-                        "COMPONENT" -> {
-                            val dto = Json.decodeFromString<ComponentDto>(action.payloadJson)
-                            if (action.actionType == "CREATE") api.createComponent(dto)
-                            else api.updateComponent(action.entityId, dto)
+        var allSuccess = true
+        for (action in pendingActions) {
+            try {
+                when (action.actionType) {
+                    "CREATE", "UPDATE" -> {
+                        when (action.entityType) {
+                            "COMPONENT" -> {
+                                val dto = Json.decodeFromString<ComponentDto>(action.payloadJson)
+                                firestore.collection("components").document(dto.id).set(dto).await()
+                            }
+                            "CUSTOMER" -> {
+                                val dto = Json.decodeFromString<CustomerDto>(action.payloadJson)
+                                firestore.collection("customers").document(dto.id).set(dto).await()
+                            }
+                            "MOLD" -> {
+                                val dto = Json.decodeFromString<MoldDto>(action.payloadJson)
+                                firestore.collection("molds").document(dto.id).set(dto).await()
+                            }
                         }
-                        "CUSTOMER" -> {
-                            val dto = Json.decodeFromString<CustomerDto>(action.payloadJson)
-                            if (action.actionType == "CREATE") api.createCustomer(dto)
-                            else api.updateCustomer(action.entityId, dto)
-                        }
-                        "MOLD" -> {
-                            val dto = Json.decodeFromString<MoldDto>(action.payloadJson)
-                            if (action.actionType == "CREATE") api.createMold(dto)
-                            else api.updateMold(action.entityId, dto)
-                        }
-                        else -> null
                     }
-
-                    if (response?.isSuccessful == true || response == null) {
-                        dao.deletePendingAction(action)
-                    } else {
-                        allSuccess = false
+                    "DELETE" -> {
+                        when (action.entityType) {
+                            "COMPONENT" -> firestore.collection("components").document(action.entityId).delete().await()
+                            "CUSTOMER" -> firestore.collection("customers").document(action.entityId).delete().await()
+                            "MOLD" -> firestore.collection("molds").document(action.entityId).delete().await()
+                        }
                     }
-                } catch (e: Exception) {
-                    allSuccess = false
                 }
+                dao.deletePendingAction(action)
+            } catch (e: Exception) {
+                allSuccess = false
             }
-
-            if (allSuccess) Result.success() else Result.retry()
-        } catch (e: Exception) {
-            Result.retry()
         }
+        return if (allSuccess) Result.success() else Result.retry()
     }
 }
+
+

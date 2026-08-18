@@ -6,7 +6,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.company.cavitrack.data.remote.api.CaviTrackApi
+
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,8 +19,8 @@ import com.company.cavitrack.R
 @AndroidEntryPoint
 class CaviTrackMessagingService : FirebaseMessagingService() {
 
-    @Inject
-    lateinit var api: CaviTrackApi
+    
+    
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -68,4 +68,5 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
     }
 }
+
 
