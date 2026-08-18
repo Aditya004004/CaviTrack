@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "738530047936",
+    "project_id": "cavitrack-1868b",
+    "storage_bucket": "cavitrack-1868b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:738530047936:android:84c4fe5903cbc865ad7a25",
+        "android_client_info": {
+          "package_name": "com.company.cavitrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEYGqeXzIXuk_3yVzcMu-dp5feb5LSdbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

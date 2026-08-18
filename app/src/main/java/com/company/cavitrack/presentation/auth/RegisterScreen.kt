@@ -7,23 +7,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Authenticated) {
+            onRegisterSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Create an Account", style = MaterialTheme.typography.headlineMedium)
+        Text("Create Account", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(32.dp))
+
+        if (authState is AuthState.Error) {
+            Text((authState as AuthState.Error).message, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         OutlinedTextField(
             value = name,
@@ -51,13 +66,15 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { 
-                // TODO Register via API
-                onRegisterSuccess() 
-            },
-            modifier = Modifier.fillMaxWidth().height(56.dp)
+            onClick = { viewModel.register(name, email, password) },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            enabled = authState !is AuthState.Loading
         ) {
-            Text("Register")
+            if (authState is AuthState.Loading) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+            } else {
+                Text("Register")
+            }
         }
         
         TextButton(onClick = onNavigateToLogin) {

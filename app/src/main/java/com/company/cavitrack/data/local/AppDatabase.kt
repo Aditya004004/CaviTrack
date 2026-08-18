@@ -2,9 +2,11 @@ package com.company.cavitrack.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.company.cavitrack.data.local.dao.InventoryDao
 import com.company.cavitrack.data.local.entity.*
 
+@TypeConverters(Converters::class)
 @Database(
     entities = [
         ComponentEntity::class,
@@ -19,3 +21,4 @@ import com.company.cavitrack.data.local.entity.*
 abstract class AppDatabase : RoomDatabase() {
     abstract val inventoryDao: InventoryDao
 }
+

@@ -1,6 +1,7 @@
-﻿package com.company.cavitrack.presentation.components
+package com.company.cavitrack.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -17,10 +18,18 @@ fun StatusBadge(
     statusType: StatusType,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
+    
     val (bgColor, textColor) = when (statusType) {
-        StatusType.WARNING -> WarningLight.copy(alpha = 0.2f) to WarningLight
+        StatusType.WARNING -> {
+            val color = if (isDark) WarningDark else WarningLight
+            color.copy(alpha = 0.2f) to color
+        }
         StatusType.ERROR -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.error
-        StatusType.SUCCESS -> Color.Transparent to SuccessLight
+        StatusType.SUCCESS -> {
+            val color = if (isDark) SuccessDark else SuccessLight
+            color.copy(alpha = 0.2f) to color
+        }
         StatusType.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
     }
 

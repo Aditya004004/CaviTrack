@@ -1,5 +1,6 @@
 package com.company.cavitrack.presentation.home
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.ListCard
 import com.company.cavitrack.presentation.components.LoadingState
+import com.company.cavitrack.presentation.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,7 +32,7 @@ fun HomeScreen(
             val data = uiState.data!!
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 80.dp) // Space for FAB
+                contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 item {
                     Text(
@@ -68,7 +70,7 @@ fun HomeScreen(
                     )
                 }
                 
-                items(data.recentActivity) { log ->
+                items(data.recentActivity, key = { it.id }) { log ->
                     ListCard(onClick = { /* TODO navigate to detail */ }) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
@@ -102,24 +104,29 @@ fun SummaryCard(
     modifier: Modifier = Modifier,
     isWarning: Boolean = false
 ) {
+    val isDark = isSystemInDarkTheme()
+    val warningBg = if (isDark) WarningDark.copy(alpha = 0.2f) else WarningLight.copy(alpha = 0.2f)
+    val warningText = if (isDark) WarningDark else WarningLight
+
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = if (isWarning) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isWarning) warningBg else MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isWarning) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isWarning) warningText else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineLarge,
-                color = if (isWarning) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+                color = if (isWarning) warningText else MaterialTheme.colorScheme.onSurface
             )
         }
     }
 }
+

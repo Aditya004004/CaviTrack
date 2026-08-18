@@ -61,4 +61,29 @@ interface InventoryDao {
 
     @Delete
     suspend fun deletePendingAction(action: PendingActionEntity)
+
+    @Transaction
+    suspend fun refreshComponents(components: List<ComponentEntity>) {
+        clearComponents()
+        insertComponents(components)
+    }
+
+    @Transaction
+    suspend fun refreshCustomers(customers: List<CustomerEntity>) {
+        clearCustomers()
+        insertCustomers(customers)
+    }
+
+    @Transaction
+    suspend fun refreshMolds(molds: List<MoldEntity>) {
+        clearMolds()
+        insertMolds(molds)
+    }
+
+    @Transaction
+    suspend fun refreshHistoryLogs(logs: List<HistoryLogEntity>) {
+        clearHistoryLogs()
+        insertHistoryLogs(logs)
+    }
 }
+

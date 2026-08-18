@@ -1,5 +1,9 @@
 package com.company.cavitrack.presentation.inventory
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -12,7 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
@@ -25,55 +29,86 @@ fun BarcodeScannerScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    var hasCameraPermission by remember { mutableStateOf(false) } // In reality, request permission via accompanist
+    
+    var hasCameraPermission by remember { 
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        ) 
+    }
+    
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted ->
+            hasCameraPermission = granted
+        }
+    )
+
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
-            AndroidView(
-                factory = { ctx ->
-                    val previewView = PreviewView(ctx)
-                    val executor = ContextCompat.getMainExecutor(ctx)
-                    
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
-                        
-                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                        
-                        // Setup ImageAnalysis for ML Kit
-                        val imageAnalysis = ImageAnalysis.Builder()
-                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                            .build()
-                            
-                        // imageAnalysis.setAnalyzer(Executors.newSingleThreadExecutor()) { imageProxy ->
-                        //     // ML Kit BarcodeScanner processing logic here
-                        //     // val barcodeScanner = BarcodeScanning.getClient()
-                        //     // ...
-                        // }
+            if (hasCameraPermission) {
+                val executor = remember { Executors.newSingleThreadExecutor() }
+                
+                DisposableEffect(lifecycleOwner) {
+                    onDispose {
+                        cameraProviderFuture.get().unbindAll()
+                        executor.shutdown()
+                    }
+                }
 
-                        try {
-                            cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
-                                lifecycleOwner, cameraSelector, preview, imageAnalysis
-                            )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }, executor)
-                    
-                    previewView
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-            
-            // Scanner Overlay UI
-            Text(
-                "Scanning for barcodes...",
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp)
-            )
+                AndroidView(
+                    factory = { ctx ->
+                        val previewView = PreviewView(ctx)
+                        val mainExecutor = ContextCompat.getMainExecutor(ctx)
+                        
+                        cameraProviderFuture.addListener({
+                            val cameraProvider = cameraProviderFuture.get()
+                            val preview = Preview.Builder().build().also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
+                            
+                            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                            
+                            val imageAnalysis = ImageAnalysis.Builder()
+                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                .build()
+                                
+                            // imageAnalysis.setAnalyzer(executor) { imageProxy ->
+                            //     // ML Kit BarcodeScanner processing logic here
+                            // }
+
+                            try {
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner, cameraSelector, preview, imageAnalysis
+                                )
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }, mainExecutor)
+                        
+                        previewView
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+                
+                // Scanner Overlay UI
+                Text(
+                    "Scanning for barcodes...",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp)
+                )
+            } else {
+                Text(
+                    "Camera permission is required to scan barcodes.",
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
         }
         
         Button(
@@ -84,3 +119,4 @@ fun BarcodeScannerScreen(
         }
     }
 }
+

@@ -1,4 +1,5 @@
 plugins {
+    alias(libs.plugins.google.services)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("com.google.dagger.hilt.android")
@@ -20,13 +21,22 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
     }
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            buildConfigField("String", "BASE_URL", "\"https://api.cavitrack.company.com/\"")
+        }
+        debug {
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
         }
     }
     compileOptions {
@@ -35,10 +45,13 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation(libs.firebase.messaging)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     implementation(libs.mlkit.barcode)
@@ -82,14 +95,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
-
-
-
-
-
-
-
-
-
 
 

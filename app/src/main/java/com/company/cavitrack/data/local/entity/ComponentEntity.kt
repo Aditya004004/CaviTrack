@@ -13,7 +13,7 @@ data class ComponentEntity(
     val qty: Int,
     val unit: String,
     val minStockThreshold: Int,
-    val linkedMoldIds: String, // Stored as comma-separated string for simplicity
+    val linkedMoldIds: List<String>, // Stored as comma-separated string for simplicity
     val photoUrl: String?,
     val createdAt: Long,
     val updatedAt: Long
@@ -27,7 +27,7 @@ fun ComponentEntity.toDomain() = Component(
     qty = qty,
     unit = unit,
     minStockThreshold = minStockThreshold,
-    linkedMoldIds = if (linkedMoldIds.isEmpty()) emptyList() else linkedMoldIds.split(","),
+    linkedMoldIds = linkedMoldIds,
     photoUrl = photoUrl,
     createdAt = createdAt,
     updatedAt = updatedAt
@@ -41,8 +41,11 @@ fun Component.toEntity() = ComponentEntity(
     qty = qty,
     unit = unit,
     minStockThreshold = minStockThreshold,
-    linkedMoldIds = linkedMoldIds.joinToString(","),
+    linkedMoldIds = linkedMoldIds,
     photoUrl = photoUrl,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
+
+
+

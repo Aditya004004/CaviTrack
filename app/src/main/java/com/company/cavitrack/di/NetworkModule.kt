@@ -2,10 +2,12 @@ package com.company.cavitrack.di
 
 import android.content.Context
 import androidx.room.Room
+import com.company.cavitrack.BuildConfig
 import com.company.cavitrack.data.local.AppDatabase
 import com.company.cavitrack.data.local.dao.InventoryDao
 import com.company.cavitrack.data.remote.api.CaviTrackApi
 import com.company.cavitrack.data.remote.interceptor.AuthInterceptor
+import com.company.cavitrack.data.remote.interceptor.TokenAuthenticator
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -17,6 +19,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -25,11 +28,17 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
-        val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor, tokenAuthenticator: TokenAuthenticator): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply { 
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE 
+        }
         return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(logging)
             .addInterceptor(authInterceptor)
+            .authenticator(tokenAuthenticator)
             .build()
     }
 
@@ -38,7 +47,7 @@ object NetworkModule {
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         val json = Json { ignoreUnknownKeys = true }
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:3000/") // Localhost from Android emulator
+            .baseUrl(BuildConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
@@ -66,3 +75,4 @@ object NetworkModule {
         return db.inventoryDao
     }
 }
+

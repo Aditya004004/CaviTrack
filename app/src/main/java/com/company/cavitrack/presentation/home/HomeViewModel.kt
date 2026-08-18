@@ -7,6 +7,7 @@ import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.presentation.components.UiState
 import com.company.cavitrack.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,14 +30,17 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(UiState<HomeData>(isLoading = true))
     val uiState: StateFlow<UiState<HomeData>> = _uiState.asStateFlow()
+    
+    private var loadJob: Job? = null
 
     init {
         loadData()
     }
 
     fun loadData() {
+        loadJob?.cancel()
         _uiState.value = UiState(isLoading = true)
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             combine(
                 repository.getComponents(),
                 repository.getCustomers(),

@@ -7,14 +7,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Authenticated) {
+            onLoginSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -23,6 +33,11 @@ fun LoginScreen(
     ) {
         Text("Login to CaviTrack", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(32.dp))
+
+        if (authState is AuthState.Error) {
+            Text((authState as AuthState.Error).message, color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         OutlinedTextField(
             value = email,
@@ -42,13 +57,15 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { 
-                // TODO Auth via API
-                onLoginSuccess() 
-            },
-            modifier = Modifier.fillMaxWidth().height(56.dp)
+            onClick = { viewModel.login(email, password) },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            enabled = authState !is AuthState.Loading
         ) {
-            Text("Login")
+            if (authState is AuthState.Loading) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+            } else {
+                Text("Login")
+            }
         }
         
         TextButton(onClick = onNavigateToRegister) {
