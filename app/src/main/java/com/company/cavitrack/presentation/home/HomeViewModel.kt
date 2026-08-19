@@ -28,18 +28,19 @@ class HomeViewModel @Inject constructor(
     private val repository: InventoryRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(UiState<HomeData>(isLoading = true))
+    private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
     val uiState: StateFlow<UiState<HomeData>> = _uiState.asStateFlow()
     
     private var loadJob: Job? = null
 
     init {
         loadData()
+        viewModelScope.launch { repository.refreshData() }
     }
 
     fun loadData() {
         loadJob?.cancel()
-        _uiState.value = UiState(isLoading = true)
+        _uiState.value = UiState.Loading
         loadJob = viewModelScope.launch {
             combine(
                 repository.getComponents(),
@@ -47,14 +48,14 @@ class HomeViewModel @Inject constructor(
                 repository.getMolds(),
                 repository.getHistory()
             ) { compRes, custRes, moldRes, histRes ->
-                if (compRes is Result.Error) return@combine UiState<HomeData>(error = compRes.message)
-                if (custRes is Result.Error) return@combine UiState<HomeData>(error = custRes.message)
-                if (moldRes is Result.Error) return@combine UiState<HomeData>(error = moldRes.message)
-                if (histRes is Result.Error) return@combine UiState<HomeData>(error = histRes.message)
+                if (compRes is Result.Error) return@combine UiState.Error(compRes.message)
+                if (custRes is Result.Error) return@combine UiState.Error(custRes.message)
+                if (moldRes is Result.Error) return@combine UiState.Error(moldRes.message)
+                if (histRes is Result.Error) return@combine UiState.Error(histRes.message)
 
                 if (compRes is Result.Loading || custRes is Result.Loading || 
                     moldRes is Result.Loading || histRes is Result.Loading) {
-                    return@combine UiState<HomeData>(isLoading = true)
+                    return@combine UiState.Loading
                 }
 
                 val components = (compRes as Result.Success).data
@@ -65,8 +66,8 @@ class HomeViewModel @Inject constructor(
                 val lowStockCount = components.count { it.qty < it.minStockThreshold }
                 val activeMolds = molds.count { it.status == "Active" }
 
-                UiState(
-                    data = HomeData(
+                UiState.Success(
+                    HomeData(
                         totalComponents = components.size,
                         lowStockCount = lowStockCount,
                         totalCustomers = customers.size,
@@ -80,3 +81,4 @@ class HomeViewModel @Inject constructor(
         }
     }
 }
+

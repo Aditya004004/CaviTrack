@@ -28,19 +28,20 @@ class InventoryViewModel @Inject constructor(
     private val repository: InventoryRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(UiState<InventoryData>(isLoading = true))
+    private val _uiState = MutableStateFlow<UiState<InventoryData>>(UiState.Loading)
     val uiState: StateFlow<UiState<InventoryData>> = _uiState.asStateFlow()
     
     private var loadJob: Job? = null
 
     init {
         loadData()
+        viewModelScope.launch { repository.refreshData() }
     }
 
     fun loadData() {
         loadJob?.cancel()
         
-        _uiState.value = UiState(isLoading = true)
+        _uiState.value = UiState.Loading
         loadJob = viewModelScope.launch {
             try {
                 combine(
@@ -49,28 +50,29 @@ class InventoryViewModel @Inject constructor(
                     repository.getMolds()
                 ) { compRes, custRes, moldRes ->
                     if (compRes is Result.Success && custRes is Result.Success && moldRes is Result.Success) {
-                        UiState(
-                            data = InventoryData(
+                        UiState.Success(
+                            InventoryData(
                                 components = compRes.data,
                                 customers = custRes.data,
                                 molds = moldRes.data
                             )
                         )
                     } else if (compRes is Result.Error) {
-                        UiState(error = compRes.message)
+                        UiState.Error(compRes.message)
                     } else if (custRes is Result.Error) {
-                        UiState(error = custRes.message)
+                        UiState.Error(custRes.message)
                     } else if (moldRes is Result.Error) {
-                        UiState(error = moldRes.message)
+                        UiState.Error(moldRes.message)
                     } else {
-                        UiState(isLoading = true)
+                        UiState.Loading
                     }
                 }.collect { combinedState ->
                     _uiState.value = combinedState
                 }
             } catch (e: Exception) {
-                _uiState.value = UiState(error = e.message ?: "Unknown error")
+                _uiState.value = UiState.Error(e.message ?: "Unknown error")
             }
         }
     }
 }
+

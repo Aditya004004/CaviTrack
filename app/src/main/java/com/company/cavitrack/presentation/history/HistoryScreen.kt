@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -15,6 +15,7 @@ import com.company.cavitrack.presentation.components.EmptyState
 import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.ListCard
 import com.company.cavitrack.presentation.components.LoadingState
+import com.company.cavitrack.presentation.components.UiState
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -22,13 +23,13 @@ import java.util.*
 fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when {
-        uiState.isLoading -> LoadingState()
-        uiState.error != null -> ErrorState(message = uiState.error!!, onRetry = { viewModel.loadData() })
-        uiState.data != null -> {
-            val history = uiState.data!!
+    when (val state = uiState) {
+        is UiState.Loading -> LoadingState()
+        is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
+        is UiState.Success -> {
+            val history = state.data
             if (history.isEmpty()) {
                 EmptyState(message = "No history available")
             } else {

@@ -15,6 +15,7 @@ class Converters {
         return try {
             Json.decodeFromString<List<String>>(value)
         } catch (e: Exception) {
+            android.util.Log.e("Converters", "Failed to deserialize List<String>", e)
             emptyList()
         }
     }

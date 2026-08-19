@@ -13,6 +13,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.company.cavitrack.presentation.components.*
 import com.company.cavitrack.domain.model.*
@@ -22,7 +23,7 @@ import com.company.cavitrack.domain.model.*
 fun InventoryScreen(
     viewModel: InventoryViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Components", "Customers", "Molds")
 
@@ -37,11 +38,11 @@ fun InventoryScreen(
             }
         }
 
-        when {
-            uiState.isLoading -> LoadingState()
-            uiState.error != null -> ErrorState(message = uiState.error!!, onRetry = { viewModel.loadData() })
-            uiState.data != null -> {
-                val data = uiState.data!!
+        when (val state = uiState) {
+            is UiState.Loading -> LoadingState()
+            is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
+            is UiState.Success -> {
+                val data = state.data
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 80.dp)
@@ -157,4 +158,3 @@ fun MoldItem(mold: Mold) {
         }
     }
 }
-

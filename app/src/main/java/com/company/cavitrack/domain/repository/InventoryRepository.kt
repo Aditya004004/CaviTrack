@@ -1,4 +1,4 @@
-﻿package com.company.cavitrack.domain.repository
+package com.company.cavitrack.domain.repository
 
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.Customer
@@ -17,4 +17,6 @@ interface InventoryRepository {
     suspend fun saveComponent(component: Component): Result<Unit>
     suspend fun saveCustomer(customer: Customer): Result<Unit>
     suspend fun saveMold(mold: Mold): Result<Unit>
+    
+    suspend fun refreshData()
 }

@@ -19,7 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.company.cavitrack.presentation.auth.AuthState
 import com.company.cavitrack.presentation.auth.AuthViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +27,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val authState by authViewModel.authState.collectAsState()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     if (authState is AuthState.Unauthenticated) {
         // Show auth graph
@@ -104,4 +104,5 @@ data class BottomNavItem(
     val routeObj: Any, 
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
+
 

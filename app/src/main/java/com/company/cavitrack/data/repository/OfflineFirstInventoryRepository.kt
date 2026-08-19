@@ -102,7 +102,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
         )
     }
 
-    suspend fun refreshData() {
+    override suspend fun refreshData() {
         try {
             val compDocs = firestore.collection("components").get().await()
             val comps = compDocs.toObjects(ComponentDto::class.java)
@@ -124,3 +124,4 @@ class OfflineFirstInventoryRepository @Inject constructor(
         }
     }
 }
+

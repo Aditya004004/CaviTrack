@@ -2,6 +2,7 @@ package com.company.cavitrack.presentation.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,7 +20,7 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val authState by viewModel.authState.collectAsState()
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
@@ -82,3 +83,6 @@ fun RegisterScreen(
         }
     }
 }
+
+
+
