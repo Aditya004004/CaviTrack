@@ -69,7 +69,6 @@ class PhotoUpdateViewModel @Inject constructor(
             } catch (e: Exception) {
                 _error.value = e.message
             }
-            }
         }
     }
 }

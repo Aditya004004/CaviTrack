@@ -106,3 +106,19 @@ fun HistoryLogDto.toEntity(): HistoryLogEntity {
         timestamp = timestamp
     )
 }
+
+fun HistoryLog.toDto(): HistoryLogDto {
+    return HistoryLogDto(
+        id = id,
+        entityType = entityType,
+        entityId = entityId,
+        entityName = entityName,
+        action = action,
+        changeSource = changeSource,
+        beforeValue = beforeValue,
+        afterValue = afterValue,
+        photoUrl = photoUrl,
+        performedBy = performedBy,
+        timestamp = timestamp
+    )
+}
