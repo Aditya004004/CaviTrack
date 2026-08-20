@@ -28,8 +28,27 @@ fun PhotoUpdateScreen(entityType: String, entityId: String?) {
     val executor = ContextCompat.getMainExecutor(context)
     var photoUri by remember { mutableStateOf<String?>(null) }
 
+    var hasCameraPermission by remember { 
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) 
+    }
+    
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        onResult = { granted ->
+            hasCameraPermission = granted
+        }
+    )
+
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) {
+            permissionLauncher.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        if (photoUri == null) {
+        if (photoUri == null && hasCameraPermission) {
             AndroidView(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 factory = { ctx ->
@@ -56,6 +75,10 @@ fun PhotoUpdateScreen(entityType: String, entityId: String?) {
                     previewView
                 }
             )
+        } else if (photoUri == null && !hasCameraPermission) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                Text("Camera permission is required.")
+            }
         } else {
             // Show captured photo or success
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {

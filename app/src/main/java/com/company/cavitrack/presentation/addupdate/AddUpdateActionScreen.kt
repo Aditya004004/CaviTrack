@@ -12,7 +12,8 @@ import androidx.compose.ui.unit.dp
 fun AddUpdateActionScreen(
     entityType: String?,
     onNavigateToManual: (String?) -> Unit,
-    onNavigateToPhoto: (String?) -> Unit
+    onNavigateToPhoto: (String?) -> Unit,
+    onNavigateToScan: (String?) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -37,6 +38,13 @@ fun AddUpdateActionScreen(
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("Photo Update")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedButton(
+            onClick = { onNavigateToScan(entityType) },
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        ) {
+            Text("Scan Barcode")
         }
     }
 }

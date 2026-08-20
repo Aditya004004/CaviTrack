@@ -21,6 +21,9 @@ class ManualUpdateViewModel @Inject constructor(
 
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
     
     fun updateQuantity(entityType: String, entityId: String?, newQuantity: Int, note: String) {
         viewModelScope.launch {
@@ -31,10 +34,12 @@ class ManualUpdateViewModel @Inject constructor(
                         val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
                         repository.saveComponent(updated)
                         _isSaved.value = true
+                    } else if (result is Result.Error) {
+                        _error.value = result.message
                     }
                 }
             } else {
-                _isSaved.value = true
+                _error.value = "Creating new items is not supported yet."
             }
         }
     }

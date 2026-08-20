@@ -35,7 +35,6 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadData()
-        viewModelScope.launch { repository.refreshData() }
     }
 
     fun loadData() {

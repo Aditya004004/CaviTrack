@@ -14,12 +14,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
-    viewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val authState by viewModel.authState.collectAsStateWithLifecycle()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
@@ -58,7 +58,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { viewModel.login(email, password) },
+            onClick = { authViewModel.login(email, password) },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = authState !is AuthState.Loading
         ) {

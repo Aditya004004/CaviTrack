@@ -35,7 +35,6 @@ class InventoryViewModel @Inject constructor(
 
     init {
         loadData()
-        viewModelScope.launch { repository.refreshData() }
     }
 
     fun loadData() {

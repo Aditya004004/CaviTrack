@@ -64,8 +64,9 @@ fun CaviTrackNavGraph(
             val route: Route.AddUpdateAction = backStackEntry.toRoute()
             AddUpdateActionScreen(
                 entityType = route.entityType,
-                onNavigateToManual = { type -> navController.navigate(Route.ManualUpdate(type, null)) },
-                onNavigateToPhoto = { type -> navController.navigate(Route.PhotoUpdate(type, null)) }
+                onNavigateToManual = { type -> navController.navigate(Route.ManualUpdate(type ?: "Component", null)) },
+                onNavigateToPhoto = { type -> navController.navigate(Route.PhotoUpdate(type ?: "Component", null)) },
+                onNavigateToScan = { type -> navController.navigate(Route.BarcodeScan(type)) }
             )
         }
         
@@ -81,6 +82,16 @@ fun CaviTrackNavGraph(
         composable<Route.PhotoUpdate> { backStackEntry ->
             val route: Route.PhotoUpdate = backStackEntry.toRoute()
             PhotoUpdateScreen(entityType = route.entityType, entityId = route.entityId)
+        }
+        
+        composable<Route.BarcodeScan> { backStackEntry ->
+            com.company.cavitrack.presentation.inventory.BarcodeScannerScreen(
+                onBarcodeScanned = { barcode ->
+                    // For now just navigate back or to detail
+                    navController.popBackStack()
+                },
+                onCancel = { navController.popBackStack() }
+            )
         }
         
         composable<Route.ComponentDetail> { backStackEntry -> 

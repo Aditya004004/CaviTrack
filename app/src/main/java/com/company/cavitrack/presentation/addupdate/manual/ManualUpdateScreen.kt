@@ -20,6 +20,7 @@ fun ManualUpdateScreen(
     var hasError by remember { mutableStateOf(false) }
     
     val isSaved by viewModel.isSaved.collectAsState()
+    val error by viewModel.error.collectAsState()
     
     LaunchedEffect(isSaved) {
         if (isSaved) {
@@ -30,6 +31,11 @@ fun ManualUpdateScreen(
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Manual Update - $entityType", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
+
+        if (error != null) {
+            Text(error ?: "", color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         OutlinedTextField(
             value = quantity,

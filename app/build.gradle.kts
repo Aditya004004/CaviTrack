@@ -25,11 +25,15 @@ android {
 
     signingConfigs {
         create("release") {
-            // Placeholder values. Will need to be replaced with actual keystore details.
-            storeFile = file("release.keystore")
-            storePassword = "password"
-            keyAlias = "release"
-            keyPassword = "password"
+            val keystorePropertiesFile = rootProject.file("app/keystore.properties")
+            val keystoreProperties = java.util.Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+                storeFile = file("release.keystore")
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
         }
     }
 

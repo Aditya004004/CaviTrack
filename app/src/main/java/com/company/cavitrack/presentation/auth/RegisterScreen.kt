@@ -14,13 +14,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit,
-    viewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val authState by viewModel.authState.collectAsStateWithLifecycle()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
@@ -67,7 +67,7 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { viewModel.register(name, email, password) },
+            onClick = { authViewModel.register(name, email, password) },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = authState !is AuthState.Loading
         ) {
