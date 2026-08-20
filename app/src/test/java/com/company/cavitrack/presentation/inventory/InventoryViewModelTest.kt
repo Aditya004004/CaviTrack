@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -48,7 +49,7 @@ class InventoryViewModelTest {
 
         // Assert
         val state = viewModel.uiState.value
-        assert(state is UiState.Success)
+        assertTrue(state is UiState.Success)
         val successState = state as UiState.Success
         assertEquals(1, successState.data.components.size)
         assertEquals("Screw", successState.data.components[0].name)
@@ -67,7 +68,7 @@ class InventoryViewModelTest {
 
         // Assert
         val state = viewModel.uiState.value
-        assert(state is UiState.Error)
+        assertTrue(state is UiState.Error)
         assertEquals("Network Error", (state as UiState.Error).message)
     }
 }
