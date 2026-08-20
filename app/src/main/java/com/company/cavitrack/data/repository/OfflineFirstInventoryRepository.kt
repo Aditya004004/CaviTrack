@@ -25,6 +25,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.company.cavitrack.data.local.worker.SyncWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class OfflineFirstInventoryRepository @Inject constructor(

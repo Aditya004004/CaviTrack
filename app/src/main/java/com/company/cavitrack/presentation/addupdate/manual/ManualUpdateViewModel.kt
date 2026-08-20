@@ -25,21 +25,73 @@ class ManualUpdateViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     
-    fun updateQuantity(entityType: String, entityId: String?, newQuantity: Int, note: String) {
+    fun updateQuantity(entityType: String, entityId: String?, newQuantity: Int, note: String, name: String = "", sku: String = "", category: String = "") {
         viewModelScope.launch {
             if (entityId != null && entityType == "Component") {
                 repository.getComponent(entityId).collect { result ->
                     if (result is Result.Success) {
                         val component = result.data
                         val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
-                        repository.saveComponent(updated)
-                        _isSaved.value = true
+                        val saveResult = repository.saveComponent(updated)
+                        if (saveResult is Result.Success) {
+                            _isSaved.value = true
+                        } else if (saveResult is Result.Error) {
+                            _error.value = saveResult.message
+                        }
                     } else if (result is Result.Error) {
                         _error.value = result.message
                     }
                 }
-            } else {
-                _error.value = "Creating new items is not supported yet."
+            } else if (entityId == null) {
+                when (entityType) {
+                    "Component" -> {
+                        val component = Component(
+                            id = UUID.randomUUID().toString(),
+                            name = name.ifBlank { "New Component" },
+                            sku = sku.ifBlank { "SKU-UNKNOWN" },
+                            category = category.ifBlank { "General" },
+                            qty = newQuantity,
+                            unit = "pcs",
+                            minStockThreshold = 10
+                        )
+                        val result = repository.saveComponent(component)
+                        if (result is Result.Success) {
+                            _isSaved.value = true
+                        } else if (result is Result.Error) {
+                            _error.value = result.message
+                        }
+                    }
+                    "Customer" -> {
+                        val customer = com.company.cavitrack.domain.model.Customer(
+                            id = UUID.randomUUID().toString(),
+                            name = name.ifBlank { "New Customer" },
+                            phone = note,
+                            email = "",
+                            address = ""
+                        )
+                        val result = repository.saveCustomer(customer)
+                        if (result is Result.Success) {
+                            _isSaved.value = true
+                        } else if (result is Result.Error) {
+                            _error.value = result.message
+                        }
+                    }
+                    "Mold" -> {
+                        val mold = com.company.cavitrack.domain.model.Mold(
+                            id = UUID.randomUUID().toString(),
+                            moldCode = name.ifBlank { "MOLD-UNKNOWN" },
+                            cavityCount = newQuantity.takeIf { it > 0 } ?: 1,
+                            status = com.company.cavitrack.domain.model.MoldStatus.Active,
+                            location = category.ifBlank { "Storage" }
+                        )
+                        val result = repository.saveMold(mold)
+                        if (result is Result.Success) {
+                            _isSaved.value = true
+                        } else if (result is Result.Error) {
+                            _error.value = result.message
+                        }
+                    }
+                }
             }
         }
     }

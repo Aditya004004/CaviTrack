@@ -21,12 +21,26 @@ import java.io.File
 import java.util.concurrent.Executor
 
 @Composable
-fun PhotoUpdateScreen(entityType: String, entityId: String?) {
+fun PhotoUpdateScreen(
+    entityType: String,
+    entityId: String?,
+    viewModel: PhotoUpdateViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    onUpdateComplete: () -> Unit = {}
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val imageCapture = remember { ImageCapture.Builder().build() }
     val executor = ContextCompat.getMainExecutor(context)
     var photoUri by remember { mutableStateOf<String?>(null) }
+    
+    val isSaved by viewModel.isSaved.collectAsState()
+    val error by viewModel.error.collectAsState()
+    
+    LaunchedEffect(isSaved) {
+        if (isSaved) {
+            onUpdateComplete()
+        }
+    }
 
     var hasCameraPermission by remember { 
         mutableStateOf(
@@ -48,6 +62,10 @@ fun PhotoUpdateScreen(entityType: String, entityId: String?) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        if (error != null) {
+            Text("Error: $error", color = androidx.compose.material3.MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+        }
+
         if (photoUri == null && hasCameraPermission) {
             AndroidView(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -82,37 +100,56 @@ fun PhotoUpdateScreen(entityType: String, entityId: String?) {
         } else {
             // Show captured photo or success
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                Text("Photo Captured: $photoUri")
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Text("Photo Captured: $photoUri")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = {
+                        if (entityId != null) {
+                            viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(photoUri!!))
+                        } else {
+                            // If it's a new item, they should probably create it first. 
+                            // But for now, we just pass onUpdateComplete if not possible
+                            onUpdateComplete()
+                        }
+                    }) {
+                        Text("Upload and Save")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = { photoUri = null }) {
+                        Text("Retake")
+                    }
+                }
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(onClick = { /* TODO open gallery */ }) {
-                Text("Gallery")
-            }
-            Button(
-                onClick = {
-                    val file = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
-                    val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
-                    imageCapture.takePicture(
-                        outputOptions,
-                        executor,
-                        object : ImageCapture.OnImageSavedCallback {
-                            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                photoUri = file.absolutePath
-                            }
-                            override fun onError(exc: ImageCaptureException) {
-                                exc.printStackTrace()
-                            }
-                        }
-                    )
-                },
-                enabled = photoUri == null
+        if (photoUri == null) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text("Capture")
+                Button(onClick = { /* TODO open gallery */ }) {
+                    Text("Gallery")
+                }
+                Button(
+                    onClick = {
+                        val file = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
+                        val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
+                        imageCapture.takePicture(
+                            outputOptions,
+                            executor,
+                            object : ImageCapture.OnImageSavedCallback {
+                                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                    photoUri = file.absolutePath
+                                }
+                                override fun onError(exc: ImageCaptureException) {
+                                    exc.printStackTrace()
+                                }
+                            }
+                        )
+                    }
+                ) {
+                    Text("Capture")
+                }
             }
         }
     }

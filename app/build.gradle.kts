@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.android.application)
@@ -26,9 +29,9 @@ android {
     signingConfigs {
         create("release") {
             val keystorePropertiesFile = rootProject.file("app/keystore.properties")
-            val keystoreProperties = java.util.Properties()
+            val keystoreProperties = Properties()
             if (keystorePropertiesFile.exists()) {
-                keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
                 storeFile = file("release.keystore")
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
@@ -65,6 +68,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore.ktx)
+    implementation("com.google.firebase:firebase-storage-ktx")
 
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)

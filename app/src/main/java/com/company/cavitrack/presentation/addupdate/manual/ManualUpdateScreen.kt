@@ -19,6 +19,10 @@ fun ManualUpdateScreen(
     var note by remember { mutableStateOf("") }
     var hasError by remember { mutableStateOf(false) }
     
+    var name by remember { mutableStateOf("") }
+    var sku by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    
     val isSaved by viewModel.isSaved.collectAsState()
     val error by viewModel.error.collectAsState()
     
@@ -37,13 +41,37 @@ fun ManualUpdateScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+        if (entityId == null) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = sku,
+                onValueChange = { sku = it },
+                label = { Text("SKU / Code") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = category,
+                onValueChange = { category = it },
+                label = { Text("Category / Location") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         OutlinedTextField(
             value = quantity,
             onValueChange = { 
                 quantity = it
                 hasError = it.toIntOrNull() == null
             },
-            label = { Text("Quantity") },
+            label = { Text(if (entityId == null && entityType != "Component") "Value / Count" else "Quantity") },
             isError = hasError,
             supportingText = { if (hasError) Text("Must be a valid number") },
             modifier = Modifier.fillMaxWidth()
@@ -65,7 +93,7 @@ fun ManualUpdateScreen(
             onClick = {
                 val parsedQty = quantity.toIntOrNull()
                 if (parsedQty != null) {
-                    viewModel.updateQuantity(entityType, entityId, parsedQty, note)
+                    viewModel.updateQuantity(entityType, entityId, parsedQty, note, name, sku, category)
                 } else {
                     hasError = true
                 }

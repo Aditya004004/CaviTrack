@@ -27,7 +27,6 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d("FCM", "New Token: $token")
         
-        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
@@ -40,8 +39,6 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
                 }
             } catch (e: Exception) {
                 Log.e("FCM", "Failed to send token", e)
-            } finally {
-                pendingResult.finish()
             }
         }
     }

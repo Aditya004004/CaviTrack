@@ -81,7 +81,11 @@ fun CaviTrackNavGraph(
         
         composable<Route.PhotoUpdate> { backStackEntry ->
             val route: Route.PhotoUpdate = backStackEntry.toRoute()
-            PhotoUpdateScreen(entityType = route.entityType, entityId = route.entityId)
+            PhotoUpdateScreen(
+                entityType = route.entityType, 
+                entityId = route.entityId,
+                onUpdateComplete = { navController.popBackStack(Route.Home, inclusive = false) }
+            )
         }
         
         composable<Route.BarcodeScan> { backStackEntry ->
