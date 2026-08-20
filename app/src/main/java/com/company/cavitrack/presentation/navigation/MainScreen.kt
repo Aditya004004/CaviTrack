@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -50,7 +50,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 NavigationBar {
                     val items = listOf(
                         BottomNavItem("Home", Route.Home::class, Route.Home, Icons.Filled.Home),
-                        BottomNavItem("Inventory", Route.Inventory::class, Route.Inventory, Icons.Filled.List),
+                        BottomNavItem("Inventory", Route.Inventory::class, Route.Inventory, Icons.AutoMirrored.Filled.List),
                         BottomNavItem("History", Route.History::class, Route.History, Icons.Filled.History),
                         BottomNavItem("Settings", Route.Settings::class, Route.Settings, Icons.Filled.Settings)
                     )

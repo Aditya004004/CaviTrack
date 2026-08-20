@@ -32,7 +32,7 @@ import javax.inject.Singleton
 class OfflineFirstInventoryRepository @Inject constructor(
     private val dao: InventoryDao,
     private val firestore: FirebaseFirestore,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : InventoryRepository {
 
     override fun getComponents(): Flow<Result<List<Component>>> = dao.getComponents()
