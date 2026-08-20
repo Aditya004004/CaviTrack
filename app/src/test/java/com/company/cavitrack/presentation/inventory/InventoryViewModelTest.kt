@@ -48,10 +48,10 @@ class InventoryViewModelTest {
 
         // Assert
         val state = viewModel.uiState.value
-        assertEquals(false, state.isLoading)
-        assertEquals(null, state.error)
-        assertEquals(1, state.data?.components?.size)
-        assertEquals("Screw", state.data?.components?.get(0)?.name)
+        assert(state is UiState.Success)
+        val successState = state as UiState.Success
+        assertEquals(1, successState.data.components.size)
+        assertEquals("Screw", successState.data.components[0].name)
     }
 
     @Test
@@ -67,8 +67,7 @@ class InventoryViewModelTest {
 
         // Assert
         val state = viewModel.uiState.value
-        assertEquals(false, state.isLoading)
-        assertEquals("Network Error", state.error)
-        assertEquals(null, state.data)
+        assert(state is UiState.Error)
+        assertEquals("Network Error", (state as UiState.Error).message)
     }
 }
