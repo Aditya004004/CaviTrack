@@ -53,6 +53,8 @@ fun BarcodeScannerScreen(
         Box(modifier = Modifier.weight(1f)) {
             if (hasCameraPermission) {
                 val executor = remember { Executors.newSingleThreadExecutor() }
+                val scanner = remember { com.google.mlkit.vision.barcode.BarcodeScanning.getClient() }
+                val hasScanned = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
                 
                 DisposableEffect(lifecycleOwner) {
                     onDispose {
@@ -60,6 +62,7 @@ fun BarcodeScannerScreen(
                             cameraProviderFuture.get().unbindAll()
                         }
                         executor.shutdown()
+                        scanner.close()
                     }
                 }
 
@@ -80,17 +83,20 @@ fun BarcodeScannerScreen(
                                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                 .build()
                                 
-                            val scanner = com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
                             imageAnalysis.setAnalyzer(executor) { imageProxy ->
                                 val mediaImage = imageProxy.image
                                 if (mediaImage != null) {
                                     val image = com.google.mlkit.vision.common.InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
                                     scanner.process(image)
                                         .addOnSuccessListener { barcodes ->
-                                            for (barcode in barcodes) {
-                                                barcode.rawValue?.let { value ->
-                                                    onBarcodeScanned(value)
-                                                    return@addOnSuccessListener
+                                            if (!hasScanned.get()) {
+                                                for (barcode in barcodes) {
+                                                    barcode.rawValue?.let { value ->
+                                                        if (hasScanned.compareAndSet(false, true)) {
+                                                            onBarcodeScanned(value)
+                                                        }
+                                                        return@addOnSuccessListener
+                                                    }
                                                 }
                                             }
                                         }

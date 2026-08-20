@@ -29,7 +29,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val currentDestination = navBackStackEntry?.destination
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
-    if (authState is AuthState.Unauthenticated) {
+    if (authState !is AuthState.Authenticated) {
         // Show auth graph
         CaviTrackAuthGraph(
             authViewModel = authViewModel,

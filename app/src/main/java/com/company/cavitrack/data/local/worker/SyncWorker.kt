@@ -17,47 +17,56 @@ class SyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val dao: InventoryDao,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val repository: com.company.cavitrack.domain.repository.InventoryRepository
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
         val pendingActions = dao.getPendingActions()
-        if (pendingActions.isEmpty()) return Result.success()
-
-        var allSuccess = true
-        for (action in pendingActions) {
-            try {
-                when (action.actionType) {
-                    "CREATE", "UPDATE" -> {
-                        when (action.entityType) {
-                            "COMPONENT" -> {
-                                val dto = Json.decodeFromString<ComponentDto>(action.payloadJson)
-                                firestore.collection("components").document(dto.id).set(dto).await()
+        if (pendingActions.isNotEmpty()) {
+            var allSuccess = true
+            for (action in pendingActions) {
+                try {
+                    when (action.actionType) {
+                        "CREATE", "UPDATE" -> {
+                            when (action.entityType) {
+                                "COMPONENT" -> {
+                                    val dto = Json.decodeFromString<ComponentDto>(action.payloadJson)
+                                    firestore.collection("components").document(dto.id).set(dto).await()
+                                }
+                                "CUSTOMER" -> {
+                                    val dto = Json.decodeFromString<CustomerDto>(action.payloadJson)
+                                    firestore.collection("customers").document(dto.id).set(dto).await()
+                                }
+                                "MOLD" -> {
+                                    val dto = Json.decodeFromString<MoldDto>(action.payloadJson)
+                                    firestore.collection("molds").document(dto.id).set(dto).await()
+                                }
                             }
-                            "CUSTOMER" -> {
-                                val dto = Json.decodeFromString<CustomerDto>(action.payloadJson)
-                                firestore.collection("customers").document(dto.id).set(dto).await()
-                            }
-                            "MOLD" -> {
-                                val dto = Json.decodeFromString<MoldDto>(action.payloadJson)
-                                firestore.collection("molds").document(dto.id).set(dto).await()
+                        }
+                        "DELETE" -> {
+                            when (action.entityType) {
+                                "COMPONENT" -> firestore.collection("components").document(action.entityId).delete().await()
+                                "CUSTOMER" -> firestore.collection("customers").document(action.entityId).delete().await()
+                                "MOLD" -> firestore.collection("molds").document(action.entityId).delete().await()
                             }
                         }
                     }
-                    "DELETE" -> {
-                        when (action.entityType) {
-                            "COMPONENT" -> firestore.collection("components").document(action.entityId).delete().await()
-                            "CUSTOMER" -> firestore.collection("customers").document(action.entityId).delete().await()
-                            "MOLD" -> firestore.collection("molds").document(action.entityId).delete().await()
-                        }
-                    }
+                    dao.deletePendingAction(action)
+                } catch (e: Exception) {
+                    allSuccess = false
                 }
-                dao.deletePendingAction(action)
-            } catch (e: Exception) {
-                allSuccess = false
             }
+            if (!allSuccess) return Result.retry()
         }
-        return if (allSuccess) Result.success() else Result.retry()
+        
+        try {
+            repository.refreshData()
+        } catch (e: Exception) {
+            return Result.retry()
+        }
+        
+        return Result.success()
     }
 }
 

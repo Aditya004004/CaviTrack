@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -33,8 +34,18 @@ fun PhotoUpdateScreen(
     val executor = ContextCompat.getMainExecutor(context)
     var photoUri by remember { mutableStateOf<String?>(null) }
     
-    val isSaved by viewModel.isSaved.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    
+    DisposableEffect(lifecycleOwner) {
+        onDispose {
+            if (cameraProviderFuture.isDone) {
+                cameraProviderFuture.get().unbindAll()
+            }
+        }
+    }
+    
+    val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     
     LaunchedEffect(isSaved) {
         if (isSaved) {
@@ -71,7 +82,6 @@ fun PhotoUpdateScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 factory = { ctx ->
                     val previewView = PreviewView(ctx)
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                     cameraProviderFuture.addListener({
                         val cameraProvider = cameraProviderFuture.get()
                         val preview = Preview.Builder().build().also {

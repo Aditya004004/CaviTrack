@@ -34,7 +34,7 @@ class HistoryViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             repository.getHistory().collect { result ->
                 when (result) {
-                    is Result.Success -> _uiState.value = if (result.data != null) UiState.Success(result.data) else UiState.Error("No data")
+                    is Result.Success -> _uiState.value = UiState.Success(result.data)
                     is Result.Error -> _uiState.value = UiState.Error(result.message ?: "Unknown Error")
                     is Result.Loading -> _uiState.value = UiState.Loading
                 }

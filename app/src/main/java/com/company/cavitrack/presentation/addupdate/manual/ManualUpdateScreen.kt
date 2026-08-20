@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun ManualUpdateScreen(
@@ -23,8 +24,8 @@ fun ManualUpdateScreen(
     var sku by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
     
-    val isSaved by viewModel.isSaved.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     
     LaunchedEffect(isSaved) {
         if (isSaved) {

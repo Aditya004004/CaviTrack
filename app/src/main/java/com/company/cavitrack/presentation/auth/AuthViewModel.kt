@@ -13,7 +13,7 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 sealed class AuthState {
-    object Idle : AuthState()
+
     object Unauthenticated : AuthState()
     object Loading : AuthState()
     object Authenticated : AuthState()

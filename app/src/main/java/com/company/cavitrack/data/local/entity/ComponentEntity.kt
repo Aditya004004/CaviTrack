@@ -13,7 +13,7 @@ data class ComponentEntity(
     val qty: Int,
     val unit: String,
     val minStockThreshold: Int,
-    val linkedMoldIds: List<String>, // Stored as comma-separated string for simplicity
+    val linkedMoldIds: List<String>,
     val photoUrl: String?,
     val createdAt: Long,
     val updatedAt: Long

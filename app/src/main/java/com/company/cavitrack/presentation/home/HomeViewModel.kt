@@ -52,11 +52,6 @@ class HomeViewModel @Inject constructor(
                 if (moldRes is Result.Error) return@combine UiState.Error(moldRes.message)
                 if (histRes is Result.Error) return@combine UiState.Error(histRes.message)
 
-                if (compRes is Result.Loading || custRes is Result.Loading || 
-                    moldRes is Result.Loading || histRes is Result.Loading) {
-                    return@combine UiState.Loading
-                }
-
                 val components = (compRes as Result.Success).data
                 val customers = (custRes as Result.Success).data
                 val molds = (moldRes as Result.Success).data

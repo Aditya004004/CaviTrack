@@ -27,7 +27,9 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
-        // Permission result handled
+        if (!isGranted) {
+            android.util.Log.d("MainActivity", "Notification permission denied")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
