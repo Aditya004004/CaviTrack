@@ -99,6 +99,20 @@ class OfflineFirstInventoryRepository @Inject constructor(
         }
     }
 
+    override suspend fun saveHistoryLog(log: HistoryLog): Result<Unit> {
+        return try {
+            val dto = log.toDto()
+            firestore.collection("history").document(dto.id).set(dto).await()
+            dao.insertHistoryLogs(listOf(dto.toEntity()))
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            val dto = log.toDto()
+            queueAction("CREATE", "HISTORY", log.id, Json.encodeToString(dto))
+            dao.insertHistoryLogs(listOf(dto.toEntity()))
+            Result.Error(e.message ?: "Exception, queued offline")
+        }
+    }
+
     private suspend fun queueAction(actionType: String, entityType: String, entityId: String, payloadJson: String) {
         dao.insertPendingAction(
             PendingActionEntity(

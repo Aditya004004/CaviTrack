@@ -45,7 +45,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        Log.d("FCM", "Message received from: $message.from")
+        Log.d("FCM", "Message received from: ${message.from}")
 
         message.notification?.let {
             Log.d("FCM", "Message Notification Body: ${it.body}")

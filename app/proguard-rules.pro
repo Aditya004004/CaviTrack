@@ -23,3 +23,6 @@
 # Hilt & Coroutines basic rules
 -keep class dagger.hilt.** { *; }
 -dontwarn dagger.hilt.**
+
+# Keep Firebase DTOs from being obfuscated so Firestore reflection mapping works
+-keep class com.company.cavitrack.data.remote.dto.** { *; }

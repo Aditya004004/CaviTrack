@@ -89,10 +89,21 @@ fun CaviTrackNavGraph(
         }
         
         composable<Route.BarcodeScan> { backStackEntry ->
+            val route: Route.BarcodeScan = backStackEntry.toRoute()
             com.company.cavitrack.presentation.inventory.BarcodeScannerScreen(
                 onBarcodeScanned = { barcode ->
-                    // For now just navigate back or to detail
-                    navController.popBackStack()
+                    val type = route.entityType ?: "Component"
+                    if (type == "Component") {
+                        navController.navigate(Route.ComponentDetail(barcode)) {
+                            popUpTo<Route.Home>()
+                        }
+                    } else if (type == "Mold") {
+                        navController.navigate(Route.MoldDetail(barcode)) {
+                            popUpTo<Route.Home>()
+                        }
+                    } else {
+                        navController.popBackStack()
+                    }
                 },
                 onCancel = { navController.popBackStack() }
             )

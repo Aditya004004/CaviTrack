@@ -42,6 +42,10 @@ class SyncWorker @AssistedInject constructor(
                                     val dto = Json.decodeFromString<MoldDto>(action.payloadJson)
                                     firestore.collection("molds").document(dto.id).set(dto).await()
                                 }
+                                "HISTORY" -> {
+                                    val dto = Json.decodeFromString<HistoryLogDto>(action.payloadJson)
+                                    firestore.collection("history").document(dto.id).set(dto).await()
+                                }
                             }
                         }
                         "DELETE" -> {

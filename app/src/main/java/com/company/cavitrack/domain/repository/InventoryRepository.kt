@@ -17,6 +17,7 @@ interface InventoryRepository {
     suspend fun saveComponent(component: Component): Result<Unit>
     suspend fun saveCustomer(customer: Customer): Result<Unit>
     suspend fun saveMold(mold: Mold): Result<Unit>
+    suspend fun saveHistoryLog(log: HistoryLog): Result<Unit>
     
     suspend fun refreshData()
 }

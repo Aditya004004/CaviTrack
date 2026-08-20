@@ -137,7 +137,19 @@ fun PhotoUpdateScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Button(onClick = { /* TODO open gallery */ }) {
+                val galleryLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                ) { uri ->
+                    if (uri != null) {
+                        val inputStream = context.contentResolver.openInputStream(uri)
+                        val file = File(context.cacheDir, "${System.currentTimeMillis()}_gallery.jpg")
+                        file.outputStream().use { output ->
+                            inputStream?.copyTo(output)
+                        }
+                        photoUri = file.absolutePath
+                    }
+                }
+                Button(onClick = { galleryLauncher.launch("image/*") }) {
                     Text("Gallery")
                 }
                 Button(

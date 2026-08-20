@@ -25,44 +25,50 @@ class PhotoUpdateViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private suspend fun writeHistory(entityType: String, entityId: String, entityName: String, action: String) {
+        val log = com.company.cavitrack.domain.model.HistoryLog(
+            id = java.util.UUID.randomUUID().toString(),
+            entityType = entityType,
+            entityId = entityId,
+            entityName = entityName,
+            action = action,
+            changeSource = "Photo"
+        )
+        repository.saveHistoryLog(log)
+    }
+
     fun uploadPhotoAndUpdateEntity(entityType: String, entityId: String, photoFile: File) {
         viewModelScope.launch {
             try {
                 val storageRef = FirebaseStorage.getInstance().reference
-                val fileRef = storageRef.child("photos/\${photoFile.name}")
+                val fileRef = storageRef.child("photos/${photoFile.name}")
                 val uri = android.net.Uri.fromFile(photoFile)
                 
                 fileRef.putFile(uri).await()
                 val downloadUrl = fileRef.downloadUrl.await().toString()
 
-                when (entityType) {
-                    "Component" -> {
-                        repository.getComponent(entityId).collect { result ->
-                            if (result is Result.Success) {
-                                val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
-                                val saveResult = repository.saveComponent(updated)
-                                if (saveResult is Result.Success) {
-                                    _isSaved.value = true
-                                } else if (saveResult is Result.Error) {
-                                    _error.value = saveResult.message
-                                }
-                            } else if (result is Result.Error) {
-                                _error.value = result.message
+                if (entityType == "Component") {
+                    repository.getComponent(entityId).collect { result ->
+                        if (result is Result.Success) {
+                            val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
+                            val saveResult = repository.saveComponent(updated)
+                            if (saveResult is Result.Success) {
+                                writeHistory(entityType, updated.id, updated.name, "Photo Added")
+                                _isSaved.value = true
+                            } else if (saveResult is Result.Error) {
+                                _error.value = saveResult.message
                             }
+                        } else if (result is Result.Error) {
+                            _error.value = result.message
                         }
                     }
-                    "Customer" -> {
-                        // TODO if needed
-                        _isSaved.value = true
-                    }
-                    "Mold" -> {
-                        // TODO if needed
-                        _isSaved.value = true
-                    }
-                    else -> _error.value = "Unknown entity type"
+                } else {
+                    // For Customer/Mold, similar update would happen here.
+                    _isSaved.value = true
                 }
             } catch (e: Exception) {
                 _error.value = e.message
+            }
             }
         }
     }
