@@ -4,6 +4,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.company.cavitrack.domain.model.Mold
 
+import com.company.cavitrack.domain.model.MoldStatus
+
 @Entity(tableName = "molds")
 data class MoldEntity(
     @PrimaryKey val id: String,
@@ -22,7 +24,7 @@ fun MoldEntity.toDomain() = Mold(
     moldCode = moldCode,
     cavityCount = cavityCount,
     linkedComponentId = linkedComponentId,
-    status = status,
+    status = try { MoldStatus.valueOf(status) } catch (e: Exception) { MoldStatus.Active },
     location = location,
     photoUrl = photoUrl,
     createdAt = createdAt,
@@ -34,7 +36,7 @@ fun Mold.toEntity() = MoldEntity(
     moldCode = moldCode,
     cavityCount = cavityCount,
     linkedComponentId = linkedComponentId,
-    status = status,
+    status = status.name,
     location = location,
     photoUrl = photoUrl,
     createdAt = createdAt,

@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "inventory"
+rootProject.name = "CaviTrack"
 include(":app")

@@ -56,7 +56,9 @@ fun BarcodeScannerScreen(
                 
                 DisposableEffect(lifecycleOwner) {
                     onDispose {
-                        cameraProviderFuture.get().unbindAll()
+                        if (cameraProviderFuture.isDone) {
+                            cameraProviderFuture.get().unbindAll()
+                        }
                         executor.shutdown()
                     }
                 }
@@ -78,9 +80,27 @@ fun BarcodeScannerScreen(
                                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                 .build()
                                 
-                            // imageAnalysis.setAnalyzer(executor) { imageProxy ->
-                            //     // ML Kit BarcodeScanner processing logic here
-                            // }
+                            val scanner = com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
+                            imageAnalysis.setAnalyzer(executor) { imageProxy ->
+                                val mediaImage = imageProxy.image
+                                if (mediaImage != null) {
+                                    val image = com.google.mlkit.vision.common.InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                    scanner.process(image)
+                                        .addOnSuccessListener { barcodes ->
+                                            for (barcode in barcodes) {
+                                                barcode.rawValue?.let { value ->
+                                                    onBarcodeScanned(value)
+                                                    return@addOnSuccessListener
+                                                }
+                                            }
+                                        }
+                                        .addOnCompleteListener {
+                                            imageProxy.close()
+                                        }
+                                } else {
+                                    imageProxy.close()
+                                }
+                            }
 
                             try {
                                 cameraProvider.unbindAll()

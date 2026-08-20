@@ -64,7 +64,7 @@ class HomeViewModel @Inject constructor(
                 val history = (histRes as Result.Success).data
 
                 val lowStockCount = components.count { it.qty < it.minStockThreshold }
-                val activeMolds = molds.count { it.status == "Active" }
+                val activeMolds = molds.count { it.status == com.company.cavitrack.domain.model.MoldStatus.Active }
 
                 UiState.Success(
                     HomeData(

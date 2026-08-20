@@ -32,6 +32,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     if (authState is AuthState.Unauthenticated) {
         // Show auth graph
         CaviTrackAuthGraph(
+            authViewModel = authViewModel,
             onAuthSuccess = { authViewModel.checkAuthStatus() }
         )
     } else {
@@ -92,6 +93,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         ) { innerPadding ->
             CaviTrackNavGraph(
                 navController = navController,
+                authViewModel = authViewModel,
                 modifier = Modifier.padding(innerPadding)
             )
         }

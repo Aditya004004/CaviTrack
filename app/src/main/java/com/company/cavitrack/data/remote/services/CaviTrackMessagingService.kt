@@ -13,6 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import com.company.cavitrack.R
 
@@ -26,12 +27,21 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d("FCM", "New Token: $token")
         
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // api.updateFcmToken(token) // Assuming backend endpoint exists
-                Log.d("FCM", "Token sent to backend")
+                val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                if (user != null) {
+                    val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    db.collection("users").document(user.uid)
+                        .set(mapOf("fcmToken" to token), com.google.firebase.firestore.SetOptions.merge())
+                        .await()
+                    Log.d("FCM", "Token sent to Firestore for user: ${user.uid}")
+                }
             } catch (e: Exception) {
                 Log.e("FCM", "Failed to send token", e)
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -59,11 +69,19 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        val intent = android.content.Intent(this, com.company.cavitrack.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            this, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
 
         notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
     }

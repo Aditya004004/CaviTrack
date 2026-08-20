@@ -36,7 +36,12 @@ class AuthViewModel @Inject constructor(
                 firebaseAuth.signInWithEmailAndPassword(email, password).await()
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Login failed")
+                val errorMessage = when (e) {
+                    is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException -> "Invalid email or password."
+                    is com.google.firebase.auth.FirebaseAuthInvalidUserException -> "No account found with this email."
+                    else -> e.message ?: "Login failed"
+                }
+                _authState.value = AuthState.Error(errorMessage)
             }
         }
     }
@@ -57,7 +62,13 @@ class AuthViewModel @Inject constructor(
                 
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Registration failed")
+                val errorMessage = when (e) {
+                    is com.google.firebase.auth.FirebaseAuthUserCollisionException -> "An account already exists with this email."
+                    is com.google.firebase.auth.FirebaseAuthWeakPasswordException -> "Password is too weak."
+                    is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException -> "Invalid email format."
+                    else -> e.message ?: "Registration failed"
+                }
+                _authState.value = AuthState.Error(errorMessage)
             }
         }
     }
@@ -72,7 +83,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         tokenManager.clearToken()
-        _authState.value = AuthState.Idle
+        _authState.value = AuthState.Unauthenticated
     }
 }
 

@@ -16,10 +16,12 @@ import com.company.cavitrack.presentation.inventory.InventoryScreen
 import com.company.cavitrack.presentation.settings.SettingsScreen
 import com.company.cavitrack.presentation.auth.LoginScreen
 import com.company.cavitrack.presentation.auth.RegisterScreen
+import com.company.cavitrack.presentation.auth.AuthViewModel
 
 @Composable
 fun CaviTrackNavGraph(
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -27,19 +29,53 @@ fun CaviTrackNavGraph(
         startDestination = Route.Home,
         modifier = modifier
     ) {
-        composable<Route.Home> { HomeScreen() }
-        composable<Route.Inventory> { InventoryScreen() }
-        composable<Route.History> { HistoryScreen() }
-        composable<Route.Settings> { SettingsScreen() }
+        composable<Route.Home> { 
+            HomeScreen(
+                onNavigateToDetail = { type, id -> 
+                    when(type) {
+                        "Component" -> navController.navigate(Route.ComponentDetail(id))
+                        "Customer" -> navController.navigate(Route.CustomerDetail(id))
+                        "Mold" -> navController.navigate(Route.MoldDetail(id))
+                    }
+                }
+            ) 
+        }
+        composable<Route.Inventory> { 
+            InventoryScreen(
+                onComponentClick = { id -> navController.navigate(Route.ComponentDetail(id)) },
+                onCustomerClick = { id -> navController.navigate(Route.CustomerDetail(id)) },
+                onMoldClick = { id -> navController.navigate(Route.MoldDetail(id)) }
+            ) 
+        }
+        composable<Route.History> { 
+            HistoryScreen(
+                onNavigateToDetail = { type, id -> 
+                    when(type) {
+                        "Component" -> navController.navigate(Route.ComponentDetail(id))
+                        "Customer" -> navController.navigate(Route.CustomerDetail(id))
+                        "Mold" -> navController.navigate(Route.MoldDetail(id))
+                    }
+                }
+            ) 
+        }
+        composable<Route.Settings> { SettingsScreen(authViewModel = authViewModel) }
         
         composable<Route.AddUpdateAction> { backStackEntry ->
             val route: Route.AddUpdateAction = backStackEntry.toRoute()
-            AddUpdateActionScreen(entityType = route.entityType)
+            AddUpdateActionScreen(
+                entityType = route.entityType,
+                onNavigateToManual = { type -> navController.navigate(Route.ManualUpdate(type, null)) },
+                onNavigateToPhoto = { type -> navController.navigate(Route.PhotoUpdate(type, null)) }
+            )
         }
         
         composable<Route.ManualUpdate> { backStackEntry ->
             val route: Route.ManualUpdate = backStackEntry.toRoute()
-            ManualUpdateScreen(entityType = route.entityType, entityId = route.entityId)
+            ManualUpdateScreen(
+                entityType = route.entityType,
+                entityId = route.entityId,
+                onUpdateComplete = { navController.popBackStack(Route.Home, inclusive = false) }
+            )
         }
         
         composable<Route.PhotoUpdate> { backStackEntry ->
@@ -47,24 +83,35 @@ fun CaviTrackNavGraph(
             PhotoUpdateScreen(entityType = route.entityType, entityId = route.entityId)
         }
         
-        composable<Route.ComponentDetail> { }
-        composable<Route.CustomerDetail> { }
-        composable<Route.MoldDetail> { }
+        composable<Route.ComponentDetail> { backStackEntry -> 
+            val route: Route.ComponentDetail = backStackEntry.toRoute()
+            com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(entityId = route.id)
+        }
+        composable<Route.CustomerDetail> { backStackEntry -> 
+            val route: Route.CustomerDetail = backStackEntry.toRoute()
+            com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(entityId = route.id)
+        }
+        composable<Route.MoldDetail> { backStackEntry -> 
+            val route: Route.MoldDetail = backStackEntry.toRoute()
+            com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(entityId = route.id)
+        }
     }
 }
 
 @Composable
-fun CaviTrackAuthGraph(onAuthSuccess: () -> Unit) {
+fun CaviTrackAuthGraph(authViewModel: AuthViewModel, onAuthSuccess: () -> Unit) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Route.Login) {
         composable<Route.Login> {
             LoginScreen(
+                authViewModel = authViewModel,
                 onLoginSuccess = onAuthSuccess,
                 onNavigateToRegister = { navController.navigate(Route.Register) }
             )
         }
         composable<Route.Register> {
             RegisterScreen(
+                authViewModel = authViewModel,
                 onRegisterSuccess = onAuthSuccess,
                 onNavigateToLogin = { navController.navigate(Route.Login) }
             )

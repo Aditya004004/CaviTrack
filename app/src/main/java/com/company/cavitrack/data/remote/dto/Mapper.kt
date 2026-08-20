@@ -42,7 +42,7 @@ fun CustomerDto.toEntity(): CustomerEntity {
         phone = phone,
         email = email,
         address = address,
-        linkedComponentIds = linkedComponentIds.joinToString(","),
+        linkedComponentIds = linkedComponentIds,
         notes = notes,
         photoUrl = photoUrl,
         createdAt = createdAt,
@@ -79,19 +79,17 @@ fun MoldDto.toEntity(): MoldEntity {
     )
 }
 
-fun Mold.toDto(): MoldDto {
-    return MoldDto(
-        id = id,
-        moldCode = moldCode,
-        cavityCount = cavityCount,
-        linkedComponentId = linkedComponentId,
-        status = status,
-        location = location,
-        photoUrl = photoUrl,
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
-}
+fun Mold.toDto() = MoldDto(
+    id = id,
+    moldCode = moldCode,
+    cavityCount = cavityCount,
+    linkedComponentId = linkedComponentId,
+    status = status.name,
+    location = location,
+    photoUrl = photoUrl,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)
 
 fun HistoryLogDto.toEntity(): HistoryLogEntity {
     return HistoryLogEntity(

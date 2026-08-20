@@ -21,8 +21,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            // Placeholder values. Will need to be replaced with actual keystore details.
+            storeFile = file("release.keystore")
+            storePassword = "password"
+            keyAlias = "release"
+            keyPassword = "password"
+        }
     }
 
     buildTypes {
@@ -33,10 +41,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://api.cavitrack.company.com/\"")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
         }
     }
     compileOptions {
@@ -61,7 +68,6 @@ dependencies {
     implementation(libs.mlkit.text)
     
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.navigation.compose)
     
     implementation(libs.hilt.android)
@@ -80,7 +86,6 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
     
-    implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     
     implementation(platform(libs.androidx.compose.bom))

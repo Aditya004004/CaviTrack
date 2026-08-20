@@ -21,11 +21,18 @@ import com.company.cavitrack.domain.model.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(
-    viewModel: InventoryViewModel = hiltViewModel()
+    viewModel: InventoryViewModel = hiltViewModel(),
+    onComponentClick: (String) -> Unit = {},
+    onCustomerClick: (String) -> Unit = {},
+    onMoldClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Components", "Customers", "Molds")
+
+    val componentsListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val customersListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val moldsListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
@@ -43,7 +50,13 @@ fun InventoryScreen(
             is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
             is UiState.Success -> {
                 val data = state.data
+                val listState = when (selectedTabIndex) {
+                    0 -> componentsListState
+                    1 -> customersListState
+                    else -> moldsListState
+                }
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
@@ -51,19 +64,19 @@ fun InventoryScreen(
                         0 -> {
                             if (data.components.isEmpty()) item { EmptyState("No components found") }
                             items(data.components, key = { it.id }) { component ->
-                                ComponentItem(component)
+                                ComponentItem(component, onClick = { onComponentClick(component.id) })
                             }
                         }
                         1 -> {
                             if (data.customers.isEmpty()) item { EmptyState("No customers found") }
                             items(data.customers, key = { it.id }) { customer ->
-                                CustomerItem(customer)
+                                CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
                             }
                         }
                         2 -> {
                             if (data.molds.isEmpty()) item { EmptyState("No molds found") }
                             items(data.molds, key = { it.id }) { mold ->
-                                MoldItem(mold)
+                                MoldItem(mold, onClick = { onMoldClick(mold.id) })
                             }
                         }
                     }
@@ -74,8 +87,8 @@ fun InventoryScreen(
 }
 
 @Composable
-fun ComponentItem(component: Component) {
-    ListCard(onClick = { /* TODO */ }) {
+fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
+    ListCard(onClick = onClick) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (component.photoUrl != null) {
@@ -104,8 +117,8 @@ fun ComponentItem(component: Component) {
 }
 
 @Composable
-fun CustomerItem(customer: Customer) {
-    ListCard(onClick = { /* TODO */ }) {
+fun CustomerItem(customer: Customer, onClick: () -> Unit = {}) {
+    ListCard(onClick = onClick) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (customer.photoUrl != null) {
                 AsyncImage(
@@ -127,8 +140,8 @@ fun CustomerItem(customer: Customer) {
 }
 
 @Composable
-fun MoldItem(mold: Mold) {
-    ListCard(onClick = { /* TODO */ }) {
+fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
+    ListCard(onClick = onClick) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (mold.photoUrl != null) {
@@ -148,11 +161,11 @@ fun MoldItem(mold: Mold) {
                 }
             }
             StatusBadge(
-                text = mold.status,
+                text = mold.status.name,
                 statusType = when(mold.status) {
-                    "Active" -> StatusType.SUCCESS
-                    "In Maintenance" -> StatusType.WARNING
-                    else -> StatusType.NEUTRAL
+                    MoldStatus.Active -> StatusType.SUCCESS
+                    MoldStatus.InMaintenance -> StatusType.WARNING
+                    MoldStatus.Retired -> StatusType.NEUTRAL
                 }
             )
         }

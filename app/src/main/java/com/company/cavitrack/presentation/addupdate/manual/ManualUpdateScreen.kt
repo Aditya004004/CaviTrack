@@ -6,11 +6,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
-fun ManualUpdateScreen(entityType: String, entityId: String?) {
+fun ManualUpdateScreen(
+    entityType: String,
+    entityId: String?,
+    viewModel: ManualUpdateViewModel = hiltViewModel(),
+    onUpdateComplete: () -> Unit = {}
+) {
     var quantity by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var hasError by remember { mutableStateOf(false) }
+    
+    val isSaved by viewModel.isSaved.collectAsState()
+    
+    LaunchedEffect(isSaved) {
+        if (isSaved) {
+            onUpdateComplete()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Manual Update - $entityType", style = MaterialTheme.typography.headlineMedium)
@@ -42,8 +57,9 @@ fun ManualUpdateScreen(entityType: String, entityId: String?) {
 
         Button(
             onClick = {
-                if (quantity.toIntOrNull() != null) {
-                    // TODO save to repository
+                val parsedQty = quantity.toIntOrNull()
+                if (parsedQty != null) {
+                    viewModel.updateQuantity(entityType, entityId, parsedQty, note)
                 } else {
                     hasError = true
                 }

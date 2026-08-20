@@ -18,13 +18,19 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import javax.inject.Inject
-import javax.inject.Singleton
+import android.content.Context
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.company.cavitrack.data.local.worker.SyncWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Singleton
 class OfflineFirstInventoryRepository @Inject constructor(
     private val dao: InventoryDao,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    @ApplicationContext private val context: Context
 ) : InventoryRepository {
 
     override fun getComponents(): Flow<Result<List<Component>>> = dao.getComponents()
@@ -100,6 +106,16 @@ class OfflineFirstInventoryRepository @Inject constructor(
                 payloadJson = payloadJson
             )
         )
+        
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
+            
+        WorkManager.getInstance(context).enqueue(syncRequest)
     }
 
     override suspend fun refreshData() {

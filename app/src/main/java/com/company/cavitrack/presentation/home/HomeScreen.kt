@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,7 +23,8 @@ import java.util.*
 
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    onNavigateToDetail: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -72,7 +74,7 @@ fun HomeScreen(
                 }
                 
                 items(data.recentActivity, key = { it.id }) { log ->
-                    ListCard(onClick = { /* TODO navigate to detail */ }) {
+                    ListCard(onClick = { onNavigateToDetail(log.entityType, log.entityId) }) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -80,7 +82,7 @@ fun HomeScreen(
                             ) {
                                 Text(text = log.entityName, fontWeight = FontWeight.Bold)
                                 Text(
-                                    text = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(log.timestamp)),
+                                    text = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }.format(Date(log.timestamp)),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

@@ -9,7 +9,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AddUpdateActionScreen(entityType: String?) {
+fun AddUpdateActionScreen(
+    entityType: String?,
+    onNavigateToManual: (String?) -> Unit,
+    onNavigateToPhoto: (String?) -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -22,14 +26,14 @@ fun AddUpdateActionScreen(entityType: String?) {
         )
         Spacer(modifier = Modifier.height(32.dp))
         Button(
-            onClick = { /* TODO navigate to manual update */ },
+            onClick = { onNavigateToManual(entityType) },
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("Manual Update")
         }
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedButton(
-            onClick = { /* TODO navigate to photo update */ },
+            onClick = { onNavigateToPhoto(entityType) },
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("Photo Update")
