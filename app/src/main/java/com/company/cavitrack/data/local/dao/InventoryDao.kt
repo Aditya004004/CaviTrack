@@ -62,27 +62,43 @@ interface InventoryDao {
     @Delete
     suspend fun deletePendingAction(action: PendingActionEntity)
 
+    @Query("DELETE FROM components WHERE id NOT IN (:ids)")
+    suspend fun deleteComponentsNotIn(ids: List<String>)
+
+    @Query("DELETE FROM customers WHERE id NOT IN (:ids)")
+    suspend fun deleteCustomersNotIn(ids: List<String>)
+
+    @Query("DELETE FROM molds WHERE id NOT IN (:ids)")
+    suspend fun deleteMoldsNotIn(ids: List<String>)
+
+    @Query("DELETE FROM history_logs WHERE id NOT IN (:ids)")
+    suspend fun deleteHistoryLogsNotIn(ids: List<String>)
+
     @Transaction
     suspend fun refreshComponents(components: List<ComponentEntity>) {
-        clearComponents()
+        if (components.isNotEmpty()) deleteComponentsNotIn(components.map { it.id })
+        else clearComponents()
         insertComponents(components)
     }
 
     @Transaction
     suspend fun refreshCustomers(customers: List<CustomerEntity>) {
-        clearCustomers()
+        if (customers.isNotEmpty()) deleteCustomersNotIn(customers.map { it.id })
+        else clearCustomers()
         insertCustomers(customers)
     }
 
     @Transaction
     suspend fun refreshMolds(molds: List<MoldEntity>) {
-        clearMolds()
+        if (molds.isNotEmpty()) deleteMoldsNotIn(molds.map { it.id })
+        else clearMolds()
         insertMolds(molds)
     }
 
     @Transaction
     suspend fun refreshHistoryLogs(logs: List<HistoryLogEntity>) {
-        clearHistoryLogs()
+        if (logs.isNotEmpty()) deleteHistoryLogsNotIn(logs.map { it.id })
+        else clearHistoryLogs()
         insertHistoryLogs(logs)
     }
 }

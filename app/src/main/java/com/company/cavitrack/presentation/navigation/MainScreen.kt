@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +41,16 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             topBar = {
                 TopAppBar(
                     title = { Text("CaviTrack") },
+                    actions = {
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        IconButton(onClick = {
+                            val workManager = androidx.work.WorkManager.getInstance(context)
+                            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>().build()
+                            workManager.enqueue(syncRequest)
+                        }) {
+                            Icon(androidx.compose.material.icons.Icons.Filled.Refresh, contentDescription = "Sync Data")
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer

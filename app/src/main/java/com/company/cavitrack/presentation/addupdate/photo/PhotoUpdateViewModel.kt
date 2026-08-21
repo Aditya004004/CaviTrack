@@ -68,6 +68,10 @@ class PhotoUpdateViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _error.value = e.message
+            } finally {
+                if (photoFile.exists()) {
+                    photoFile.delete()
+                }
             }
         }
     }

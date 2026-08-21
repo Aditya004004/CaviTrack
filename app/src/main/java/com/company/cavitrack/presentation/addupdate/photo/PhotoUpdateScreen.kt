@@ -72,6 +72,17 @@ fun PhotoUpdateScreen(
         }
     }
 
+    val hasCameraHardware = remember { context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY) }
+    if (!hasCameraHardware) {
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+            Text("No camera available on this device.")
+            Button(onClick = onUpdateComplete, modifier = Modifier.padding(top = 16.dp)) {
+                Text("Go Back")
+            }
+        }
+        return
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         if (error != null) {
             Text("Error: $error", color = androidx.compose.material3.MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))

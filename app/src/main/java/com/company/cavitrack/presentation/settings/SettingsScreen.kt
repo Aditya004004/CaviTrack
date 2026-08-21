@@ -34,13 +34,13 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         Text("Preferences", style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        TextButton(
+            onClick = {
+                // TODO: Open a webview or browser intent for privacy policy
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Dark Mode (System Default)", style = MaterialTheme.typography.bodyLarge)
-            Switch(checked = androidx.compose.foundation.isSystemInDarkTheme(), onCheckedChange = {  }, enabled = false)
+            Text("Privacy Policy")
         }
 
         Spacer(modifier = Modifier.weight(1f))

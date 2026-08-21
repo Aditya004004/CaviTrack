@@ -33,6 +33,7 @@ fun HomeScreen(
         is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
         is UiState.Success -> {
             val data = state.data
+            val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
@@ -82,7 +83,7 @@ fun HomeScreen(
                             ) {
                                 Text(text = log.entityName, fontWeight = FontWeight.Bold)
                                 Text(
-                                    text = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }.format(Date(log.timestamp)),
+                                    text = dateFormat.format(Date(log.timestamp)),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

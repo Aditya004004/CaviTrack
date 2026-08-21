@@ -48,6 +48,18 @@ fun BarcodeScannerScreen(
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
+    
+    val hasCameraHardware = remember { context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) }
+    
+    if (!hasCameraHardware) {
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("No camera available on this device.")
+            Button(onClick = onCancel, modifier = Modifier.padding(top = 16.dp)) {
+                Text("Go Back")
+            }
+        }
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
