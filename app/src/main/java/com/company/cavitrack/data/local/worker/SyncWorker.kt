@@ -57,8 +57,15 @@ class SyncWorker @AssistedInject constructor(
                         }
                     }
                     dao.deletePendingAction(action)
+                } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+                    if (e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE || 
+                        e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.DEADLINE_EXCEEDED) {
+                        allSuccess = false
+                    } else {
+                        dao.deletePendingAction(action) // Permanent error
+                    }
                 } catch (e: Exception) {
-                    allSuccess = false
+                    dao.deletePendingAction(action) // Permanent error (e.g. JSON parse)
                 }
             }
             if (!allSuccess) return Result.retry()

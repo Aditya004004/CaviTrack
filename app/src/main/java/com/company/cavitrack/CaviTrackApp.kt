@@ -26,6 +26,12 @@ class CaviTrackApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         setupPeriodicSync()
+        
+        // Trigger initial sync on startup
+        val initialSync = androidx.work.OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        WorkManager.getInstance(this).enqueue(initialSync)
     }
 
     private fun setupPeriodicSync() {

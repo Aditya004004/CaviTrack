@@ -29,6 +29,23 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(if (tokenManager.hasValidToken()) AuthState.Authenticated else AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
+    private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
+        if (auth.currentUser != null) {
+            _authState.value = AuthState.Authenticated
+        } else {
+            _authState.value = AuthState.Unauthenticated
+        }
+    }
+
+    init {
+        firebaseAuth.addAuthStateListener(authStateListener)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        firebaseAuth.removeAuthStateListener(authStateListener)
+    }
+
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
