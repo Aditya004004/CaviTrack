@@ -1,6 +1,5 @@
 package com.company.cavitrack.presentation.home
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,9 +16,11 @@ import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.ListCard
 import com.company.cavitrack.presentation.components.LoadingState
 import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.presentation.theme.*
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 
 @Composable
 fun HomeScreen(

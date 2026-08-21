@@ -1,6 +1,7 @@
 package com.company.cavitrack.presentation.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
@@ -21,6 +22,9 @@ import com.company.cavitrack.presentation.auth.AuthState
 import com.company.cavitrack.presentation.auth.AuthViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +104,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .padding(end = 16.dp, bottom = 16.dp)
-                            .androidx.compose.foundation.layout.size(56.dp)
+                            .size(56.dp)
                     ) {
                         Icon(Icons.Filled.Add, "Add Update")
                     }

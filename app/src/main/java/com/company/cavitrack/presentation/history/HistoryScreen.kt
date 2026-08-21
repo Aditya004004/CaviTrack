@@ -12,13 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.company.cavitrack.presentation.components.EmptyState
 import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.ListCard
 import com.company.cavitrack.presentation.components.LoadingState
 import com.company.cavitrack.presentation.components.UiState
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.History
 
 @Composable
 fun HistoryScreen(

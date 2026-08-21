@@ -17,6 +17,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.company.cavitrack.presentation.components.*
 import com.company.cavitrack.domain.model.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Build
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +94,7 @@ fun InventoryScreen(
                     when (selectedTabIndex) {
                         0 -> {
                             if (filteredComponents.isEmpty()) {
-                                item { StyledEmptyState("No components registered", androidx.compose.material.icons.Icons.Default.Inventory, "Add First Component") }
+                                item { StyledEmptyState("No components registered", androidx.compose.material.icons.Icons.Default.List, "Add First Component") }
                             }
                             items(filteredComponents, key = { it.id }) { component ->
                                 ComponentItem(component, onClick = { onComponentClick(component.id) })
@@ -96,7 +102,7 @@ fun InventoryScreen(
                         }
                         1 -> {
                             if (filteredCustomers.isEmpty()) {
-                                item { StyledEmptyState("No customers registered", androidx.compose.material.icons.Icons.Default.Group, "Add First Customer") }
+                                item { StyledEmptyState("No customers registered", androidx.compose.material.icons.Icons.Default.Person, "Add First Customer") }
                             }
                             items(filteredCustomers, key = { it.id }) { customer ->
                                 CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
@@ -104,7 +110,7 @@ fun InventoryScreen(
                         }
                         2 -> {
                             if (filteredMolds.isEmpty()) {
-                                item { StyledEmptyState("No molds registered", androidx.compose.material.icons.Icons.Default.PrecisionManufacturing, "Add First Mold") }
+                                item { StyledEmptyState("No molds registered", androidx.compose.material.icons.Icons.Default.Build, "Add First Mold") }
                             }
                             items(filteredMolds, key = { it.id }) { mold ->
                                 MoldItem(mold, onClick = { onMoldClick(mold.id) })

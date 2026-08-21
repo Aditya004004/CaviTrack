@@ -11,6 +11,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.company.cavitrack.presentation.auth.AuthViewModel
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.foundation.clickable
 
 @Composable
 fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
@@ -73,7 +75,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         val context = androidx.compose.ui.platform.LocalContext.current
         ListItem(
             headlineContent = { Text("Privacy Policy") },
-            modifier = Modifier.androidx.compose.foundation.clickable {
+            modifier = Modifier.clickable {
                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://policies.google.com/privacy"))
                 context.startActivity(intent)
             }

@@ -3,10 +3,10 @@ package com.company.cavitrack.data.remote.services
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -14,27 +14,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
-import com.company.cavitrack.R
+import kotlin.time.Duration.Companion.seconds
 
 @AndroidEntryPoint
 class CaviTrackMessagingService : FirebaseMessagingService() {
-
-    
-    
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d("FCM", "New Token: $token")
         
-        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                kotlinx.coroutines.withTimeoutOrNull(5000) {
+                kotlinx.coroutines.withTimeoutOrNull(5.seconds) {
                     try {
-                        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                        val user = FirebaseAuth.getInstance().currentUser
                         if (user != null) {
-                            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            val db = FirebaseFirestore.getInstance()
                             db.collection("users").document(user.uid)
                                 .collection("fcmTokens").document(token)
                                 .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
@@ -45,8 +40,8 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
                         Log.e("FCM", "Failed to send token", e)
                     }
                 }
-            } finally {
-                pendingResult.finish()
+            } catch (e: Exception) {
+                Log.e("FCM", "Error in Coroutine", e)
             }
         }
     }
@@ -78,17 +73,15 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
     }
 
     private fun showNotification(title: String, body: String) {
-        val channelId = "cavitrack_alerts"
+        val channelId = "cavi_track_alerts"
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "CaviTrack Alerts",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(
+            channelId,
+            "CaviTrack Alerts",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        notificationManager.createNotificationChannel(channel)
 
         val intent = android.content.Intent(this, com.company.cavitrack.MainActivity::class.java).apply {
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
