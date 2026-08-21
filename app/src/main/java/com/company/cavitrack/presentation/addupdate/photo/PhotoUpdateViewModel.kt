@@ -22,6 +22,9 @@ class PhotoUpdateViewModel @Inject constructor(
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
 
+    private val _isUploading = MutableStateFlow(false)
+    val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
@@ -39,6 +42,9 @@ class PhotoUpdateViewModel @Inject constructor(
 
     fun uploadPhotoAndUpdateEntity(entityType: String, entityId: String, photoFile: File) {
         viewModelScope.launch {
+            _isUploading.value = true
+            _error.value = null
+            var success = false
             try {
                 val storageRef = FirebaseStorage.getInstance().reference
                 val fileRef = storageRef.child("photos/${photoFile.name}")
@@ -54,6 +60,7 @@ class PhotoUpdateViewModel @Inject constructor(
                             val saveResult = repository.saveComponent(updated)
                             if (saveResult is Result.Success) {
                                 writeHistory(entityType, updated.id, updated.name, "Photo Added")
+                                success = true
                                 _isSaved.value = true
                             } else if (saveResult is Result.Error) {
                                 _error.value = saveResult.message
@@ -63,13 +70,13 @@ class PhotoUpdateViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    // For Customer/Mold, similar update would happen here.
-                    _isSaved.value = true
+                    _error.value = "Attaching photos to existing $entityType is not supported yet."
                 }
             } catch (e: Exception) {
                 _error.value = e.message
             } finally {
-                if (photoFile.exists()) {
+                _isUploading.value = false
+                if (success && photoFile.exists()) {
                     photoFile.delete()
                 }
             }

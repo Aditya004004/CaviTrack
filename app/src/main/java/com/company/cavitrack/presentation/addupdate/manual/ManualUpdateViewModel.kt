@@ -58,12 +58,8 @@ class ManualUpdateViewModel @Inject constructor(
                             _error.value = result.message
                         }
                     }
-                } else if (entityType == "Customer") {
-                    // Update customer logic placeholder, assume only components use this properly for now
-                    _isSaved.value = true
-                } else if (entityType == "Mold") {
-                    // Update mold logic placeholder
-                    _isSaved.value = true
+                } else {
+                    _error.value = "Editing existing $entityType is not supported yet."
                 }
             } else {
                 when (entityType) {

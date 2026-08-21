@@ -23,11 +23,19 @@ fun ComponentDetailScreen(
         is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${(uiState as UiState.Error).message}") }
         is UiState.Success -> {
-            val component = (uiState as UiState.Success).data.components.find { it.id == entityId }
+            val component = (uiState as UiState.Success).data.components.find { it.id == entityId || it.sku == entityId }
             if (component != null) {
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Component Details", style = MaterialTheme.typography.headlineMedium)
                     Spacer(modifier = Modifier.height(16.dp))
+                    if (!component.photoUrl.isNullOrEmpty()) {
+                        coil.compose.AsyncImage(
+                            model = component.photoUrl,
+                            contentDescription = "Component Photo",
+                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                     Text("ID: ${component.id}")
                     Text("Name: ${component.name}")
                     Text("SKU: ${component.sku}")
@@ -58,6 +66,14 @@ fun CustomerDetailScreen(
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Customer Details", style = MaterialTheme.typography.headlineMedium)
                     Spacer(modifier = Modifier.height(16.dp))
+                    if (!customer.photoUrl.isNullOrEmpty()) {
+                        coil.compose.AsyncImage(
+                            model = customer.photoUrl,
+                            contentDescription = "Customer Photo",
+                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                     Text("ID: ${customer.id}")
                     Text("Name: ${customer.name}")
                     Text("Phone: ${customer.phone}")
@@ -83,11 +99,19 @@ fun MoldDetailScreen(
         is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${(uiState as UiState.Error).message}") }
         is UiState.Success -> {
-            val mold = (uiState as UiState.Success).data.molds.find { it.id == entityId }
+            val mold = (uiState as UiState.Success).data.molds.find { it.id == entityId || it.moldCode == entityId }
             if (mold != null) {
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Mold Details", style = MaterialTheme.typography.headlineMedium)
                     Spacer(modifier = Modifier.height(16.dp))
+                    if (!mold.photoUrl.isNullOrEmpty()) {
+                        coil.compose.AsyncImage(
+                            model = mold.photoUrl,
+                            contentDescription = "Mold Photo",
+                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                     Text("ID: ${mold.id}")
                     Text("Mold Code: ${mold.moldCode}")
                     Text("Cavity Count: ${mold.cavityCount}")

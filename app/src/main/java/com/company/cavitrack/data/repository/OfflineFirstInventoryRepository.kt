@@ -135,25 +135,21 @@ class OfflineFirstInventoryRepository @Inject constructor(
     }
 
     override suspend fun refreshData() {
-        try {
-            val compDocs = firestore.collection("components").get().await()
-            val comps = compDocs.toObjects(ComponentDto::class.java)
-            dao.refreshComponents(comps.map { it.toEntity() })
+        val compDocs = firestore.collection("components").get().await()
+        val comps = compDocs.toObjects(ComponentDto::class.java)
+        dao.refreshComponents(comps.map { it.toEntity() })
 
-            val custDocs = firestore.collection("customers").get().await()
-            val custs = custDocs.toObjects(CustomerDto::class.java)
-            dao.refreshCustomers(custs.map { it.toEntity() })
+        val custDocs = firestore.collection("customers").get().await()
+        val custs = custDocs.toObjects(CustomerDto::class.java)
+        dao.refreshCustomers(custs.map { it.toEntity() })
 
-            val moldDocs = firestore.collection("molds").get().await()
-            val molds = moldDocs.toObjects(MoldDto::class.java)
-            dao.refreshMolds(molds.map { it.toEntity() })
+        val moldDocs = firestore.collection("molds").get().await()
+        val molds = moldDocs.toObjects(MoldDto::class.java)
+        dao.refreshMolds(molds.map { it.toEntity() })
 
-            val histDocs = firestore.collection("history").get().await()
-            val hists = histDocs.toObjects(HistoryLogDto::class.java)
-            dao.refreshHistoryLogs(hists.map { it.toEntity() })
-        } catch (e: Exception) {
-            Log.e("OfflineFirstRepository", "refreshData failed", e)
-        }
+        val histDocs = firestore.collection("history").get().await()
+        val hists = histDocs.toObjects(HistoryLogDto::class.java)
+        dao.refreshHistoryLogs(hists.map { it.toEntity() })
     }
 }
 

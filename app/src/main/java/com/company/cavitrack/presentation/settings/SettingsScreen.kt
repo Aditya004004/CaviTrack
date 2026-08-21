@@ -34,9 +34,11 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         Text("Preferences", style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(16.dp))
 
+        val context = androidx.compose.ui.platform.LocalContext.current
         TextButton(
             onClick = {
-                // TODO: Open a webview or browser intent for privacy policy
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://policies.google.com/privacy"))
+                context.startActivity(intent)
             },
             modifier = Modifier.fillMaxWidth()
         ) {

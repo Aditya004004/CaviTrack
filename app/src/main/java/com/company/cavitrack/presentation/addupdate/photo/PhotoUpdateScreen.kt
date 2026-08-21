@@ -124,20 +124,29 @@ fun PhotoUpdateScreen(
                 Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
                     Text("Photo Captured: $photoUri")
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = {
-                        if (entityId != null) {
-                            viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(photoUri!!))
-                        } else {
-                            // If it's a new item, they should probably create it first. 
-                            // But for now, we just pass onUpdateComplete if not possible
-                            onUpdateComplete()
+                    
+                    val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
+                    
+                    if (isUploading) {
+                        androidx.compose.material3.CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Uploading...")
+                    } else {
+                        Button(onClick = {
+                            if (entityId != null) {
+                                viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(photoUri!!))
+                            } else {
+                                // Realistically, we should either save the photo path to pass to the creation screen,
+                                // or block photo capture until the entity is created. For now, show an explicit error.
+                                android.widget.Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        }, enabled = !isUploading) {
+                            Text("Upload and Save")
                         }
-                    }) {
-                        Text("Upload and Save")
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { photoUri = null }) {
-                        Text("Retake")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { photoUri = null }, enabled = !isUploading) {
+                            Text("Retake")
+                        }
                     }
                 }
             }

@@ -27,21 +27,26 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d("FCM", "New Token: $token")
         
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
-            kotlinx.coroutines.withTimeoutOrNull(5000) {
-                try {
-                    val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                    if (user != null) {
-                        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                        db.collection("users").document(user.uid)
-                            .collection("fcmTokens").document(token)
-                            .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
-                            .await()
-                        Log.d("FCM", "Token sent to Firestore for user: ${user.uid}")
+            try {
+                kotlinx.coroutines.withTimeoutOrNull(5000) {
+                    try {
+                        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                        if (user != null) {
+                            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            db.collection("users").document(user.uid)
+                                .collection("fcmTokens").document(token)
+                                .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
+                                .await()
+                            Log.d("FCM", "Token sent to Firestore for user: ${user.uid}")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("FCM", "Failed to send token", e)
                     }
-                } catch (e: Exception) {
-                    Log.e("FCM", "Failed to send token", e)
                 }
+            } finally {
+                pendingResult.finish()
             }
         }
     }
