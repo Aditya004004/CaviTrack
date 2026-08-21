@@ -28,17 +28,20 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         Log.d("FCM", "New Token: $token")
         
         CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                if (user != null) {
-                    val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                    db.collection("users").document(user.uid)
-                        .set(mapOf("fcmToken" to token), com.google.firebase.firestore.SetOptions.merge())
-                        .await()
-                    Log.d("FCM", "Token sent to Firestore for user: ${user.uid}")
+            kotlinx.coroutines.withTimeoutOrNull(5000) {
+                try {
+                    val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                    if (user != null) {
+                        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        db.collection("users").document(user.uid)
+                            .collection("fcmTokens").document(token)
+                            .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
+                            .await()
+                        Log.d("FCM", "Token sent to Firestore for user: ${user.uid}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("FCM", "Failed to send token", e)
                 }
-            } catch (e: Exception) {
-                Log.e("FCM", "Failed to send token", e)
             }
         }
     }
@@ -47,10 +50,26 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         Log.d("FCM", "Message received from: ${message.from}")
 
+        // Handle data payload for background sync triggers
+        if (message.data.isNotEmpty()) {
+            Log.d("FCM", "Message Data payload: ${message.data}")
+            // Trigger a sync if requested
+            if (message.data["action"] == "SYNC") {
+                val workManager = androidx.work.WorkManager.getInstance(applicationContext)
+                val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>().build()
+                workManager.enqueue(syncRequest)
+            }
+        }
+
+        // Handle notification payload
         message.notification?.let {
             Log.d("FCM", "Message Notification Body: ${it.body}")
             showNotification(it.title ?: "CaviTrack", it.body ?: "")
         }
+    }
+
+    companion object {
+        private val notificationId = java.util.concurrent.atomic.AtomicInteger(0)
     }
 
     private fun showNotification(title: String, body: String) {
@@ -80,7 +99,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 
-        notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
+        notificationManager.notify(notificationId.incrementAndGet(), notificationBuilder.build())
     }
 }
 

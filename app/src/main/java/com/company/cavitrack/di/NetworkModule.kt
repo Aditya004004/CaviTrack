@@ -38,7 +38,8 @@ object NetworkModule {
             context,
             AppDatabase::class.java,
             "cavitrack.db"
-        ).build()
+        ).fallbackToDestructiveMigration()
+         .build()
     }
 
     @Provides

@@ -36,7 +36,6 @@ class HistoryViewModel @Inject constructor(
                 when (result) {
                     is Result.Success -> _uiState.value = UiState.Success(result.data)
                     is Result.Error -> _uiState.value = UiState.Error(result.message ?: "Unknown Error")
-                    is Result.Loading -> _uiState.value = UiState.Loading
                 }
             }
         }

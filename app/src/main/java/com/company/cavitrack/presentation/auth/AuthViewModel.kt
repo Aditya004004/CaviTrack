@@ -99,8 +99,15 @@ class AuthViewModel @Inject constructor(
     }
 
     fun logout() {
-        tokenManager.clearToken()
-        _authState.value = AuthState.Unauthenticated
+        viewModelScope.launch {
+            try {
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken().await()
+            } catch (e: Exception) {
+                // Ignore failure if not connected
+            }
+            tokenManager.clearToken()
+            _authState.value = AuthState.Unauthenticated
+        }
     }
 }
 

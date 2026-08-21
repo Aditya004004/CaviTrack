@@ -48,23 +48,17 @@ class InventoryViewModel @Inject constructor(
                     repository.getCustomers(),
                     repository.getMolds()
                 ) { compRes, custRes, moldRes ->
-                    if (compRes is Result.Success && custRes is Result.Success && moldRes is Result.Success) {
-                        UiState.Success(
-                            InventoryData(
-                                components = compRes.data,
-                                customers = custRes.data,
-                                molds = moldRes.data
-                            )
+                    if (compRes is Result.Error) return@combine UiState.Error(compRes.message)
+                    if (custRes is Result.Error) return@combine UiState.Error(custRes.message)
+                    if (moldRes is Result.Error) return@combine UiState.Error(moldRes.message)
+
+                    UiState.Success(
+                        InventoryData(
+                            components = (compRes as Result.Success).data,
+                            customers = (custRes as Result.Success).data,
+                            molds = (moldRes as Result.Success).data
                         )
-                    } else if (compRes is Result.Error) {
-                        UiState.Error(compRes.message)
-                    } else if (custRes is Result.Error) {
-                        UiState.Error(custRes.message)
-                    } else if (moldRes is Result.Error) {
-                        UiState.Error(moldRes.message)
-                    } else {
-                        UiState.Loading
-                    }
+                    )
                 }.collect { combinedState ->
                     _uiState.value = combinedState
                 }
