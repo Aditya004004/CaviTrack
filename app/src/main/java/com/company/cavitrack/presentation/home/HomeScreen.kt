@@ -74,25 +74,49 @@ fun HomeScreen(
                     )
                 }
                 
-                items(data.recentActivity, key = { it.id }) { log ->
-                    ListCard(onClick = { onNavigateToDetail(log.entityType, log.entityId) }) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(text = log.entityName, fontWeight = FontWeight.Bold)
+                if (data.recentActivity.isEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.History,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "No recent activity recorded",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
+                            )
+                        }
+                    }
+                } else {
+                    items(data.recentActivity, key = { it.id }) { log ->
+                        ListCard(onClick = { onNavigateToDetail(log.entityType, log.entityId) }) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = log.entityName, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = dateFormat.format(Date(log.timestamp)),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = dateFormat.format(Date(log.timestamp)),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "${log.action} via ${log.changeSource}",
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "${log.action} via ${log.changeSource}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
                         }
                     }
                 }
@@ -108,27 +132,28 @@ fun SummaryCard(
     modifier: Modifier = Modifier,
     isWarning: Boolean = false
 ) {
-    val isDark = isSystemInDarkTheme()
-    val warningBg = if (isDark) WarningDark.copy(alpha = 0.2f) else WarningLight.copy(alpha = 0.2f)
-    val warningText = if (isDark) WarningDark else WarningLight
+    val warningColor = androidx.compose.ui.graphics.Color(0xFFF59E0B)
 
     Card(
         modifier = modifier,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFD0D5DD)),
         colors = CardDefaults.cardColors(
-            containerColor = if (isWarning) warningBg else MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isWarning) warningColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isWarning) warningText else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isWarning) warningColor else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineLarge,
-                color = if (isWarning) warningText else MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.Bold,
+                color = if (isWarning) warningColor else MaterialTheme.colorScheme.onSurface
             )
         }
     }

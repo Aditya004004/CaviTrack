@@ -34,7 +34,26 @@ fun InventoryScreen(
     val customersListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val moldsListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
+    var searchQuery by remember { mutableStateOf("") }
+
     Column(modifier = Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Search inventory...") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(8.dp),
+            leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Search, contentDescription = "Search") },
+            trailingIcon = {
+                IconButton(onClick = { /* TODO: Filter Bottom Sheet */ }) {
+                    Icon(androidx.compose.material.icons.Icons.Default.FilterList, contentDescription = "Filter")
+                }
+            },
+            singleLine = true
+        )
+        
         PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -55,6 +74,12 @@ fun InventoryScreen(
                     1 -> customersListState
                     else -> moldsListState
                 }
+                
+                // Filtering
+                val filteredComponents = data.components.filter { it.name.contains(searchQuery, ignoreCase = true) || it.sku.contains(searchQuery, ignoreCase = true) }
+                val filteredCustomers = data.customers.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                val filteredMolds = data.molds.filter { it.moldCode.contains(searchQuery, ignoreCase = true) }
+
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
@@ -62,26 +87,56 @@ fun InventoryScreen(
                 ) {
                     when (selectedTabIndex) {
                         0 -> {
-                            if (data.components.isEmpty()) item { EmptyState("No components found") }
-                            items(data.components, key = { it.id }) { component ->
+                            if (filteredComponents.isEmpty()) {
+                                item { StyledEmptyState("No components registered", androidx.compose.material.icons.Icons.Default.Inventory, "Add First Component") }
+                            }
+                            items(filteredComponents, key = { it.id }) { component ->
                                 ComponentItem(component, onClick = { onComponentClick(component.id) })
                             }
                         }
                         1 -> {
-                            if (data.customers.isEmpty()) item { EmptyState("No customers found") }
-                            items(data.customers, key = { it.id }) { customer ->
+                            if (filteredCustomers.isEmpty()) {
+                                item { StyledEmptyState("No customers registered", androidx.compose.material.icons.Icons.Default.Group, "Add First Customer") }
+                            }
+                            items(filteredCustomers, key = { it.id }) { customer ->
                                 CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
                             }
                         }
                         2 -> {
-                            if (data.molds.isEmpty()) item { EmptyState("No molds found") }
-                            items(data.molds, key = { it.id }) { mold ->
+                            if (filteredMolds.isEmpty()) {
+                                item { StyledEmptyState("No molds registered", androidx.compose.material.icons.Icons.Default.PrecisionManufacturing, "Add First Mold") }
+                            }
+                            items(filteredMolds, key = { it.id }) { mold ->
                                 MoldItem(mold, onClick = { onMoldClick(mold.id) })
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun StyledEmptyState(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector, actionLabel: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 64.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(message, style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(24.dp))
+        OutlinedButton(onClick = { /* Triggers add flow */ }) {
+            Text(actionLabel)
         }
     }
 }

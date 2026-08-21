@@ -29,6 +29,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
+    var showUpdateSheet by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     if (authState !is AuthState.Authenticated) {
         // Show auth graph
@@ -93,9 +94,13 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 
                 if (showFab) {
                     FloatingActionButton(
-                        onClick = { navController.navigate(Route.AddUpdateAction(null)) },
+                        onClick = { showUpdateSheet = true },
+                        shape = androidx.compose.foundation.shape.CircleShape,
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier
+                            .padding(end = 16.dp, bottom = 16.dp)
+                            .androidx.compose.foundation.layout.size(56.dp)
                     ) {
                         Icon(Icons.Filled.Add, "Add Update")
                     }
@@ -107,6 +112,30 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 authViewModel = authViewModel,
                 modifier = Modifier.padding(innerPadding)
             )
+            
+            if (showUpdateSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showUpdateSheet = false },
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
+                    scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
+                ) {
+                    com.company.cavitrack.presentation.addupdate.AddUpdateActionScreen(
+                        entityType = null,
+                        onNavigateToManual = { type ->
+                            showUpdateSheet = false
+                            navController.navigate(Route.ManualUpdate(type ?: "Component", null))
+                        },
+                        onNavigateToPhoto = { type ->
+                            showUpdateSheet = false
+                            navController.navigate(Route.PhotoUpdate(type ?: "Component", null))
+                        },
+                        onNavigateToScan = { type ->
+                            showUpdateSheet = false
+                            navController.navigate(Route.BarcodeScan(type))
+                        }
+                    )
+                }
+            }
         }
     }
 }

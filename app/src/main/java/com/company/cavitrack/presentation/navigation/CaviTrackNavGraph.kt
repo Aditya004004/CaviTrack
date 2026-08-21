@@ -60,15 +60,7 @@ fun CaviTrackNavGraph(
         }
         composable<Route.Settings> { SettingsScreen(authViewModel = authViewModel) }
         
-        composable<Route.AddUpdateAction> { backStackEntry ->
-            val route: Route.AddUpdateAction = backStackEntry.toRoute()
-            AddUpdateActionScreen(
-                entityType = route.entityType,
-                onNavigateToManual = { type -> navController.navigate(Route.ManualUpdate(type ?: "Component", null)) },
-                onNavigateToPhoto = { type -> navController.navigate(Route.PhotoUpdate(type ?: "Component", null)) },
-                onNavigateToScan = { type -> navController.navigate(Route.BarcodeScan(type)) }
-            )
-        }
+
         
         composable<Route.ManualUpdate> { backStackEntry ->
             val route: Route.ManualUpdate = backStackEntry.toRoute()
