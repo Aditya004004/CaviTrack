@@ -132,10 +132,6 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         onNavigateToPhoto = { type ->
                             showUpdateSheet = false
                             navController.navigate(Route.PhotoUpdate(type ?: "Component", null))
-                        },
-                        onNavigateToScan = { type ->
-                            showUpdateSheet = false
-                            navController.navigate(Route.BarcodeScan(type))
                         }
                     )
                 }

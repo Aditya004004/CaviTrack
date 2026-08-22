@@ -15,8 +15,7 @@ import androidx.compose.runtime.setValue
 fun AddUpdateActionScreen(
     entityType: String?,
     onNavigateToManual: (String?) -> Unit,
-    onNavigateToPhoto: (String?) -> Unit,
-    onNavigateToScan: (String?) -> Unit
+    onNavigateToPhoto: (String?) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
@@ -77,18 +76,6 @@ fun AddUpdateActionScreen(
             Column(horizontalAlignment = Alignment.Start, modifier = Modifier.weight(1f)) {
                 Text("Photo Update", style = MaterialTheme.typography.titleMedium)
                 Text("Attach image from camera/gallery", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f))
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = { onNavigateToScan(selectedType) },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
-        ) {
-            Column(horizontalAlignment = Alignment.Start, modifier = Modifier.weight(1f)) {
-                Text("Scan Barcode", style = MaterialTheme.typography.titleMedium)
-                Text("Quickly identify using barcode scanner", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
         }
         Spacer(modifier = Modifier.height(32.dp))

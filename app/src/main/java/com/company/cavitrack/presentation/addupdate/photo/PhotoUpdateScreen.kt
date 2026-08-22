@@ -163,8 +163,10 @@ fun PhotoUpdateScreen(
                     if (uri != null) {
                         val inputStream = context.contentResolver.openInputStream(uri)
                         val file = File(context.cacheDir, "${System.currentTimeMillis()}_gallery.jpg")
-                        file.outputStream().use { output ->
-                            inputStream?.copyTo(output)
+                        inputStream?.use { input ->
+                            file.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
                         }
                         photoUri = file.absolutePath
                     }

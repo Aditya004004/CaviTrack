@@ -19,7 +19,7 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComponent(component: ComponentEntity)
 
-    @Query("DELETE FROM components")
+    @Query("DELETE FROM components WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
     suspend fun clearComponents()
 
     // Customers
@@ -29,7 +29,7 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomers(customers: List<CustomerEntity>)
 
-    @Query("DELETE FROM customers")
+    @Query("DELETE FROM customers WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
     suspend fun clearCustomers()
 
     // Molds
@@ -39,7 +39,7 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMolds(molds: List<MoldEntity>)
 
-    @Query("DELETE FROM molds")
+    @Query("DELETE FROM molds WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
     suspend fun clearMolds()
 
     // History
@@ -49,7 +49,7 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHistoryLogs(logs: List<HistoryLogEntity>)
 
-    @Query("DELETE FROM history_logs")
+    @Query("DELETE FROM history_logs WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
     suspend fun clearHistoryLogs()
 
     // Pending Actions
@@ -62,16 +62,16 @@ interface InventoryDao {
     @Delete
     suspend fun deletePendingAction(action: PendingActionEntity)
 
-    @Query("DELETE FROM components WHERE id NOT IN (:ids)")
+    @Query("DELETE FROM components WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
     suspend fun deleteComponentsNotIn(ids: List<String>)
 
-    @Query("DELETE FROM customers WHERE id NOT IN (:ids)")
+    @Query("DELETE FROM customers WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
     suspend fun deleteCustomersNotIn(ids: List<String>)
 
-    @Query("DELETE FROM molds WHERE id NOT IN (:ids)")
+    @Query("DELETE FROM molds WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
     suspend fun deleteMoldsNotIn(ids: List<String>)
 
-    @Query("DELETE FROM history_logs WHERE id NOT IN (:ids)")
+    @Query("DELETE FROM history_logs WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
     suspend fun deleteHistoryLogsNotIn(ids: List<String>)
 
     @Transaction

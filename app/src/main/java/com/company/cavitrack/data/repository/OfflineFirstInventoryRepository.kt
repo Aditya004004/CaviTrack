@@ -60,56 +60,44 @@ class OfflineFirstInventoryRepository @Inject constructor(
     override suspend fun saveComponent(component: Component): Result<Unit> {
         return try {
             val dto = component.toDto()
-            firestore.collection("components").document(dto.id).set(dto).await()
             dao.insertComponent(dto.toEntity())
+            queueAction("CREATE", "COMPONENT", component.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
-            val dto = component.toDto()
-            queueAction("CREATE", "COMPONENT", component.id, Json.encodeToString(dto))
-            dao.insertComponent(dto.toEntity())
-            Result.Error(e.message ?: "Exception, queued offline")
+            Result.Error(e.message ?: "Failed to save locally")
         }
     }
 
     override suspend fun saveCustomer(customer: Customer): Result<Unit> {
         return try {
             val dto = customer.toDto()
-            firestore.collection("customers").document(dto.id).set(dto).await()
             dao.insertCustomers(listOf(dto.toEntity()))
+            queueAction("CREATE", "CUSTOMER", customer.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
-            val dto = customer.toDto()
-            queueAction("CREATE", "CUSTOMER", customer.id, Json.encodeToString(dto))
-            dao.insertCustomers(listOf(dto.toEntity()))
-            Result.Error(e.message ?: "Exception, queued offline")
+            Result.Error(e.message ?: "Failed to save locally")
         }
     }
 
     override suspend fun saveMold(mold: Mold): Result<Unit> {
         return try {
             val dto = mold.toDto()
-            firestore.collection("molds").document(dto.id).set(dto).await()
             dao.insertMolds(listOf(dto.toEntity()))
+            queueAction("CREATE", "MOLD", mold.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
-            val dto = mold.toDto()
-            queueAction("CREATE", "MOLD", mold.id, Json.encodeToString(dto))
-            dao.insertMolds(listOf(dto.toEntity()))
-            Result.Error(e.message ?: "Exception, queued offline")
+            Result.Error(e.message ?: "Failed to save locally")
         }
     }
 
     override suspend fun saveHistoryLog(log: HistoryLog): Result<Unit> {
         return try {
             val dto = log.toDto()
-            firestore.collection("history").document(dto.id).set(dto).await()
             dao.insertHistoryLogs(listOf(dto.toEntity()))
+            queueAction("CREATE", "HISTORY", log.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
-            val dto = log.toDto()
-            queueAction("CREATE", "HISTORY", log.id, Json.encodeToString(dto))
-            dao.insertHistoryLogs(listOf(dto.toEntity()))
-            Result.Error(e.message ?: "Exception, queued offline")
+            Result.Error(e.message ?: "Failed to save locally")
         }
     }
 

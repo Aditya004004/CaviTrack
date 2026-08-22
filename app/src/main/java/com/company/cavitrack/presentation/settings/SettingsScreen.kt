@@ -54,24 +54,6 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-        Text("Preferences", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        ListItem(
-            headlineContent = { Text("Units of Measure") },
-            supportingContent = { Text("pcs (Default)") },
-            trailingContent = { Icon(androidx.compose.material.icons.Icons.Default.ArrowDropDown, contentDescription = null) }
-        )
-        ListItem(
-            headlineContent = { Text("Default Low-Stock Threshold") },
-            supportingContent = { Text("10 items") }
-        )
-        ListItem(
-            headlineContent = { Text("Notifications") },
-            trailingContent = { Switch(checked = true, onCheckedChange = {}) }
-        )
-
         val context = androidx.compose.ui.platform.LocalContext.current
         ListItem(
             headlineContent = { Text("Privacy Policy") },

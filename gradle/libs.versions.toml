@@ -1,13 +1,8 @@
 [versions]
 mockk = "1.13.8"
 coroutinesTest = "1.7.3"
-mlkitBarcode = "18.3.0"
 mlkitText = "19.0.0"
-firebaseMessaging = "23.4.0"
-firebaseAuth = "23.0.0"
-firebaseFirestore = "25.0.0"
 work = "2.9.0"
-securityCrypto = "1.1.0-alpha06"
 agp = "9.3.1"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -29,7 +24,6 @@ serialization = "1.7.3"
 [libraries]
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
-mlkit-barcode = { group = "com.google.android.gms", name = "play-services-mlkit-barcode-scanning", version.ref = "mlkitBarcode" }
 mlkit-text = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkitText" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }

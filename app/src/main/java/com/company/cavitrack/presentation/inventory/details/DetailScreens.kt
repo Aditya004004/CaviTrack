@@ -15,7 +15,8 @@ import com.company.cavitrack.presentation.inventory.InventoryViewModel
 @Composable
 fun ComponentDetailScreen(
     entityId: String,
-    viewModel: InventoryViewModel = hiltViewModel()
+    viewModel: InventoryViewModel = hiltViewModel(),
+    onNavigateToUpdate: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
@@ -42,6 +43,14 @@ fun ComponentDetailScreen(
                     Text("Category: ${component.category}")
                     Text("Quantity: ${component.qty} ${component.unit}")
                     Text("Min Stock: ${component.minStockThreshold}")
+                    
+                    Spacer(modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = { onNavigateToUpdate(component.id) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                    ) {
+                        Text("Adjust Stock")
+                    }
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Component not found") }

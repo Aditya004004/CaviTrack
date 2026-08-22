@@ -23,33 +23,45 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.History
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.clickable
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel(),
     onNavigateToDetail: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showFilterSheet by remember { mutableStateOf(false) }
+    var selectedAction by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            @OptIn(ExperimentalMaterial3Api::class)
-            TopAppBar(
-                title = { Text("Activity History") },
-                actions = {
-                    IconButton(onClick = { /* TODO: Open filter bottom sheet */ }) {
-                        Icon(androidx.compose.material.icons.Icons.Default.FilterList, contentDescription = "Filter History")
-                    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            is UiState.Loading -> LoadingState()
+            is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
+            is UiState.Success -> {
+                val history = state.data
+                val filteredHistory = history.filter {
+                    selectedAction == null || it.action.equals(selectedAction, ignoreCase = true)
                 }
-            )
-        }
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-            when (val state = uiState) {
-                is UiState.Loading -> LoadingState()
-                is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
-                is UiState.Success -> {
-                    val history = state.data
-                    if (history.isEmpty()) {
+
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        OutlinedButton(onClick = { showFilterSheet = true }) {
+                            Icon(androidx.compose.material.icons.Icons.Default.FilterList, contentDescription = "Filter")
+                            Spacer(Modifier.width(8.dp))
+                            Text(selectedAction ?: "Filter History")
+                        }
+                    }
+
+                    if (filteredHistory.isEmpty()) {
                         Column(
                             modifier = Modifier.fillMaxSize().padding(32.dp),
                             verticalArrangement = Arrangement.Center,
@@ -62,10 +74,10 @@ fun HistoryScreen(
                                 tint = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("No stock movements yet", style = MaterialTheme.typography.titleMedium)
+                            Text("No stock movements found", style = MaterialTheme.typography.titleMedium)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                "All manual and photo updates will appear here in real-time.",
+                                "Try adjusting your filters.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -77,7 +89,7 @@ fun HistoryScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 80.dp)
                         ) {
-                            items(history, key = { it.id }) { log ->
+                            items(filteredHistory, key = { it.id }) { log ->
                                 ListCard(onClick = { onNavigateToDetail(log.entityType, log.entityId) }) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Row(
@@ -106,6 +118,44 @@ fun HistoryScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+                
+                if (showFilterSheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showFilterSheet = false },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
+                            Text("Filter by Action", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            val actions = listOf(null, "Created", "Updated", "Stock Adjusted", "Deleted")
+                            val labels = listOf("All", "Created", "Updated", "Stock Adjusted", "Deleted")
+                            
+                            actions.forEachIndexed { index, action ->
+                                Row(
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedAction = action }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    RadioButton(
+                                        selected = selectedAction == action,
+                                        onClick = { selectedAction = action }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(labels[index])
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(onClick = { showFilterSheet = false }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Apply Filters")
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }

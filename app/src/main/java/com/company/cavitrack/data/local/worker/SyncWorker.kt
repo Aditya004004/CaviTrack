@@ -64,8 +64,10 @@ class SyncWorker @AssistedInject constructor(
                     } else {
                         dao.deletePendingAction(action) // Permanent error
                     }
+                } catch (e: kotlinx.serialization.SerializationException) {
+                    dao.deletePendingAction(action) // Permanent error (JSON parse)
                 } catch (e: Exception) {
-                    dao.deletePendingAction(action) // Permanent error (e.g. JSON parse)
+                    allSuccess = false // Retry on other exceptions
                 }
             }
             if (!allSuccess) return Result.retry()

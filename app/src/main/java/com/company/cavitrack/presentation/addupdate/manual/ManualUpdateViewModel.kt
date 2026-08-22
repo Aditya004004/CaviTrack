@@ -39,7 +39,18 @@ class ManualUpdateViewModel @Inject constructor(
         repository.saveHistoryLog(log)
     }
 
-    fun updateQuantity(entityType: String, entityId: String?, newQuantity: Int, note: String, name: String = "", sku: String = "", category: String = "") {
+    fun updateQuantity(
+        entityType: String, 
+        entityId: String?, 
+        newQuantity: Int, 
+        note: String, 
+        name: String = "", 
+        sku: String = "", 
+        category: String = "",
+        phone: String = "",
+        email: String = "",
+        address: String = ""
+    ) {
         viewModelScope.launch {
             if (entityId != null) {
                 if (entityType == "Component") {
@@ -85,9 +96,9 @@ class ManualUpdateViewModel @Inject constructor(
                         val customer = com.company.cavitrack.domain.model.Customer(
                             id = UUID.randomUUID().toString(),
                             name = name.ifBlank { "New Customer" },
-                            phone = note,
-                            email = "",
-                            address = ""
+                            phone = phone,
+                            email = email,
+                            address = address
                         )
                         val result = repository.saveCustomer(customer)
                         if (result is Result.Success) {

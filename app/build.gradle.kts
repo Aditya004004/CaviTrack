@@ -72,7 +72,6 @@ dependencies {
 
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
-    implementation(libs.mlkit.barcode)
     implementation(libs.mlkit.text)
     
     implementation(libs.androidx.work.runtime.ktx)

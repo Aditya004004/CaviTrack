@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +42,11 @@ fun InventoryScreen(
     val customersListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val moldsListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
+    var showFilterSheet by remember { mutableStateOf(false) }
+    var lowStockOnly by remember { mutableStateOf(false) }
+    var selectedMoldStatus by remember { mutableStateOf<MoldStatus?>(null) } // null means All
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -53,7 +59,7 @@ fun InventoryScreen(
             shape = RoundedCornerShape(8.dp),
             leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Search, contentDescription = "Search") },
             trailingIcon = {
-                IconButton(onClick = { /* TODO: Filter Bottom Sheet */ }) {
+                IconButton(onClick = { showFilterSheet = true }) {
                     Icon(androidx.compose.material.icons.Icons.Default.FilterList, contentDescription = "Filter")
                 }
             },
@@ -82,9 +88,15 @@ fun InventoryScreen(
                 }
                 
                 // Filtering
-                val filteredComponents = data.components.filter { it.name.contains(searchQuery, ignoreCase = true) || it.sku.contains(searchQuery, ignoreCase = true) }
+                val filteredComponents = data.components.filter { 
+                    (it.name.contains(searchQuery, ignoreCase = true) || it.sku.contains(searchQuery, ignoreCase = true)) &&
+                    (!lowStockOnly || it.qty < it.minStockThreshold)
+                }
                 val filteredCustomers = data.customers.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                val filteredMolds = data.molds.filter { it.moldCode.contains(searchQuery, ignoreCase = true) }
+                val filteredMolds = data.molds.filter { 
+                    it.moldCode.contains(searchQuery, ignoreCase = true) &&
+                    (selectedMoldStatus == null || it.status == selectedMoldStatus)
+                }
 
                 LazyColumn(
                     state = listState,
@@ -94,7 +106,7 @@ fun InventoryScreen(
                     when (selectedTabIndex) {
                         0 -> {
                             if (filteredComponents.isEmpty()) {
-                                item { StyledEmptyState("No components registered", androidx.compose.material.icons.Icons.Default.List, "Add First Component") }
+                                item { StyledEmptyState("No components registered", androidx.compose.material.icons.Icons.Default.List) }
                             }
                             items(filteredComponents, key = { it.id }) { component ->
                                 ComponentItem(component, onClick = { onComponentClick(component.id) })
@@ -102,7 +114,7 @@ fun InventoryScreen(
                         }
                         1 -> {
                             if (filteredCustomers.isEmpty()) {
-                                item { StyledEmptyState("No customers registered", androidx.compose.material.icons.Icons.Default.Person, "Add First Customer") }
+                                item { StyledEmptyState("No customers registered", androidx.compose.material.icons.Icons.Default.Person) }
                             }
                             items(filteredCustomers, key = { it.id }) { customer ->
                                 CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
@@ -110,7 +122,7 @@ fun InventoryScreen(
                         }
                         2 -> {
                             if (filteredMolds.isEmpty()) {
-                                item { StyledEmptyState("No molds registered", androidx.compose.material.icons.Icons.Default.Build, "Add First Mold") }
+                                item { StyledEmptyState("No molds registered", androidx.compose.material.icons.Icons.Default.Build) }
                             }
                             items(filteredMolds, key = { it.id }) { mold ->
                                 MoldItem(mold, onClick = { onMoldClick(mold.id) })
@@ -121,10 +133,51 @@ fun InventoryScreen(
             }
         }
     }
+    
+    if (showFilterSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showFilterSheet = false },
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        ) {
+            Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
+                Text("Filter Options", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                if (selectedTabIndex == 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { lowStockOnly = !lowStockOnly }) {
+                        Checkbox(checked = lowStockOnly, onCheckedChange = { lowStockOnly = it })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Low Stock Only")
+                    }
+                } else if (selectedTabIndex == 2) {
+                    Text("Mold Status", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                    val statuses = listOf(null, MoldStatus.Active, MoldStatus.InMaintenance, MoldStatus.Retired)
+                    val labels = listOf("All", "Active", "In Maintenance", "Retired")
+                    statuses.forEachIndexed { index, status ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clickable { selectedMoldStatus = status }.padding(vertical = 4.dp)
+                        ) {
+                            RadioButton(selected = selectedMoldStatus == status, onClick = { selectedMoldStatus = status })
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(labels[index])
+                        }
+                    }
+                } else {
+                    Text("No filters available for Customers.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(onClick = { showFilterSheet = false }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Apply Filters")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
 }
 
 @Composable
-fun StyledEmptyState(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector, actionLabel: String) {
+fun StyledEmptyState(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -140,10 +193,8 @@ fun StyledEmptyState(message: String, icon: androidx.compose.ui.graphics.vector.
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(message, style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(24.dp))
-        OutlinedButton(onClick = { /* Triggers add flow */ }) {
-            Text(actionLabel)
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Use the + button below to get started", style = MaterialTheme.typography.bodyMedium, color = androidx.compose.ui.graphics.Color(0xFF9AA1AC))
     }
 }
 

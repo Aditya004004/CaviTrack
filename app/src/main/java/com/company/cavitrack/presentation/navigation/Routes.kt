@@ -15,6 +15,5 @@ sealed class Route {
     @Serializable data class AddUpdateAction(val entityType: String? = null) : Route()
     @Serializable data class ManualUpdate(val entityType: String, val entityId: String? = null) : Route()
     @Serializable data class PhotoUpdate(val entityType: String, val entityId: String? = null) : Route()
-    @Serializable data class BarcodeScan(val entityType: String? = null) : Route()
 }
 
