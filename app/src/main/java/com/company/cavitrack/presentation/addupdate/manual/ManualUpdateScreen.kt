@@ -112,19 +112,21 @@ fun ManualUpdateScreen(
             }
         }
 
-        OutlinedTextField(
-            value = quantity,
-            onValueChange = { 
-                quantity = it
-                hasError = it.toIntOrNull() == null
-            },
-            label = { Text(if (entityId == null && entityType != "Component") "Value / Count" else "Quantity") },
-            isError = hasError,
-            supportingText = { if (hasError) Text("Must be a valid number") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
+        if (entityType != "Customer") {
+            OutlinedTextField(
+                value = quantity,
+                onValueChange = { 
+                    quantity = it
+                    hasError = it.toIntOrNull() == null
+                },
+                label = { Text(if (entityId == null) "Value / Count" else "Quantity") },
+                isError = hasError,
+                supportingText = { if (hasError) Text("Must be a valid number") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         OutlinedTextField(
             value = note,
@@ -138,7 +140,7 @@ fun ManualUpdateScreen(
 
         Button(
             onClick = {
-                val parsedQty = quantity.toIntOrNull()
+                val parsedQty = if (entityType == "Customer") 0 else quantity.toIntOrNull()
                 if (parsedQty != null) {
                     viewModel.updateQuantity(
                         entityType = entityType, 

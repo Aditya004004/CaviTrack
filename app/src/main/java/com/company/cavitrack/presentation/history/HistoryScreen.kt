@@ -27,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.clickable
 
+import androidx.compose.runtime.saveable.rememberSaveable
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
@@ -34,8 +36,8 @@ fun HistoryScreen(
     onNavigateToDetail: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showFilterSheet by remember { mutableStateOf(false) }
-    var selectedAction by remember { mutableStateOf<String?>(null) }
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    var selectedAction by rememberSaveable { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -55,7 +57,7 @@ fun HistoryScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         OutlinedButton(onClick = { showFilterSheet = true }) {
-                            Icon(androidx.compose.material.icons.Icons.Default.FilterList, contentDescription = "Filter")
+                            Icon(Icons.Default.FilterList, contentDescription = "Filter")
                             Spacer(Modifier.width(8.dp))
                             Text(selectedAction ?: "Filter History")
                         }
@@ -68,10 +70,10 @@ fun HistoryScreen(
                             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = androidx.compose.material.icons.Icons.Default.History,
+                                imageVector = Icons.Default.History,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text("No stock movements found", style = MaterialTheme.typography.titleMedium)
@@ -131,8 +133,8 @@ fun HistoryScreen(
                             Text("Filter by Action", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(16.dp))
                             
-                            val actions = listOf(null, "Created", "Updated", "Stock Adjusted", "Deleted")
-                            val labels = listOf("All", "Created", "Updated", "Stock Adjusted", "Deleted")
+                            val actions = listOf(null, "Created", "Updated", "Stock Adjusted")
+                            val labels = listOf("All", "Created", "Updated", "Stock Adjusted")
                             
                             actions.forEachIndexed { index, action ->
                                 Row(

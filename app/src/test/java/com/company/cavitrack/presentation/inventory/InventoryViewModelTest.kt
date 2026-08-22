@@ -37,7 +37,7 @@ class InventoryViewModelTest {
     fun `loadData success updates uiState with data`() = runTest {
         // Arrange
         val components = listOf(
-            Component("1", "Screw", "SKU1", "Fastener", 100, "pcs", 50, emptyList(), null, 0L, 0L)
+            Component(id = "1", name = "Screw", sku = "SKU1", category = "Fastener", qty = 100, unit = "pcs", minStockThreshold = 50)
         )
         every { repository.getComponents() } returns flowOf(Result.Success(components))
         every { repository.getCustomers() } returns flowOf(Result.Success(emptyList()))

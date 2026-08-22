@@ -15,8 +15,8 @@ import com.company.cavitrack.data.local.entity.*
         HistoryLogEntity::class,
         PendingActionEntity::class
     ],
-    version = 1,
-    exportSchema = false
+    version = 2,
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract val inventoryDao: InventoryDao

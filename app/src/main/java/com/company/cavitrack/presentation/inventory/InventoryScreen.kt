@@ -21,7 +21,7 @@ import com.company.cavitrack.domain.model.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.foundation.clickable
@@ -35,7 +35,7 @@ fun InventoryScreen(
     onMoldClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf("Components", "Customers", "Molds")
 
     val componentsListState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -44,9 +44,9 @@ fun InventoryScreen(
 
     var searchQuery by rememberSaveable { mutableStateOf("") }
 
-    var showFilterSheet by remember { mutableStateOf(false) }
-    var lowStockOnly by remember { mutableStateOf(false) }
-    var selectedMoldStatus by remember { mutableStateOf<MoldStatus?>(null) } // null means All
+    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    var lowStockOnly by rememberSaveable { mutableStateOf(false) }
+    var selectedMoldStatus by rememberSaveable { mutableStateOf<MoldStatus?>(null) } // null means All
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -57,10 +57,10 @@ fun InventoryScreen(
                 .fillMaxWidth()
                 .padding(16.dp),
             shape = RoundedCornerShape(8.dp),
-            leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Search, contentDescription = "Search") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
             trailingIcon = {
                 IconButton(onClick = { showFilterSheet = true }) {
-                    Icon(androidx.compose.material.icons.Icons.Default.FilterList, contentDescription = "Filter")
+                    Icon(Icons.Default.FilterList, contentDescription = "Filter")
                 }
             },
             singleLine = true
@@ -106,7 +106,7 @@ fun InventoryScreen(
                     when (selectedTabIndex) {
                         0 -> {
                             if (filteredComponents.isEmpty()) {
-                                item { StyledEmptyState("No components registered", androidx.compose.material.icons.Icons.Default.List) }
+                                item { StyledEmptyState("No components registered", Icons.AutoMirrored.Filled.List) }
                             }
                             items(filteredComponents, key = { it.id }) { component ->
                                 ComponentItem(component, onClick = { onComponentClick(component.id) })
@@ -114,7 +114,7 @@ fun InventoryScreen(
                         }
                         1 -> {
                             if (filteredCustomers.isEmpty()) {
-                                item { StyledEmptyState("No customers registered", androidx.compose.material.icons.Icons.Default.Person) }
+                                item { StyledEmptyState("No customers registered", Icons.Default.Person) }
                             }
                             items(filteredCustomers, key = { it.id }) { customer ->
                                 CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
@@ -122,7 +122,7 @@ fun InventoryScreen(
                         }
                         2 -> {
                             if (filteredMolds.isEmpty()) {
-                                item { StyledEmptyState("No molds registered", androidx.compose.material.icons.Icons.Default.Build) }
+                                item { StyledEmptyState("No molds registered", Icons.Default.Build) }
                             }
                             items(filteredMolds, key = { it.id }) { mold ->
                                 MoldItem(mold, onClick = { onMoldClick(mold.id) })
@@ -189,12 +189,12 @@ fun StyledEmptyState(message: String, icon: androidx.compose.ui.graphics.vector.
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(message, style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("Use the + button below to get started", style = MaterialTheme.typography.bodyMedium, color = androidx.compose.ui.graphics.Color(0xFF9AA1AC))
+        Text("Use the + button below to get started", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

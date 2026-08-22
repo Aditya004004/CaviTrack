@@ -27,8 +27,8 @@ class SyncWorker @AssistedInject constructor(
             var allSuccess = true
             for (action in pendingActions) {
                 try {
-                    when (action.actionType) {
-                        "CREATE", "UPDATE" -> {
+                        when (action.actionType) {
+                            "CREATE", "UPDATE", "UPSERT" -> {
                             when (action.entityType) {
                                 "COMPONENT" -> {
                                     val dto = Json.decodeFromString<ComponentDto>(action.payloadJson)
@@ -46,13 +46,6 @@ class SyncWorker @AssistedInject constructor(
                                     val dto = Json.decodeFromString<HistoryLogDto>(action.payloadJson)
                                     firestore.collection("history").document(dto.id).set(dto).await()
                                 }
-                            }
-                        }
-                        "DELETE" -> {
-                            when (action.entityType) {
-                                "COMPONENT" -> firestore.collection("components").document(action.entityId).delete().await()
-                                "CUSTOMER" -> firestore.collection("customers").document(action.entityId).delete().await()
-                                "MOLD" -> firestore.collection("molds").document(action.entityId).delete().await()
                             }
                         }
                     }

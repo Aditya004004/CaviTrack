@@ -25,14 +25,15 @@ class ManualUpdateViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     
-    private suspend fun writeHistory(entityType: String, entityId: String, entityName: String, action: String, before: String? = null, after: String? = null) {
+    private suspend fun writeHistory(entityType: String, entityId: String, entityName: String, action: String, before: String? = null, after: String? = null, note: String = "") {
+        val source = if (note.isNotBlank()) "Manual - $note" else "Manual"
         val log = HistoryLog(
             id = UUID.randomUUID().toString(),
             entityType = entityType,
             entityId = entityId,
             entityName = entityName,
             action = action,
-            changeSource = "Manual",
+            changeSource = source,
             beforeValue = before,
             afterValue = after
         )
@@ -60,7 +61,7 @@ class ManualUpdateViewModel @Inject constructor(
                             val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
                             val saveResult = repository.saveComponent(updated)
                             if (saveResult is Result.Success) {
-                                writeHistory(entityType, component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString())
+                                writeHistory(entityType, component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
                                 _isSaved.value = true
                             } else if (saveResult is Result.Error) {
                                 _error.value = saveResult.message
@@ -86,7 +87,7 @@ class ManualUpdateViewModel @Inject constructor(
                         )
                         val result = repository.saveComponent(component)
                         if (result is Result.Success) {
-                            writeHistory(entityType, component.id, component.name, "Created", null, newQuantity.toString())
+                            writeHistory(entityType, component.id, component.name, "Created", null, newQuantity.toString(), note)
                             _isSaved.value = true
                         } else if (result is Result.Error) {
                             _error.value = result.message
@@ -102,7 +103,7 @@ class ManualUpdateViewModel @Inject constructor(
                         )
                         val result = repository.saveCustomer(customer)
                         if (result is Result.Success) {
-                            writeHistory(entityType, customer.id, customer.name, "Created")
+                            writeHistory(entityType, customer.id, customer.name, "Created", null, null, note)
                             _isSaved.value = true
                         } else if (result is Result.Error) {
                             _error.value = result.message
@@ -118,7 +119,7 @@ class ManualUpdateViewModel @Inject constructor(
                         )
                         val result = repository.saveMold(mold)
                         if (result is Result.Success) {
-                            writeHistory(entityType, mold.id, mold.moldCode, "Created")
+                            writeHistory(entityType, mold.id, mold.moldCode, "Created", null, null, note)
                             _isSaved.value = true
                         } else if (result is Result.Error) {
                             _error.value = result.message

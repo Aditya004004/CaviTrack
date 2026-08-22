@@ -84,7 +84,7 @@ fun HomeScreen(
                             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = androidx.compose.material.icons.Icons.Default.History,
+                                imageVector = Icons.Default.History,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
                                 tint = androidx.compose.ui.graphics.Color(0xFF9AA1AC)

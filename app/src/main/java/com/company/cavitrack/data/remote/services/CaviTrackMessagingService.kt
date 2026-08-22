@@ -19,11 +19,14 @@ import kotlin.time.Duration.Companion.seconds
 @AndroidEntryPoint
 class CaviTrackMessagingService : FirebaseMessagingService() {
 
+    @javax.inject.Inject
+    @com.company.cavitrack.di.ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d("FCM", "New Token: $token")
         
-        CoroutineScope(Dispatchers.IO).launch {
+        applicationScope.launch {
             try {
                 kotlinx.coroutines.withTimeoutOrNull(5.seconds) {
                     try {
@@ -34,7 +37,6 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
                                 .collection("fcmTokens").document(token)
                                 .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
                                 .await()
-                            Log.d("FCM", "Token sent to Firestore for user: ${user.uid}")
                         }
                     } catch (e: Exception) {
                         Log.e("FCM", "Failed to send token", e)
@@ -48,11 +50,9 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        Log.d("FCM", "Message received from: ${message.from}")
 
         // Handle data payload for background sync triggers
         if (message.data.isNotEmpty()) {
-            Log.d("FCM", "Message Data payload: ${message.data}")
             // Trigger a sync if requested
             if (message.data["action"] == "SYNC") {
                 val workManager = androidx.work.WorkManager.getInstance(applicationContext)
@@ -63,7 +63,6 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
 
         // Handle notification payload
         message.notification?.let {
-            Log.d("FCM", "Message Notification Body: ${it.body}")
             showNotification(it.title ?: "CaviTrack", it.body ?: "")
         }
     }
@@ -91,7 +90,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(com.company.cavitrack.R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)

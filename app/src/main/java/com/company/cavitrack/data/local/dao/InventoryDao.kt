@@ -49,8 +49,8 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHistoryLogs(logs: List<HistoryLogEntity>)
 
-    @Query("DELETE FROM history_logs WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
-    suspend fun clearHistoryLogs()
+    @Query("DELETE FROM history_logs WHERE ownerId = :ownerId AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
+    suspend fun clearHistoryLogs(ownerId: String)
 
     // Pending Actions
     @Query("SELECT * FROM pending_actions ORDER BY timestamp ASC")

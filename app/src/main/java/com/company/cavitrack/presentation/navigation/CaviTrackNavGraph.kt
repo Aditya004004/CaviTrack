@@ -24,6 +24,8 @@ fun CaviTrackNavGraph(
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier
 ) {
+    val inventoryViewModel: com.company.cavitrack.presentation.inventory.InventoryViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    
     NavHost(
         navController = navController,
         startDestination = Route.Home,
@@ -42,6 +44,7 @@ fun CaviTrackNavGraph(
         }
         composable<Route.Inventory> { 
             InventoryScreen(
+                viewModel = inventoryViewModel,
                 onComponentClick = { id -> navController.navigate(Route.ComponentDetail(id)) },
                 onCustomerClick = { id -> navController.navigate(Route.CustomerDetail(id)) },
                 onMoldClick = { id -> navController.navigate(Route.MoldDetail(id)) }
@@ -84,16 +87,17 @@ fun CaviTrackNavGraph(
             val route: Route.ComponentDetail = backStackEntry.toRoute()
             com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(
                 entityId = route.id,
+                viewModel = inventoryViewModel,
                 onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate("Component", id)) }
             )
         }
         composable<Route.CustomerDetail> { backStackEntry -> 
             val route: Route.CustomerDetail = backStackEntry.toRoute()
-            com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(entityId = route.id)
+            com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(entityId = route.id, viewModel = inventoryViewModel)
         }
         composable<Route.MoldDetail> { backStackEntry -> 
             val route: Route.MoldDetail = backStackEntry.toRoute()
-            com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(entityId = route.id)
+            com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(entityId = route.id, viewModel = inventoryViewModel)
         }
     }
 }

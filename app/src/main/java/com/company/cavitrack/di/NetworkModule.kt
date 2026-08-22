@@ -38,7 +38,7 @@ object NetworkModule {
             context,
             AppDatabase::class.java,
             "cavitrack.db"
-        ).fallbackToDestructiveMigration()
+        ).fallbackToDestructiveMigration(dropAllTables = true)
          .build()
     }
 
@@ -47,4 +47,15 @@ object NetworkModule {
     fun provideInventoryDao(db: AppDatabase): InventoryDao {
         return db.inventoryDao
     }
+
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(): kotlinx.coroutines.CoroutineScope {
+        return kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+    }
 }
+
+@javax.inject.Qualifier
+@Retention(AnnotationRetention.RUNTIME)
+annotation class ApplicationScope

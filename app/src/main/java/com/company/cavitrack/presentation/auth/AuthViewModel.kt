@@ -106,7 +106,21 @@ class AuthViewModel @Inject constructor(
                 // Ignore failure if not connected
             }
             tokenManager.clearToken()
+            firebaseAuth.signOut()
             _authState.value = AuthState.Unauthenticated
+        }
+    }
+
+    fun deleteAccount() {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                firebaseAuth.currentUser?.delete()?.await()
+                tokenManager.clearToken()
+                _authState.value = AuthState.Unauthenticated
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.message ?: "Failed to delete account. You may need to log in again.")
+            }
         }
     }
 }

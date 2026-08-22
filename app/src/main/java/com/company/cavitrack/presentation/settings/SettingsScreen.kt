@@ -20,6 +20,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val userName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
     val userEmail = currentUser?.email ?: "No Email"
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
@@ -27,7 +28,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         Card(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -49,7 +50,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(userName, style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                    Text(userEmail, style = MaterialTheme.typography.bodyMedium, color = androidx.compose.ui.graphics.Color(0xFF5C636B))
+                    Text(userEmail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -58,9 +59,14 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         ListItem(
             headlineContent = { Text("Privacy Policy") },
             modifier = Modifier.clickable {
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://policies.google.com/privacy"))
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://cavitrack.com/privacy"))
                 context.startActivity(intent)
             }
+        )
+        
+        ListItem(
+            headlineContent = { Text("Delete Account", color = MaterialTheme.colorScheme.error) },
+            modifier = Modifier.clickable { showDeleteAccountDialog = true }
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -68,7 +74,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             onClick = { showLogoutDialog = true },
             modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFDC2626))
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
             Text("Logout")
         }
@@ -85,13 +91,37 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         showLogoutDialog = false
                         authViewModel.logout()
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = androidx.compose.ui.graphics.Color(0xFFDC2626))
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text("Logout")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAccountDialog = false },
+            title = { Text("Delete Account") },
+            text = { Text("Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteAccountDialog = false
+                        authViewModel.deleteAccount()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAccountDialog = false }) {
                     Text("Cancel")
                 }
             }

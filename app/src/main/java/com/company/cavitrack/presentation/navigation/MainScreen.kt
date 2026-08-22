@@ -51,9 +51,9 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         IconButton(onClick = {
                             val workManager = androidx.work.WorkManager.getInstance(context)
                             val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>().build()
-                            workManager.enqueue(syncRequest)
+                            workManager.enqueueUniqueWork("ManualSync", androidx.work.ExistingWorkPolicy.REPLACE, syncRequest)
                         }) {
-                            Icon(androidx.compose.material.icons.Icons.Filled.Refresh, contentDescription = "Sync Data")
+                            Icon(Icons.Filled.Refresh, contentDescription = "Sync Data")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
