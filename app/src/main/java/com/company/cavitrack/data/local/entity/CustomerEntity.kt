@@ -7,6 +7,7 @@ import com.company.cavitrack.domain.model.Customer
 @Entity(tableName = "customers")
 data class CustomerEntity(
     @PrimaryKey val id: String,
+    val ownerId: String = "",
     val name: String,
     val phone: String,
     val email: String,
@@ -20,6 +21,7 @@ data class CustomerEntity(
 
 fun CustomerEntity.toDomain() = Customer(
     id = id,
+    ownerId = ownerId,
     name = name,
     phone = phone,
     email = email,
@@ -33,6 +35,7 @@ fun CustomerEntity.toDomain() = Customer(
 
 fun Customer.toEntity() = CustomerEntity(
     id = id,
+    ownerId = ownerId,
     name = name,
     phone = phone,
     email = email,

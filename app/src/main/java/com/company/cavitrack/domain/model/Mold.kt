@@ -12,6 +12,7 @@ enum class MoldStatus {
 @Serializable
 data class Mold(
     val id: String,
+    val ownerId: String = "",
     val moldCode: String,
     val cavityCount: Int,
     val linkedComponentId: String? = null,

@@ -24,6 +24,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.company.cavitrack.data.local.worker.SyncWorker
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,34 +33,39 @@ import javax.inject.Singleton
 class OfflineFirstInventoryRepository @Inject constructor(
     private val dao: InventoryDao,
     private val firestore: FirebaseFirestore,
+    private val firebaseAuth: FirebaseAuth,
     @param:ApplicationContext private val context: Context
 ) : InventoryRepository {
 
-    override fun getComponents(): Flow<Result<List<Component>>> = dao.getComponents()
+    private val currentUserId: String
+        get() = firebaseAuth.currentUser?.uid ?: ""
+
+    override fun getComponents(): Flow<Result<List<Component>>> = dao.getComponents(currentUserId)
         .map { entities -> Result.Success(entities.map { it.toDomain() }) as Result<List<Component>> }
         .catch { emit(Result.Error(it.message ?: "Database error")) }
 
     override fun getComponent(id: String): Flow<Result<Component>> = kotlinx.coroutines.flow.flow {
-        val entity = dao.getComponent(id)
+        val entity = dao.getComponent(id, currentUserId)
         if (entity != null) emit(Result.Success(entity.toDomain()))
         else emit(Result.Error("Not found locally"))
     }
 
-    override fun getCustomers(): Flow<Result<List<Customer>>> = dao.getCustomers()
+    override fun getCustomers(): Flow<Result<List<Customer>>> = dao.getCustomers(currentUserId)
         .map { entities -> Result.Success(entities.map { it.toDomain() }) as Result<List<Customer>> }
         .catch { emit(Result.Error(it.message ?: "Database error")) }
 
-    override fun getMolds(): Flow<Result<List<Mold>>> = dao.getMolds()
+    override fun getMolds(): Flow<Result<List<Mold>>> = dao.getMolds(currentUserId)
         .map { entities -> Result.Success(entities.map { it.toDomain() }) as Result<List<Mold>> }
         .catch { emit(Result.Error(it.message ?: "Database error")) }
 
-    override fun getHistory(): Flow<Result<List<HistoryLog>>> = dao.getHistoryLogs()
+    override fun getHistory(): Flow<Result<List<HistoryLog>>> = dao.getHistoryLogs(currentUserId)
         .map { entities -> Result.Success(entities.map { it.toDomain() }) as Result<List<HistoryLog>> }
         .catch { emit(Result.Error(it.message ?: "Database error")) }
 
     override suspend fun saveComponent(component: Component): Result<Unit> {
         return try {
-            val dto = component.toDto()
+            val componentWithOwner = component.copy(ownerId = currentUserId)
+            val dto = componentWithOwner.toDto()
             dao.insertComponent(dto.toEntity())
             queueAction("CREATE", "COMPONENT", component.id, Json.encodeToString(dto))
             Result.Success(Unit)
@@ -70,7 +76,8 @@ class OfflineFirstInventoryRepository @Inject constructor(
 
     override suspend fun saveCustomer(customer: Customer): Result<Unit> {
         return try {
-            val dto = customer.toDto()
+            val customerWithOwner = customer.copy(ownerId = currentUserId)
+            val dto = customerWithOwner.toDto()
             dao.insertCustomers(listOf(dto.toEntity()))
             queueAction("CREATE", "CUSTOMER", customer.id, Json.encodeToString(dto))
             Result.Success(Unit)
@@ -81,7 +88,8 @@ class OfflineFirstInventoryRepository @Inject constructor(
 
     override suspend fun saveMold(mold: Mold): Result<Unit> {
         return try {
-            val dto = mold.toDto()
+            val moldWithOwner = mold.copy(ownerId = currentUserId)
+            val dto = moldWithOwner.toDto()
             dao.insertMolds(listOf(dto.toEntity()))
             queueAction("CREATE", "MOLD", mold.id, Json.encodeToString(dto))
             Result.Success(Unit)
@@ -92,7 +100,8 @@ class OfflineFirstInventoryRepository @Inject constructor(
 
     override suspend fun saveHistoryLog(log: HistoryLog): Result<Unit> {
         return try {
-            val dto = log.toDto()
+            val logWithOwner = log.copy(ownerId = currentUserId)
+            val dto = logWithOwner.toDto()
             dao.insertHistoryLogs(listOf(dto.toEntity()))
             queueAction("CREATE", "HISTORY", log.id, Json.encodeToString(dto))
             Result.Success(Unit)
@@ -123,21 +132,23 @@ class OfflineFirstInventoryRepository @Inject constructor(
     }
 
     override suspend fun refreshData() {
-        val compDocs = firestore.collection("components").get().await()
+        if (currentUserId.isBlank()) return // Don't fetch if no user
+
+        val compDocs = firestore.collection("components").whereEqualTo("ownerId", currentUserId).get().await()
         val comps = compDocs.toObjects(ComponentDto::class.java)
-        dao.refreshComponents(comps.map { it.toEntity() })
+        dao.refreshComponents(currentUserId, comps.map { it.toEntity() })
 
-        val custDocs = firestore.collection("customers").get().await()
+        val custDocs = firestore.collection("customers").whereEqualTo("ownerId", currentUserId).get().await()
         val custs = custDocs.toObjects(CustomerDto::class.java)
-        dao.refreshCustomers(custs.map { it.toEntity() })
+        dao.refreshCustomers(currentUserId, custs.map { it.toEntity() })
 
-        val moldDocs = firestore.collection("molds").get().await()
+        val moldDocs = firestore.collection("molds").whereEqualTo("ownerId", currentUserId).get().await()
         val molds = moldDocs.toObjects(MoldDto::class.java)
-        dao.refreshMolds(molds.map { it.toEntity() })
+        dao.refreshMolds(currentUserId, molds.map { it.toEntity() })
 
-        val histDocs = firestore.collection("history").get().await()
+        val histDocs = firestore.collection("history").whereEqualTo("ownerId", currentUserId).get().await()
         val hists = histDocs.toObjects(HistoryLogDto::class.java)
-        dao.refreshHistoryLogs(hists.map { it.toEntity() })
+        dao.refreshHistoryLogs(currentUserId, hists.map { it.toEntity() })
     }
 }
 

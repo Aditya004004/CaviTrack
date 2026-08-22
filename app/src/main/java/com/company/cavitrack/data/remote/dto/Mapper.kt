@@ -6,6 +6,7 @@ import com.company.cavitrack.domain.model.*
 fun ComponentDto.toEntity(): ComponentEntity {
     return ComponentEntity(
         id = id,
+        ownerId = ownerId,
         name = name,
         sku = sku,
         category = category,
@@ -22,6 +23,7 @@ fun ComponentDto.toEntity(): ComponentEntity {
 fun Component.toDto(): ComponentDto {
     return ComponentDto(
         id = id,
+        ownerId = ownerId,
         name = name,
         sku = sku,
         category = category,
@@ -38,6 +40,7 @@ fun Component.toDto(): ComponentDto {
 fun CustomerDto.toEntity(): CustomerEntity {
     return CustomerEntity(
         id = id,
+        ownerId = ownerId,
         name = name,
         phone = phone,
         email = email,
@@ -53,6 +56,7 @@ fun CustomerDto.toEntity(): CustomerEntity {
 fun Customer.toDto(): CustomerDto {
     return CustomerDto(
         id = id,
+        ownerId = ownerId,
         name = name,
         phone = phone,
         email = email,
@@ -68,6 +72,7 @@ fun Customer.toDto(): CustomerDto {
 fun MoldDto.toEntity(): MoldEntity {
     return MoldEntity(
         id = id,
+        ownerId = ownerId,
         moldCode = moldCode,
         cavityCount = cavityCount,
         linkedComponentId = linkedComponentId,
@@ -81,6 +86,7 @@ fun MoldDto.toEntity(): MoldEntity {
 
 fun Mold.toDto() = MoldDto(
     id = id,
+    ownerId = ownerId,
     moldCode = moldCode,
     cavityCount = cavityCount,
     linkedComponentId = linkedComponentId,
@@ -94,6 +100,7 @@ fun Mold.toDto() = MoldDto(
 fun HistoryLogDto.toEntity(): HistoryLogEntity {
     return HistoryLogEntity(
         id = id,
+        ownerId = ownerId,
         entityType = entityType,
         entityId = entityId,
         entityName = entityName,
@@ -110,6 +117,7 @@ fun HistoryLogDto.toEntity(): HistoryLogEntity {
 fun HistoryLog.toDto(): HistoryLogDto {
     return HistoryLogDto(
         id = id,
+        ownerId = ownerId,
         entityType = entityType,
         entityId = entityId,
         entityName = entityName,

@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface InventoryDao {
     // Components
-    @Query("SELECT * FROM components")
-    fun getComponents(): Flow<List<ComponentEntity>>
+    @Query("SELECT * FROM components WHERE ownerId = :ownerId")
+    fun getComponents(ownerId: String): Flow<List<ComponentEntity>>
 
-    @Query("SELECT * FROM components WHERE id = :id")
-    suspend fun getComponent(id: String): ComponentEntity?
+    @Query("SELECT * FROM components WHERE id = :id AND ownerId = :ownerId")
+    suspend fun getComponent(id: String, ownerId: String): ComponentEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComponents(components: List<ComponentEntity>)
@@ -19,32 +19,32 @@ interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComponent(component: ComponentEntity)
 
-    @Query("DELETE FROM components WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
-    suspend fun clearComponents()
+    @Query("DELETE FROM components WHERE ownerId = :ownerId AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
+    suspend fun clearComponents(ownerId: String)
 
     // Customers
-    @Query("SELECT * FROM customers")
-    fun getCustomers(): Flow<List<CustomerEntity>>
+    @Query("SELECT * FROM customers WHERE ownerId = :ownerId")
+    fun getCustomers(ownerId: String): Flow<List<CustomerEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomers(customers: List<CustomerEntity>)
 
-    @Query("DELETE FROM customers WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
-    suspend fun clearCustomers()
+    @Query("DELETE FROM customers WHERE ownerId = :ownerId AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
+    suspend fun clearCustomers(ownerId: String)
 
     // Molds
-    @Query("SELECT * FROM molds")
-    fun getMolds(): Flow<List<MoldEntity>>
+    @Query("SELECT * FROM molds WHERE ownerId = :ownerId")
+    fun getMolds(ownerId: String): Flow<List<MoldEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMolds(molds: List<MoldEntity>)
 
-    @Query("DELETE FROM molds WHERE id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
-    suspend fun clearMolds()
+    @Query("DELETE FROM molds WHERE ownerId = :ownerId AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
+    suspend fun clearMolds(ownerId: String)
 
     // History
-    @Query("SELECT * FROM history_logs ORDER BY timestamp DESC")
-    fun getHistoryLogs(): Flow<List<HistoryLogEntity>>
+    @Query("SELECT * FROM history_logs WHERE ownerId = :ownerId ORDER BY timestamp DESC")
+    fun getHistoryLogs(ownerId: String): Flow<List<HistoryLogEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHistoryLogs(logs: List<HistoryLogEntity>)
@@ -62,43 +62,43 @@ interface InventoryDao {
     @Delete
     suspend fun deletePendingAction(action: PendingActionEntity)
 
-    @Query("DELETE FROM components WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
-    suspend fun deleteComponentsNotIn(ids: List<String>)
+    @Query("DELETE FROM components WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
+    suspend fun deleteComponentsNotIn(ownerId: String, ids: List<String>)
 
-    @Query("DELETE FROM customers WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
-    suspend fun deleteCustomersNotIn(ids: List<String>)
+    @Query("DELETE FROM customers WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
+    suspend fun deleteCustomersNotIn(ownerId: String, ids: List<String>)
 
-    @Query("DELETE FROM molds WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
-    suspend fun deleteMoldsNotIn(ids: List<String>)
+    @Query("DELETE FROM molds WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
+    suspend fun deleteMoldsNotIn(ownerId: String, ids: List<String>)
 
-    @Query("DELETE FROM history_logs WHERE id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
-    suspend fun deleteHistoryLogsNotIn(ids: List<String>)
+    @Query("DELETE FROM history_logs WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
+    suspend fun deleteHistoryLogsNotIn(ownerId: String, ids: List<String>)
 
     @Transaction
-    suspend fun refreshComponents(components: List<ComponentEntity>) {
-        if (components.isNotEmpty()) deleteComponentsNotIn(components.map { it.id })
-        else clearComponents()
+    suspend fun refreshComponents(ownerId: String, components: List<ComponentEntity>) {
+        if (components.isNotEmpty()) deleteComponentsNotIn(ownerId, components.map { it.id })
+        else clearComponents(ownerId)
         insertComponents(components)
     }
 
     @Transaction
-    suspend fun refreshCustomers(customers: List<CustomerEntity>) {
-        if (customers.isNotEmpty()) deleteCustomersNotIn(customers.map { it.id })
-        else clearCustomers()
+    suspend fun refreshCustomers(ownerId: String, customers: List<CustomerEntity>) {
+        if (customers.isNotEmpty()) deleteCustomersNotIn(ownerId, customers.map { it.id })
+        else clearCustomers(ownerId)
         insertCustomers(customers)
     }
 
     @Transaction
-    suspend fun refreshMolds(molds: List<MoldEntity>) {
-        if (molds.isNotEmpty()) deleteMoldsNotIn(molds.map { it.id })
-        else clearMolds()
+    suspend fun refreshMolds(ownerId: String, molds: List<MoldEntity>) {
+        if (molds.isNotEmpty()) deleteMoldsNotIn(ownerId, molds.map { it.id })
+        else clearMolds(ownerId)
         insertMolds(molds)
     }
 
     @Transaction
-    suspend fun refreshHistoryLogs(logs: List<HistoryLogEntity>) {
-        if (logs.isNotEmpty()) deleteHistoryLogsNotIn(logs.map { it.id })
-        else clearHistoryLogs()
+    suspend fun refreshHistoryLogs(ownerId: String, logs: List<HistoryLogEntity>) {
+        if (logs.isNotEmpty()) deleteHistoryLogsNotIn(ownerId, logs.map { it.id })
+        else clearHistoryLogs(ownerId)
         insertHistoryLogs(logs)
     }
 }

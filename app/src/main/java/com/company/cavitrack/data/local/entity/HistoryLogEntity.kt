@@ -7,6 +7,7 @@ import com.company.cavitrack.domain.model.HistoryLog
 @Entity(tableName = "history_logs")
 data class HistoryLogEntity(
     @PrimaryKey val id: String,
+    val ownerId: String = "",
     val entityType: String,
     val entityId: String,
     val entityName: String,
@@ -21,6 +22,7 @@ data class HistoryLogEntity(
 
 fun HistoryLogEntity.toDomain() = HistoryLog(
     id = id,
+    ownerId = ownerId,
     entityType = entityType,
     entityId = entityId,
     entityName = entityName,
@@ -35,6 +37,7 @@ fun HistoryLogEntity.toDomain() = HistoryLog(
 
 fun HistoryLog.toEntity() = HistoryLogEntity(
     id = id,
+    ownerId = ownerId,
     entityType = entityType,
     entityId = entityId,
     entityName = entityName,

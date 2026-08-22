@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MoldDto(
     val id: String = "",
+    val ownerId: String = "",
     val moldCode: String = "",
     val cavityCount: Int = 0,
     val linkedComponentId: String? = null,

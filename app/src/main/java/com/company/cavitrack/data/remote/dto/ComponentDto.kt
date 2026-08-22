@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ComponentDto(
     val id: String = "",
+    val ownerId: String = "",
     val name: String = "",
     val sku: String = "",
     val category: String = "",

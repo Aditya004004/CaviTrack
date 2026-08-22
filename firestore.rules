@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if the user is authenticated and owns the document
+    function isOwner(resourceData) {
+      return request.auth != null && request.auth.uid == resourceData.ownerId;
+    }
+
+    function isOwnerCreating(requestData) {
+      return request.auth != null && request.auth.uid == requestData.ownerId;
+    }
+
+    match /components/{documentId} {
+      allow read: if isOwner(resource.data);
+      allow create: if isOwnerCreating(request.resource.data);
+      allow update, delete: if isOwner(resource.data) && isOwnerCreating(request.resource.data);
+    }
+    
+    match /customers/{documentId} {
+      allow read: if isOwner(resource.data);
+      allow create: if isOwnerCreating(request.resource.data);
+      allow update, delete: if isOwner(resource.data) && isOwnerCreating(request.resource.data);
+    }
+    
+    match /molds/{documentId} {
+      allow read: if isOwner(resource.data);
+      allow create: if isOwnerCreating(request.resource.data);
+      allow update, delete: if isOwner(resource.data) && isOwnerCreating(request.resource.data);
+    }
+    
+    match /history/{documentId} {
+      allow read: if isOwner(resource.data);
+      allow create: if isOwnerCreating(request.resource.data);
+      allow update, delete: if isOwner(resource.data) && isOwnerCreating(request.resource.data);
+    }
+  }
+}

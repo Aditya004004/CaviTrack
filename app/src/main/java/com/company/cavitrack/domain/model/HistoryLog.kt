@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class HistoryLog(
     val id: String,
+    val ownerId: String = "",
     val entityType: String, // Component, Customer, Mold
     val entityId: String,
     val entityName: String,

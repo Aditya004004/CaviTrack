@@ -7,6 +7,7 @@ import com.company.cavitrack.domain.model.Component
 @Entity(tableName = "components")
 data class ComponentEntity(
     @PrimaryKey val id: String,
+    val ownerId: String = "",
     val name: String,
     val sku: String,
     val category: String,
@@ -21,6 +22,7 @@ data class ComponentEntity(
 
 fun ComponentEntity.toDomain() = Component(
     id = id,
+    ownerId = ownerId,
     name = name,
     sku = sku,
     category = category,
@@ -35,6 +37,7 @@ fun ComponentEntity.toDomain() = Component(
 
 fun Component.toEntity() = ComponentEntity(
     id = id,
+    ownerId = ownerId,
     name = name,
     sku = sku,
     category = category,

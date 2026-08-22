@@ -9,6 +9,7 @@ import com.company.cavitrack.domain.model.MoldStatus
 @Entity(tableName = "molds")
 data class MoldEntity(
     @PrimaryKey val id: String,
+    val ownerId: String = "",
     val moldCode: String,
     val cavityCount: Int,
     val linkedComponentId: String?,
@@ -21,6 +22,7 @@ data class MoldEntity(
 
 fun MoldEntity.toDomain() = Mold(
     id = id,
+    ownerId = ownerId,
     moldCode = moldCode,
     cavityCount = cavityCount,
     linkedComponentId = linkedComponentId,
@@ -36,6 +38,7 @@ fun MoldEntity.toDomain() = Mold(
 
 fun Mold.toEntity() = MoldEntity(
     id = id,
+    ownerId = ownerId,
     moldCode = moldCode,
     cavityCount = cavityCount,
     linkedComponentId = linkedComponentId,
