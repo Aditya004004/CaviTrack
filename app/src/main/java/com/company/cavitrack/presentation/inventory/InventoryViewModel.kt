@@ -33,8 +33,21 @@ class InventoryViewModel @Inject constructor(
     
     private var loadJob: Job? = null
 
+    private val authStateListener = com.google.firebase.auth.FirebaseAuth.AuthStateListener { auth ->
+        if (auth.currentUser != null) {
+            loadData()
+        } else {
+            _uiState.value = UiState.Loading
+        }
+    }
+
     init {
-        loadData()
+        com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener(authStateListener)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.google.firebase.auth.FirebaseAuth.getInstance().removeAuthStateListener(authStateListener)
     }
 
     fun loadData() {

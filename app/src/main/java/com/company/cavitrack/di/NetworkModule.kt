@@ -34,11 +34,20 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE components ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE customers ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE molds ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE history_logs ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
             "cavitrack.db"
-        ).fallbackToDestructiveMigration(dropAllTables = true)
+        ).addMigrations(MIGRATION_1_2)
          .build()
     }
 

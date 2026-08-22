@@ -150,5 +150,25 @@ class OfflineFirstInventoryRepository @Inject constructor(
         val hists = histDocs.toObjects(HistoryLogDto::class.java)
         dao.refreshHistoryLogs(currentUserId, hists.map { it.toEntity() })
     }
+
+    override suspend fun clearUserData() {
+        val uid = currentUserId
+        if (uid.isBlank()) return
+        
+        // 1. Delete from Firestore
+        val collections = listOf("components", "customers", "molds", "history")
+        for (coll in collections) {
+            val docs = firestore.collection(coll).whereEqualTo("ownerId", uid).get().await()
+            for (doc in docs) {
+                firestore.collection(coll).document(doc.id).delete().await()
+            }
+        }
+        
+        // 2. Delete from Room (we can use the refresh methods with empty lists to clear them)
+        dao.refreshComponents(uid, emptyList())
+        dao.refreshCustomers(uid, emptyList())
+        dao.refreshMolds(uid, emptyList())
+        dao.refreshHistoryLogs(uid, emptyList())
+    }
 }
 

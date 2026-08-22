@@ -56,8 +56,13 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
             // Trigger a sync if requested
             if (message.data["action"] == "SYNC") {
                 val workManager = androidx.work.WorkManager.getInstance(applicationContext)
-                val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>().build()
-                workManager.enqueue(syncRequest)
+                val constraints = androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                    .build()
+                val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>()
+                    .setConstraints(constraints)
+                    .build()
+                workManager.enqueueUniqueWork("RemoteSync", androidx.work.ExistingWorkPolicy.REPLACE, syncRequest)
             }
         }
 

@@ -87,13 +87,13 @@ fun HomeScreen(
                                 imageVector = Icons.Default.History,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "No recent activity recorded",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = androidx.compose.ui.graphics.Color(0xFF9AA1AC)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
