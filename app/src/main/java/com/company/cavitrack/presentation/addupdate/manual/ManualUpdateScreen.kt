@@ -29,6 +29,7 @@ fun ManualUpdateScreen(
     var address by rememberSaveable { mutableStateOf("") }
     
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
+    val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val currentQty by viewModel.currentQty.collectAsStateWithLifecycle()
     
@@ -60,16 +61,15 @@ fun ManualUpdateScreen(
         }
 
         if (entityId == null) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            
             when (entityType) {
                 "Component" -> {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = sku,
                         onValueChange = { sku = it },
@@ -86,6 +86,13 @@ fun ManualUpdateScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 "Customer" -> {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = phone,
                         onValueChange = { phone = it },
@@ -175,9 +182,10 @@ fun ManualUpdateScreen(
                     hasError = true
                 }
             },
+            enabled = !isSaving,
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
-            Text("Save Update")
+            Text(if (isSaving) "Saving..." else "Save Update")
         }
     }
 }

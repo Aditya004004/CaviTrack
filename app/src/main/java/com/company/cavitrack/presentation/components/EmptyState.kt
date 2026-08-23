@@ -1,4 +1,4 @@
-﻿package com.company.cavitrack.presentation.components
+package com.company.cavitrack.presentation.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme

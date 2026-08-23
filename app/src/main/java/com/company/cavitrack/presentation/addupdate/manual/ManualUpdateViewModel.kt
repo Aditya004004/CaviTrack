@@ -22,6 +22,9 @@ class ManualUpdateViewModel @Inject constructor(
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
 
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
     
@@ -68,7 +71,9 @@ class ManualUpdateViewModel @Inject constructor(
         address: String = ""
     ) {
         viewModelScope.launch {
-            if (entityId != null) {
+            _isSaving.value = true
+            try {
+                if (entityId != null) {
                 if (entityType == "Component") {
                     val result = repository.getComponent(entityId)
                     if (result is Result.Success) {
@@ -156,6 +161,8 @@ class ManualUpdateViewModel @Inject constructor(
                         }
                     }
                 }
+            } finally {
+                _isSaving.value = false
             }
         }
     }

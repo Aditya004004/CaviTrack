@@ -12,14 +12,12 @@ plugins {
 
 android {
     namespace = "com.company.cavitrack"
-    compileSdk {
-        version = release(37)
-    }
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.cavitrack.app"
         minSdk = 26
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
