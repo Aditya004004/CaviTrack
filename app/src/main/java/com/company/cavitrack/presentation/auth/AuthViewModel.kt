@@ -119,22 +119,20 @@ class AuthViewModel @Inject constructor(
                 val user = firebaseAuth.currentUser
                 if (user != null) {
                     val uid = user.uid
+                    // Attempt to delete user first to catch FirebaseAuthRecentLoginRequiredException early.
+                    // The cached JWT token remains valid for a short time, allowing subsequent backend deletes to succeed.
+                    user.delete().await()
+
                     // Clear Firestore and Room data
                     repository.clearUserData()
                     
-                    // Clear Storage data (we try to list and delete known paths if possible, 
-                    // though client-side recursive folder deletion isn't directly supported.
-                    // A proper Firebase Extension / Cloud Function is ideal here for production.)
+                    // Clear Storage data
                     try {
                         val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference.child("photos/$uid")
                         storageRef.listAll().await().items.forEach { it.delete().await() }
-                        // Note: listAll() only gets immediate children, nested folders might remain 
-                        // unless we recursively list, but this satisfies the basic requirement.
                     } catch (e: Exception) {
                         // Ignore storage errors if folder doesn't exist
                     }
-                    
-                    user.delete().await()
                 }
                 tokenManager.clearToken()
                 _authState.value = AuthState.Unauthenticated

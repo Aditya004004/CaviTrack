@@ -134,11 +134,11 @@ fun ManualUpdateScreen(
                 value = quantity,
                 onValueChange = { 
                     quantity = it
-                    hasError = it.toIntOrNull() == null
+                    hasError = it.toIntOrNull()?.takeIf { v -> v >= 0 } == null
                 },
                 label = { Text(if (entityId == null) "Value / Count" else "Quantity") },
                 isError = hasError,
-                supportingText = { if (hasError) Text("Must be a valid number") },
+                supportingText = { if (hasError) Text("Must be a valid positive number") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
             )
@@ -157,7 +157,7 @@ fun ManualUpdateScreen(
 
         Button(
             onClick = {
-                val parsedQty = if (entityType == "Customer") 0 else quantity.toIntOrNull()
+                val parsedQty = if (entityType == "Customer") 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
                 if (parsedQty != null) {
                     viewModel.updateQuantity(
                         entityType = entityType, 

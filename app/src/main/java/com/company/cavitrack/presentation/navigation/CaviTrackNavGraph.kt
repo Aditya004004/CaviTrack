@@ -88,7 +88,8 @@ fun CaviTrackNavGraph(
             com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(
                 entityId = route.id,
                 viewModel = inventoryViewModel,
-                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate("Component", id)) }
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate("Component", id)) },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate("Component", id)) }
             )
         }
         composable<Route.CustomerDetail> { backStackEntry -> 

@@ -109,6 +109,7 @@ fun PhotoUpdateScreen(
                             )
                         } catch (e: Exception) {
                             e.printStackTrace()
+                            android.widget.Toast.makeText(context, "Failed to bind camera: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }, executor)
                     previewView
@@ -122,7 +123,11 @@ fun PhotoUpdateScreen(
             // Show captured photo or success
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    Text("Photo Captured: $photoUri")
+                    coil.compose.AsyncImage(
+                        model = photoUri,
+                        contentDescription = "Captured Photo",
+                        modifier = Modifier.fillMaxWidth().height(300.dp)
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
@@ -162,14 +167,21 @@ fun PhotoUpdateScreen(
                     contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
                 ) { uri ->
                     if (uri != null) {
-                        val inputStream = context.contentResolver.openInputStream(uri)
-                        val file = File(context.cacheDir, "${System.currentTimeMillis()}_gallery.jpg")
-                        inputStream?.use { input ->
-                            file.outputStream().use { output ->
-                                input.copyTo(output)
+                        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val inputStream = context.contentResolver.openInputStream(uri)
+                            val file = File(context.cacheDir, "${System.currentTimeMillis()}_gallery.jpg")
+                            inputStream?.use { input ->
+                                file.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            if (file.exists()) {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    photoUri = file.absolutePath
+                                    isCameraReady = false
+                                }
                             }
                         }
-                        photoUri = file.absolutePath
                     }
                 }
                 Button(onClick = { galleryLauncher.launch("image/*") }) {
@@ -191,6 +203,7 @@ fun PhotoUpdateScreen(
                                 }
                                 override fun onError(exc: ImageCaptureException) {
                                     exc.printStackTrace()
+                                    android.widget.Toast.makeText(context, "Failed to capture image: ${exc.message}", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )

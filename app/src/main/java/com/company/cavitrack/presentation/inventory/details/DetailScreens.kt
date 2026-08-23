@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.presentation.components.UiState
 import com.company.cavitrack.presentation.inventory.InventoryViewModel
 
@@ -16,15 +17,16 @@ import com.company.cavitrack.presentation.inventory.InventoryViewModel
 fun ComponentDetailScreen(
     entityId: String,
     viewModel: InventoryViewModel = hiltViewModel(),
-    onNavigateToUpdate: (String) -> Unit = {}
+    onNavigateToUpdate: (String) -> Unit = {},
+    onNavigateToPhotoUpdate: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
-    when (uiState) {
+    when (val state = uiState) {
         is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${(uiState as UiState.Error).message}") }
+        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
         is UiState.Success -> {
-            val component = (uiState as UiState.Success).data.components.find { it.id == entityId || it.sku == entityId }
+            val component = state.data.components.find { it.id == entityId || it.sku == entityId }
             if (component != null) {
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Component Details", style = MaterialTheme.typography.headlineMedium)
@@ -45,11 +47,19 @@ fun ComponentDetailScreen(
                     Text("Min Stock: ${component.minStockThreshold}")
                     
                     Spacer(modifier = Modifier.weight(1f))
-                    Button(
-                        onClick = { onNavigateToUpdate(component.id) },
-                        modifier = Modifier.fillMaxWidth().height(56.dp)
-                    ) {
-                        Text("Adjust Stock")
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Button(
+                            onClick = { onNavigateToPhotoUpdate(component.id) },
+                            modifier = Modifier.weight(1f).height(56.dp)
+                        ) {
+                            Text("Update Photo")
+                        }
+                        Button(
+                            onClick = { onNavigateToUpdate(component.id) },
+                            modifier = Modifier.weight(1f).height(56.dp)
+                        ) {
+                            Text("Adjust Stock")
+                        }
                     }
                 }
             } else {

@@ -27,6 +27,8 @@ class ManualUpdateViewModel @Inject constructor(
     
     private suspend fun writeHistory(entityType: String, entityId: String, entityName: String, action: String, before: String? = null, after: String? = null, note: String = "") {
         val source = if (note.isNotBlank()) "Manual - $note" else "Manual"
+        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        val performer = user?.displayName?.takeIf { it.isNotBlank() } ?: user?.email ?: "Unknown"
         val log = HistoryLog(
             id = UUID.randomUUID().toString(),
             entityType = entityType,
@@ -35,7 +37,8 @@ class ManualUpdateViewModel @Inject constructor(
             action = action,
             changeSource = source,
             beforeValue = before,
-            afterValue = after
+            afterValue = after,
+            performedBy = performer
         )
         repository.saveHistoryLog(log)
     }

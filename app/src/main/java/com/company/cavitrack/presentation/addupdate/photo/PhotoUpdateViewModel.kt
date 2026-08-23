@@ -29,13 +29,16 @@ class PhotoUpdateViewModel @Inject constructor(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     private suspend fun writeHistory(entityType: String, entityId: String, entityName: String, action: String) {
+        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        val performer = user?.displayName?.takeIf { it.isNotBlank() } ?: user?.email ?: "Unknown"
         val log = com.company.cavitrack.domain.model.HistoryLog(
             id = java.util.UUID.randomUUID().toString(),
             entityType = entityType,
             entityId = entityId,
             entityName = entityName,
             action = action,
-            changeSource = "Photo"
+            changeSource = "Photo",
+            performedBy = performer
         )
         repository.saveHistoryLog(log)
     }
@@ -53,16 +56,31 @@ class PhotoUpdateViewModel @Inject constructor(
                 
                 // Downscale image before upload
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath)
-                    if (bitmap != null) {
-                        val maxDim = 1280f
-                        val scale = Math.min(maxDim / bitmap.width, maxDim / bitmap.height)
-                        if (scale < 1f) {
-                            val scaled = android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
-                            java.io.FileOutputStream(photoFile).use { out ->
-                                scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
-                            }
+                    val options = android.graphics.BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath, options)
+                    
+                    val maxDim = 1280
+                    var inSampleSize = 1
+                    if (options.outHeight > maxDim || options.outWidth > maxDim) {
+                        val halfHeight = options.outHeight / 2
+                        val halfWidth = options.outWidth / 2
+                        while ((halfHeight / inSampleSize) >= maxDim && (halfWidth / inSampleSize) >= maxDim) {
+                            inSampleSize *= 2
                         }
+                    }
+                    
+                    val decodeOptions = android.graphics.BitmapFactory.Options().apply {
+                        this.inSampleSize = inSampleSize
+                    }
+                    val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath, decodeOptions)
+                    
+                    if (bitmap != null) {
+                        java.io.FileOutputStream(photoFile).use { out ->
+                            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                        }
+                        bitmap.recycle()
                     }
                 }
                 
@@ -94,7 +112,7 @@ class PhotoUpdateViewModel @Inject constructor(
                 _error.value = e.message
             } finally {
                 _isUploading.value = false
-                if (success && photoFile.exists()) {
+                if (photoFile.exists()) {
                     photoFile.delete()
                 }
             }

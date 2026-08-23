@@ -37,6 +37,7 @@ class InventoryViewModel @Inject constructor(
         if (auth.currentUser != null) {
             loadData()
         } else {
+            loadJob?.cancel()
             _uiState.value = UiState.Loading
         }
     }
