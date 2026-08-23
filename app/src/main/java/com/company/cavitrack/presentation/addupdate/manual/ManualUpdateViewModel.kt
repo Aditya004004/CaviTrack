@@ -45,10 +45,9 @@ class ManualUpdateViewModel @Inject constructor(
 
     fun loadComponent(entityId: String) {
         viewModelScope.launch {
-            repository.getComponent(entityId).collect { result ->
-                if (result is Result.Success) {
-                    _currentQty.value = result.data.qty
-                }
+            val result = repository.getComponent(entityId)
+            if (result is Result.Success) {
+                _currentQty.value = result.data.qty
             }
         }
     }
@@ -68,31 +67,30 @@ class ManualUpdateViewModel @Inject constructor(
         viewModelScope.launch {
             if (entityId != null) {
                 if (entityType == "Component") {
-                    repository.getComponent(entityId).collect { result ->
-                        if (result is Result.Success) {
-                            val component = result.data
-                            val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
-                            val saveResult = repository.saveComponent(updated)
-                            if (saveResult is Result.Success) {
-                                writeHistory(entityType, component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
-                                _isSaved.value = true
-                            } else if (saveResult is Result.Error) {
-                                _error.value = saveResult.message
-                            }
-                        } else if (result is Result.Error) {
-                            _error.value = result.message
+                    val result = repository.getComponent(entityId)
+                    if (result is Result.Success) {
+                        val component = result.data
+                        val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
+                        val saveResult = repository.saveComponent(updated)
+                        if (saveResult is Result.Success) {
+                            writeHistory(entityType, component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
+                            _isSaved.value = true
+                        } else if (saveResult is Result.Error) {
+                            _error.value = saveResult.message
                         }
+                    } else if (result is Result.Error) {
+                        _error.value = result.message
                     }
                 } else {
                     _error.value = "Editing existing $entityType is not supported yet."
                 }
             } else {
-                if (name.isBlank()) {
-                    _error.value = "Name is required."
-                    return@launch
-                }
                 when (entityType) {
                     "Component" -> {
+                        if (name.isBlank()) {
+                            _error.value = "Name is required."
+                            return@launch
+                        }
                         if (sku.isBlank()) {
                             _error.value = "SKU is required."
                             return@launch
@@ -115,6 +113,10 @@ class ManualUpdateViewModel @Inject constructor(
                         }
                     }
                     "Customer" -> {
+                        if (name.isBlank()) {
+                            _error.value = "Name is required."
+                            return@launch
+                        }
                         val customer = com.company.cavitrack.domain.model.Customer(
                             id = UUID.randomUUID().toString(),
                             name = name,

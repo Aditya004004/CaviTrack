@@ -52,14 +52,16 @@ class PhotoUpdateViewModel @Inject constructor(
                 val fileRef = storageRef.child("photos/$uid/${photoFile.name}")
                 
                 // Downscale image before upload
-                val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath)
-                if (bitmap != null) {
-                    val maxDim = 1280f
-                    val scale = Math.min(maxDim / bitmap.width, maxDim / bitmap.height)
-                    if (scale < 1f) {
-                        val scaled = android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
-                        java.io.FileOutputStream(photoFile).use { out ->
-                            scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath)
+                    if (bitmap != null) {
+                        val maxDim = 1280f
+                        val scale = Math.min(maxDim / bitmap.width, maxDim / bitmap.height)
+                        if (scale < 1f) {
+                            val scaled = android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+                            java.io.FileOutputStream(photoFile).use { out ->
+                                scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                            }
                         }
                     }
                 }

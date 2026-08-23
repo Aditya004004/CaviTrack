@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
