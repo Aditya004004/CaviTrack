@@ -55,6 +55,8 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             }
         }
 
+        Spacer(modifier = Modifier.height(10.dp))
+
         val context = androidx.compose.ui.platform.LocalContext.current
         ListItem(
             headlineContent = { Text("Privacy Policy") },
