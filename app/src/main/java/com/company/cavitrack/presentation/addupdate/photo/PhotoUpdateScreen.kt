@@ -20,6 +20,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.concurrent.Executor
+import kotlinx.coroutines.launch
 
 @Composable
 fun PhotoUpdateScreen(
@@ -29,6 +30,7 @@ fun PhotoUpdateScreen(
     onUpdateComplete: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val imageCapture = remember { ImageCapture.Builder().build() }
     val executor = ContextCompat.getMainExecutor(context)
@@ -178,7 +180,6 @@ fun PhotoUpdateScreen(
                             if (file.exists()) {
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                     photoUri = file.absolutePath
-                                    isCameraReady = false
                                 }
                             }
                         }

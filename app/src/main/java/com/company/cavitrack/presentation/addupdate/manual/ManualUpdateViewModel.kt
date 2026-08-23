@@ -161,9 +161,10 @@ class ManualUpdateViewModel @Inject constructor(
                         }
                     }
                 }
+            } // closes else
             } finally {
                 _isSaving.value = false
-            }
-        }
-    }
-}
+            } // closes try
+        } // closes launch
+    } // closes fun
+} // closes class
