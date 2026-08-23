@@ -1,9 +1,7 @@
 package com.company.cavitrack.presentation.navigation
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
@@ -15,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -38,10 +37,10 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     var showUpdateSheet by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     if (authState is AuthState.Deleting) {
-        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-            androidx.compose.foundation.layout.Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.material3.CircularProgressIndicator()
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 androidx.compose.material3.Text("Deleting your account...")
             }
         }
@@ -114,7 +113,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 if (showFab) {
                     FloatingActionButton(
                         onClick = { showUpdateSheet = true },
-                        shape = androidx.compose.foundation.shape.CircleShape,
+                        shape = CircleShape,
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
@@ -135,7 +134,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             if (showUpdateSheet) {
                 ModalBottomSheet(
                     onDismissRequest = { showUpdateSheet = false },
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
+                    shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
                     scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
                 ) {
                     com.company.cavitrack.presentation.addupdate.AddUpdateActionScreen(

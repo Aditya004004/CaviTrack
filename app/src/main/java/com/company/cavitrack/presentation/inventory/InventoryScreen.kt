@@ -37,7 +37,7 @@ fun InventoryScreen(
     onMoldClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf("Components", "Customers", "Molds")
 
     val componentsListState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -145,28 +145,32 @@ fun InventoryScreen(
                 Text("Filter Options", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                if (selectedTabIndex == 0) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { lowStockOnly = !lowStockOnly }) {
-                        Checkbox(checked = lowStockOnly, onCheckedChange = { lowStockOnly = it })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Low Stock Only")
-                    }
-                } else if (selectedTabIndex == 2) {
-                    Text("Mold Status", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                    val statuses = listOf(null, MoldStatus.Active, MoldStatus.InMaintenance, MoldStatus.Retired)
-                    val labels = listOf("All", "Active", "In Maintenance", "Retired")
-                    statuses.forEachIndexed { index, status ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable { selectedMoldStatus = status }.padding(vertical = 4.dp)
-                        ) {
-                            RadioButton(selected = selectedMoldStatus == status, onClick = { selectedMoldStatus = status })
+                when (selectedTabIndex) {
+                    0 -> {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { lowStockOnly = !lowStockOnly }) {
+                            Checkbox(checked = lowStockOnly, onCheckedChange = { lowStockOnly = it })
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(labels[index])
+                            Text("Low Stock Only")
                         }
                     }
-                } else {
-                    Text("No filters available for Customers.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    2 -> {
+                        Text("Mold Status", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                        val statuses = listOf(null, MoldStatus.Active, MoldStatus.InMaintenance, MoldStatus.Retired)
+                        val labels = listOf("All", "Active", "In Maintenance", "Retired")
+                        statuses.forEachIndexed { index, status ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().clickable { selectedMoldStatus = status }.padding(vertical = 4.dp)
+                            ) {
+                                RadioButton(selected = selectedMoldStatus == status, onClick = { selectedMoldStatus = status })
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(labels[index])
+                            }
+                        }
+                    }
+                    else -> {
+                        Text("No filters available for Customers.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(onClick = { showFilterSheet = false }, modifier = Modifier.fillMaxWidth()) {
@@ -216,7 +220,7 @@ fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
                     )
                 } else {
                     Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -250,7 +254,7 @@ fun CustomerItem(customer: Customer, onClick: () -> Unit = {}) {
                 )
             } else {
                 Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
-                    Icon(androidx.compose.material.icons.Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -279,7 +283,7 @@ fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
                     )
                 } else {
                     Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
