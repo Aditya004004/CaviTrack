@@ -212,8 +212,13 @@ fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
                             .size(48.dp)
                             .clip(RoundedCornerShape(8.dp))
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
+                } else {
+                    Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                        Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
+                Spacer(modifier = Modifier.width(16.dp))
+                
                 Column {
                     Text(text = component.name, fontWeight = FontWeight.Bold)
                     Text(text = "SKU: ${component.sku}", style = MaterialTheme.typography.bodyMedium)
@@ -241,8 +246,13 @@ fun CustomerItem(customer: Customer, onClick: () -> Unit = {}) {
                         .size(48.dp)
                         .clip(RoundedCornerShape(24.dp))
                 )
-                Spacer(modifier = Modifier.width(16.dp))
+            } else {
+                Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
+                    Icon(androidx.compose.material.icons.Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
+            Spacer(modifier = Modifier.width(16.dp))
+            
             Column {
                 Text(text = customer.name, fontWeight = FontWeight.Bold)
                 Text(text = customer.email, style = MaterialTheme.typography.bodyMedium)
@@ -265,8 +275,13 @@ fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
                             .size(48.dp)
                             .clip(RoundedCornerShape(8.dp))
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
+                } else {
+                    Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                        Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
+                Spacer(modifier = Modifier.width(16.dp))
+                
                 Column {
                     Text(text = mold.moldCode, fontWeight = FontWeight.Bold)
                     Text(text = "${mold.cavityCount} cavities", style = MaterialTheme.typography.bodyMedium)
@@ -278,6 +293,7 @@ fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
                     MoldStatus.Active -> StatusType.SUCCESS
                     MoldStatus.InMaintenance -> StatusType.WARNING
                     MoldStatus.Retired -> StatusType.NEUTRAL
+                    else -> StatusType.NEUTRAL
                 }
             )
         }

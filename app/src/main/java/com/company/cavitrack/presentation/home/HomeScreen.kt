@@ -133,12 +133,13 @@ fun SummaryCard(
     modifier: Modifier = Modifier,
     isWarning: Boolean = false
 ) {
-    val warningColor = androidx.compose.ui.graphics.Color(0xFFF59E0B)
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val warningColor = if (isDark) com.company.cavitrack.presentation.theme.WarningDark else com.company.cavitrack.presentation.theme.WarningLight
 
     Card(
         modifier = modifier,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFD0D5DD)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         colors = CardDefaults.cardColors(
             containerColor = if (isWarning) warningColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
         )

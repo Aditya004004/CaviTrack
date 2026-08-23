@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface InventoryRepository {
     fun getComponents(): Flow<Result<List<Component>>>
-    fun getComponent(id: String): Flow<Result<Component>>
+    suspend fun getComponent(id: String): Result<Component>
     fun getCustomers(): Flow<Result<List<Customer>>>
     fun getMolds(): Flow<Result<List<Mold>>>
     fun getHistory(): Flow<Result<List<HistoryLog>>>

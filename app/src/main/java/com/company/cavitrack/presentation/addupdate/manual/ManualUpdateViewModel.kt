@@ -40,6 +40,19 @@ class ManualUpdateViewModel @Inject constructor(
         repository.saveHistoryLog(log)
     }
 
+    private val _currentQty = MutableStateFlow<Int?>(null)
+    val currentQty: StateFlow<Int?> = _currentQty.asStateFlow()
+
+    fun loadComponent(entityId: String) {
+        viewModelScope.launch {
+            repository.getComponent(entityId).collect { result ->
+                if (result is Result.Success) {
+                    _currentQty.value = result.data.qty
+                }
+            }
+        }
+    }
+
     fun updateQuantity(
         entityType: String, 
         entityId: String?, 
@@ -74,12 +87,20 @@ class ManualUpdateViewModel @Inject constructor(
                     _error.value = "Editing existing $entityType is not supported yet."
                 }
             } else {
+                if (name.isBlank()) {
+                    _error.value = "Name is required."
+                    return@launch
+                }
                 when (entityType) {
                     "Component" -> {
+                        if (sku.isBlank()) {
+                            _error.value = "SKU is required."
+                            return@launch
+                        }
                         val component = Component(
                             id = UUID.randomUUID().toString(),
-                            name = name.ifBlank { "New Component" },
-                            sku = sku.ifBlank { "SKU-UNKNOWN" },
+                            name = name,
+                            sku = sku,
                             category = category.ifBlank { "General" },
                             qty = newQuantity,
                             unit = "pcs",
@@ -96,7 +117,7 @@ class ManualUpdateViewModel @Inject constructor(
                     "Customer" -> {
                         val customer = com.company.cavitrack.domain.model.Customer(
                             id = UUID.randomUUID().toString(),
-                            name = name.ifBlank { "New Customer" },
+                            name = name,
                             phone = phone,
                             email = email,
                             address = address
@@ -110,9 +131,13 @@ class ManualUpdateViewModel @Inject constructor(
                         }
                     }
                     "Mold" -> {
+                        if (sku.isBlank()) {
+                            _error.value = "Mold Code is required."
+                            return@launch
+                        }
                         val mold = com.company.cavitrack.domain.model.Mold(
                             id = UUID.randomUUID().toString(),
-                            moldCode = name.ifBlank { "MOLD-UNKNOWN" },
+                            moldCode = sku,
                             cavityCount = newQuantity.takeIf { it > 0 } ?: 1,
                             status = com.company.cavitrack.domain.model.MoldStatus.Active,
                             location = category.ifBlank { "Storage" }

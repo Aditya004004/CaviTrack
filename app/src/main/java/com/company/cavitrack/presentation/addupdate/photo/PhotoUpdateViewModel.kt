@@ -46,28 +46,44 @@ class PhotoUpdateViewModel @Inject constructor(
             _error.value = null
             var success = false
             try {
+                val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                val uid = user?.uid ?: "unknown"
                 val storageRef = FirebaseStorage.getInstance().reference
-                val fileRef = storageRef.child("photos/${photoFile.name}")
+                val fileRef = storageRef.child("photos/$uid/${photoFile.name}")
+                
+                // Downscale image before upload
+                val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath)
+                if (bitmap != null) {
+                    val maxDim = 1280f
+                    val scale = Math.min(maxDim / bitmap.width, maxDim / bitmap.height)
+                    if (scale < 1f) {
+                        val scaled = android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+                        java.io.FileOutputStream(photoFile).use { out ->
+                            scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                        }
+                    }
+                }
+                
                 val uri = android.net.Uri.fromFile(photoFile)
                 
                 fileRef.putFile(uri).await()
                 val downloadUrl = fileRef.downloadUrl.await().toString()
 
                 if (entityType == "Component") {
-                    repository.getComponent(entityId).collect { result ->
-                        if (result is Result.Success) {
-                            val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
-                            val saveResult = repository.saveComponent(updated)
-                            if (saveResult is Result.Success) {
-                                writeHistory(entityType, updated.id, updated.name, "Photo Added")
-                                success = true
-                                _isSaved.value = true
-                            } else if (saveResult is Result.Error) {
-                                _error.value = saveResult.message
-                            }
-                        } else if (result is Result.Error) {
-                            _error.value = result.message
+                    // It's a suspend method now!
+                    val result = repository.getComponent(entityId)
+                    if (result is Result.Success) {
+                        val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
+                        val saveResult = repository.saveComponent(updated)
+                        if (saveResult is Result.Success) {
+                            writeHistory(entityType, updated.id, updated.name, "Photo Added")
+                            success = true
+                            _isSaved.value = true
+                        } else if (saveResult is Result.Error) {
+                            _error.value = saveResult.message
                         }
+                    } else if (result is Result.Error) {
+                        _error.value = result.message
                     }
                 } else {
                     _error.value = "Attaching photos to existing $entityType is not supported yet."

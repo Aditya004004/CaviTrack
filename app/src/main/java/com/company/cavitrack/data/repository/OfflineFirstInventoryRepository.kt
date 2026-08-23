@@ -44,10 +44,10 @@ class OfflineFirstInventoryRepository @Inject constructor(
         .map { entities -> Result.Success(entities.map { it.toDomain() }) as Result<List<Component>> }
         .catch { emit(Result.Error(it.message ?: "Database error")) }
 
-    override fun getComponent(id: String): Flow<Result<Component>> = kotlinx.coroutines.flow.flow {
+    override suspend fun getComponent(id: String): Result<Component> {
         val entity = dao.getComponent(id, currentUserId)
-        if (entity != null) emit(Result.Success(entity.toDomain()))
-        else emit(Result.Error("Not found locally"))
+        return if (entity != null) Result.Success(entity.toDomain())
+        else Result.Error("Not found locally")
     }
 
     override fun getCustomers(): Flow<Result<List<Customer>>> = dao.getCustomers(currentUserId)
@@ -66,8 +66,13 @@ class OfflineFirstInventoryRepository @Inject constructor(
         return try {
             val componentWithOwner = component.copy(ownerId = currentUserId)
             val dto = componentWithOwner.toDto()
+            
+            // Check if it exists to decide CREATE vs UPDATE
+            val exists = dao.getComponent(component.id, currentUserId) != null
+            val action = if (exists) "UPDATE" else "CREATE"
+            
             dao.insertComponent(dto.toEntity())
-            queueAction("CREATE", "COMPONENT", component.id, Json.encodeToString(dto))
+            queueAction(action, "COMPONENT", component.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to save locally")
@@ -78,6 +83,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
         return try {
             val customerWithOwner = customer.copy(ownerId = currentUserId)
             val dto = customerWithOwner.toDto()
+            // Simplified: could do the same exists check if updates were fully supported
             dao.insertCustomers(listOf(dto.toEntity()))
             queueAction("CREATE", "CUSTOMER", customer.id, Json.encodeToString(dto))
             Result.Success(Unit)
@@ -128,7 +134,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
             .setConstraints(constraints)
             .build()
             
-        WorkManager.getInstance(context).enqueue(syncRequest)
+        WorkManager.getInstance(context).enqueueUniqueWork("DataSync", androidx.work.ExistingWorkPolicy.APPEND_OR_REPLACE, syncRequest)
     }
 
     override suspend fun refreshData() {
@@ -155,12 +161,17 @@ class OfflineFirstInventoryRepository @Inject constructor(
         val uid = currentUserId
         if (uid.isBlank()) return
         
-        // 1. Delete from Firestore
+        // 1. Delete from Firestore in batches
         val collections = listOf("components", "customers", "molds", "history")
         for (coll in collections) {
             val docs = firestore.collection(coll).whereEqualTo("ownerId", uid).get().await()
-            for (doc in docs) {
-                firestore.collection(coll).document(doc.id).delete().await()
+            val chunks = docs.documents.chunked(500)
+            for (chunk in chunks) {
+                val batch = firestore.batch()
+                for (doc in chunk) {
+                    batch.delete(doc.reference)
+                }
+                batch.commit().await()
             }
         }
         

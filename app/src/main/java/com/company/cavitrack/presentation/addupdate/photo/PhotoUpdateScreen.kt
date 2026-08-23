@@ -133,8 +133,9 @@ fun PhotoUpdateScreen(
                         Text("Uploading...")
                     } else {
                         Button(onClick = {
-                            if (entityId != null) {
-                                viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(photoUri!!))
+                            val currentUri = photoUri
+                            if (entityId != null && currentUri != null) {
+                                viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(currentUri))
                             } else {
                                 // Realistically, we should either save the photo path to pass to the creation screen,
                                 // or block photo capture until the entity is created. For now, show an explicit error.
@@ -183,6 +184,9 @@ fun PhotoUpdateScreen(
                             executor,
                             object : ImageCapture.OnImageSavedCallback {
                                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                    if (cameraProviderFuture.isDone) {
+                                        cameraProviderFuture.get().unbindAll()
+                                    }
                                     photoUri = file.absolutePath
                                 }
                                 override fun onError(exc: ImageCaptureException) {

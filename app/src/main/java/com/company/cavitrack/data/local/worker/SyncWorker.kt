@@ -27,8 +27,8 @@ class SyncWorker @AssistedInject constructor(
             var allSuccess = true
             for (action in pendingActions) {
                 try {
-                        when (action.actionType) {
-                            "CREATE", "UPDATE", "UPSERT" -> {
+                    when (action.actionType) {
+                        "CREATE", "UPDATE", "UPSERT" -> {
                             when (action.entityType) {
                                 "COMPONENT" -> {
                                     val dto = Json.decodeFromString<ComponentDto>(action.payloadJson)
@@ -48,6 +48,17 @@ class SyncWorker @AssistedInject constructor(
                                 }
                             }
                         }
+                        "DELETE" -> {
+                            when (action.entityType) {
+                                "COMPONENT" -> firestore.collection("components").document(action.entityId).delete().await()
+                                "CUSTOMER" -> firestore.collection("customers").document(action.entityId).delete().await()
+                                "MOLD" -> firestore.collection("molds").document(action.entityId).delete().await()
+                                "HISTORY" -> firestore.collection("history").document(action.entityId).delete().await()
+                            }
+                        }
+                        else -> {
+                            // Unknown action type, ignore and delete pending action
+                        }
                     }
                     dao.deletePendingAction(action)
                 } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
@@ -59,6 +70,8 @@ class SyncWorker @AssistedInject constructor(
                     }
                 } catch (e: kotlinx.serialization.SerializationException) {
                     dao.deletePendingAction(action) // Permanent error (JSON parse)
+                } catch (e: IllegalArgumentException) {
+                    dao.deletePendingAction(action) // Permanent error (e.g. empty ID)
                 } catch (e: Exception) {
                     allSuccess = false // Retry on other exceptions
                 }

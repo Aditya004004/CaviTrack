@@ -16,6 +16,7 @@ sealed class AuthState {
 
     object Unauthenticated : AuthState()
     object Loading : AuthState()
+    object Deleting : AuthState()
     object Authenticated : AuthState()
     data class Error(val message: String) : AuthState()
 }
@@ -113,7 +114,7 @@ class AuthViewModel @Inject constructor(
 
     fun deleteAccount() {
         viewModelScope.launch {
-            _authState.value = AuthState.Loading
+            _authState.value = AuthState.Deleting
             try {
                 val user = firebaseAuth.currentUser
                 if (user != null) {
@@ -125,7 +126,7 @@ class AuthViewModel @Inject constructor(
                     // though client-side recursive folder deletion isn't directly supported.
                     // A proper Firebase Extension / Cloud Function is ideal here for production.)
                     try {
-                        val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference.child("images/$uid")
+                        val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference.child("photos/$uid")
                         storageRef.listAll().await().items.forEach { it.delete().await() }
                         // Note: listAll() only gets immediate children, nested folders might remain 
                         // unless we recursively list, but this satisfies the basic requirement.

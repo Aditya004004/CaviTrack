@@ -19,8 +19,8 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
     val userEmail = currentUser?.email ?: "No Email"
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var showDeleteAccountDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)

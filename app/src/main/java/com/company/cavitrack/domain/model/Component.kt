@@ -1,8 +1,8 @@
 package com.company.cavitrack.domain.model
 
-import kotlinx.serialization.Serializable
 
-@Serializable
+
+
 data class Component(
     val id: String,
     val ownerId: String = "",

@@ -30,6 +30,19 @@ fun ManualUpdateScreen(
     
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val currentQty by viewModel.currentQty.collectAsStateWithLifecycle()
+    
+    LaunchedEffect(entityId) {
+        if (entityId != null) {
+            viewModel.loadComponent(entityId)
+        }
+    }
+
+    LaunchedEffect(currentQty) {
+        if (currentQty != null && quantity.isEmpty()) {
+            quantity = currentQty.toString()
+        }
+    }
     
     LaunchedEffect(isSaved) {
         if (isSaved) {

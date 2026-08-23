@@ -17,7 +17,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.company.cavitrack"
+        applicationId = "com.cavitrack.app"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

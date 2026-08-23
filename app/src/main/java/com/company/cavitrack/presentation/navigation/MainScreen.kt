@@ -35,7 +35,15 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     var showUpdateSheet by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
-    if (authState !is AuthState.Authenticated) {
+    if (authState is AuthState.Deleting) {
+        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            androidx.compose.foundation.layout.Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                androidx.compose.material3.CircularProgressIndicator()
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+                androidx.compose.material3.Text("Deleting your account...")
+            }
+        }
+    } else if (authState !is AuthState.Authenticated) {
         // Show auth graph
         CaviTrackAuthGraph(
             authViewModel = authViewModel,
@@ -50,7 +58,12 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         val context = androidx.compose.ui.platform.LocalContext.current
                         IconButton(onClick = {
                             val workManager = androidx.work.WorkManager.getInstance(context)
-                            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>().build()
+                            val constraints = androidx.work.Constraints.Builder()
+                                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                .build()
+                            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>()
+                                .setConstraints(constraints)
+                                .build()
                             workManager.enqueueUniqueWork("ManualSync", androidx.work.ExistingWorkPolicy.REPLACE, syncRequest)
                         }) {
                             Icon(Icons.Filled.Refresh, contentDescription = "Sync Data")

@@ -28,7 +28,7 @@ fun MoldEntity.toDomain() = Mold(
     linkedComponentId = linkedComponentId,
     status = try { MoldStatus.valueOf(status) } catch (e: Exception) { 
         android.util.Log.e("MoldEntity", "Unknown status: $status", e)
-        MoldStatus.Active 
+        MoldStatus.Unknown 
     },
     location = location,
     photoUrl = photoUrl,

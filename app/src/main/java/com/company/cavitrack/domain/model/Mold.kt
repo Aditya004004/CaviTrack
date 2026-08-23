@@ -1,15 +1,12 @@
 package com.company.cavitrack.domain.model
 
-import kotlinx.serialization.Serializable
-
-@Serializable
 enum class MoldStatus {
     Active,
     InMaintenance,
-    Retired
+    Retired,
+    Unknown
 }
 
-@Serializable
 data class Mold(
     val id: String,
     val ownerId: String = "",

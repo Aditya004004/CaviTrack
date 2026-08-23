@@ -27,23 +27,19 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         
         applicationScope.launch {
-            try {
-                kotlinx.coroutines.withTimeoutOrNull(5.seconds) {
-                    try {
-                        val user = FirebaseAuth.getInstance().currentUser
-                        if (user != null) {
-                            val db = FirebaseFirestore.getInstance()
-                            db.collection("users").document(user.uid)
-                                .collection("fcmTokens").document(token)
-                                .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
-                                .await()
-                        }
-                    } catch (e: Exception) {
-                        Log.e("FCM", "Failed to send token", e)
+            kotlinx.coroutines.withTimeoutOrNull(5.seconds) {
+                try {
+                    val user = FirebaseAuth.getInstance().currentUser
+                    if (user != null) {
+                        val db = FirebaseFirestore.getInstance()
+                        db.collection("users").document(user.uid)
+                            .collection("fcmTokens").document(token)
+                            .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
+                            .await()
                     }
+                } catch (e: Exception) {
+                    Log.e("FCM", "Failed to send token", e)
                 }
-            } catch (e: Exception) {
-                Log.e("FCM", "Error in Coroutine", e)
             }
         }
     }
@@ -95,7 +91,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(com.company.cavitrack.R.mipmap.ic_launcher)
+            .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
