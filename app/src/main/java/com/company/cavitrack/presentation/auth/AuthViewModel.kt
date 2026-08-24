@@ -127,8 +127,11 @@ class AuthViewModel @Inject constructor(
                 val user = firebaseAuth.currentUser
                 if (user != null) {
                     val uid = user.uid
-                    // Attempt to delete user first to catch FirebaseAuthRecentLoginRequiredException early.
-                    // The cached JWT token remains valid for a short time, allowing subsequent backend deletes to succeed.
+                    // NOTE: We delete the Auth user first to catch FirebaseAuthRecentLoginRequiredException early.
+                    // This creates a theoretical race where the user account is gone but their data remains if the subsequent
+                    // clearUserData() call fails. However, Firebase does not immediately invalidate already-issued JWTs
+                    // upon account deletion; the cached token remains valid for its original 1-hour lifespan,
+                    // allowing the subsequent backend Firestore/Storage deletes to succeed and cleanly wipe the data.
                     user.delete().await()
 
                     // Clear Firestore and Room data

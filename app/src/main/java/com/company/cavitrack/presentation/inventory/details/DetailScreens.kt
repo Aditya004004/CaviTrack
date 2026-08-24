@@ -76,11 +76,11 @@ fun CustomerDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
-    when (uiState) {
+    when (val state = uiState) {
         is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${(uiState as UiState.Error).message}") }
+        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
         is UiState.Success -> {
-            val customer = (uiState as UiState.Success).data.customers.find { it.id == entityId }
+            val customer = state.data.customers.find { it.id == entityId }
             if (customer != null) {
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Customer Details", style = MaterialTheme.typography.headlineMedium)
@@ -114,11 +114,11 @@ fun MoldDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
-    when (uiState) {
+    when (val state = uiState) {
         is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${(uiState as UiState.Error).message}") }
+        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
         is UiState.Success -> {
-            val mold = (uiState as UiState.Success).data.molds.find { it.id == entityId || it.moldCode == entityId }
+            val mold = state.data.molds.find { it.id == entityId || it.moldCode == entityId }
             if (mold != null) {
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Mold Details", style = MaterialTheme.typography.headlineMedium)
