@@ -45,8 +45,10 @@ fun HistoryScreen(
             is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
             is UiState.Success -> {
                 val history = state.data
-                val filteredHistory = history.filter {
-                    selectedAction == null || it.action.equals(selectedAction, ignoreCase = true)
+                val filteredHistory = remember(history, selectedAction) {
+                    history.filter {
+                        selectedAction == null || it.action.equals(selectedAction, ignoreCase = true)
+                    }
                 }
 
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -133,8 +135,8 @@ fun HistoryScreen(
                             Text("Filter by Action", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(16.dp))
                             
-                            val actions = listOf(null, "Created", "Updated", "Stock Adjusted")
-                            val labels = listOf("All", "Created", "Updated", "Stock Adjusted")
+                            val actions = listOf(null, "Created", "Stock Adjusted", "Photo Added")
+                            val labels = listOf("All", "Created", "Stock Adjusted", "Photo Added")
                             
                             actions.forEachIndexed { index, action ->
                                 Row(

@@ -90,14 +90,20 @@ fun InventoryScreen(
                 }
                 
                 // Filtering
-                val filteredComponents = data.components.filter { 
-                    (it.name.contains(searchQuery, ignoreCase = true) || it.sku.contains(searchQuery, ignoreCase = true)) &&
-                    (!lowStockOnly || it.qty < it.minStockThreshold)
+                val filteredComponents = remember(data.components, searchQuery, lowStockOnly) {
+                    data.components.filter { 
+                        (it.name.contains(searchQuery, ignoreCase = true) || it.sku.contains(searchQuery, ignoreCase = true)) &&
+                        (!lowStockOnly || it.qty < it.minStockThreshold)
+                    }
                 }
-                val filteredCustomers = data.customers.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                val filteredMolds = data.molds.filter { 
-                    it.moldCode.contains(searchQuery, ignoreCase = true) &&
-                    (selectedMoldStatus == null || it.status == selectedMoldStatus)
+                val filteredCustomers = remember(data.customers, searchQuery) {
+                    data.customers.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                }
+                val filteredMolds = remember(data.molds, searchQuery, selectedMoldStatus) {
+                    data.molds.filter { 
+                        it.moldCode.contains(searchQuery, ignoreCase = true) &&
+                        (selectedMoldStatus == null || it.status == selectedMoldStatus)
+                    }
                 }
 
                 LazyColumn(
