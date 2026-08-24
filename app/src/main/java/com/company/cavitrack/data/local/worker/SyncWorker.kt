@@ -66,11 +66,14 @@ class SyncWorker @AssistedInject constructor(
                         e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.DEADLINE_EXCEEDED) {
                         allSuccess = false
                     } else {
+                        android.util.Log.e("SyncWorker", "Permanent Firestore error syncing action: ${action.id}", e)
                         dao.deletePendingAction(action) // Permanent error
                     }
                 } catch (e: kotlinx.serialization.SerializationException) {
+                    android.util.Log.e("SyncWorker", "Serialization error for action: ${action.id}", e)
                     dao.deletePendingAction(action) // Permanent error (JSON parse)
                 } catch (e: IllegalArgumentException) {
+                    android.util.Log.e("SyncWorker", "Illegal argument error for action: ${action.id}", e)
                     dao.deletePendingAction(action) // Permanent error (e.g. empty ID)
                 } catch (e: Exception) {
                     allSuccess = false // Retry on other exceptions

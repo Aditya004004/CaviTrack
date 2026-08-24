@@ -64,11 +64,13 @@ class OfflineFirstInventoryRepository @Inject constructor(
 
     override suspend fun saveComponent(component: Component): Result<Unit> {
         return try {
-            val componentWithOwner = component.copy(ownerId = currentUserId)
+            val uid = currentUserId
+            if (uid.isBlank()) return Result.Error("Must be authenticated to save")
+            val componentWithOwner = component.copy(ownerId = uid)
             val dto = componentWithOwner.toDto()
             
             // Check if it exists to decide CREATE vs UPDATE
-            val exists = dao.getComponent(component.id, currentUserId) != null
+            val exists = dao.getComponent(component.id, uid) != null
             val action = if (exists) "UPDATE" else "CREATE"
             
             dao.insertComponent(dto.toEntity())
@@ -81,7 +83,9 @@ class OfflineFirstInventoryRepository @Inject constructor(
 
     override suspend fun saveCustomer(customer: Customer): Result<Unit> {
         return try {
-            val customerWithOwner = customer.copy(ownerId = currentUserId)
+            val uid = currentUserId
+            if (uid.isBlank()) return Result.Error("Must be authenticated to save")
+            val customerWithOwner = customer.copy(ownerId = uid)
             val dto = customerWithOwner.toDto()
             // Simplified: could do the same exists check if updates were fully supported
             dao.insertCustomers(listOf(dto.toEntity()))
@@ -94,7 +98,9 @@ class OfflineFirstInventoryRepository @Inject constructor(
 
     override suspend fun saveMold(mold: Mold): Result<Unit> {
         return try {
-            val moldWithOwner = mold.copy(ownerId = currentUserId)
+            val uid = currentUserId
+            if (uid.isBlank()) return Result.Error("Must be authenticated to save")
+            val moldWithOwner = mold.copy(ownerId = uid)
             val dto = moldWithOwner.toDto()
             dao.insertMolds(listOf(dto.toEntity()))
             queueAction("CREATE", "MOLD", mold.id, Json.encodeToString(dto))
@@ -106,7 +112,9 @@ class OfflineFirstInventoryRepository @Inject constructor(
 
     override suspend fun saveHistoryLog(log: HistoryLog): Result<Unit> {
         return try {
-            val logWithOwner = log.copy(ownerId = currentUserId)
+            val uid = currentUserId
+            if (uid.isBlank()) return Result.Error("Must be authenticated to save")
+            val logWithOwner = log.copy(ownerId = uid)
             val dto = logWithOwner.toDto()
             dao.insertHistoryLogs(listOf(dto.toEntity()))
             queueAction("CREATE", "HISTORY", log.id, Json.encodeToString(dto))
@@ -157,8 +165,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
         dao.refreshHistoryLogs(currentUserId, hists.map { it.toEntity() })
     }
 
-    override suspend fun clearUserData() {
-        val uid = currentUserId
+    override suspend fun clearUserData(uid: String) {
         if (uid.isBlank()) return
         
         // 1. Delete from Firestore in batches

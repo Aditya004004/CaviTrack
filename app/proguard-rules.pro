@@ -24,5 +24,21 @@
 -keep class dagger.hilt.** { *; }
 -dontwarn dagger.hilt.**
 
-# Keep Firebase DTOs from being obfuscated so Firestore reflection mapping works
--keep class com.company.cavitrack.data.remote.dto.** { *; }
+# Keep Firebase classes that are used for Firestore reflection
+-keepclassmembers class * {
+  @com.google.firebase.firestore.PropertyName <fields>;
+}
+
+# Keep classes and members used by kotlinx.serialization
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt # don't warn on missing annotations
+-keep,allowobfuscation,allowoptimization class * {
+    @kotlinx.serialization.Serializable <fields>;
+    @kotlinx.serialization.Serializable <methods>;
+}
+-keepclassmembers class **$$serializer { *; }
+-keepclassmembers class * {
+    @kotlinx.serialization.Serializable <fields>;
+    @kotlinx.serialization.Serializable <methods>;
+}
+-keep,includedescriptorclasses class **$$serializer { *; }

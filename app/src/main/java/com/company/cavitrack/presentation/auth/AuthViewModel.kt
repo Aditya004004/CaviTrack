@@ -103,6 +103,14 @@ class AuthViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             try {
+                val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                val uid = firebaseAuth.currentUser?.uid
+                if (uid != null && token.isNotEmpty()) {
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users").document(uid)
+                        .collection("fcmTokens").document(token)
+                        .delete().await()
+                }
                 com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken().await()
             } catch (e: Exception) {
                 // Ignore failure if not connected
@@ -124,7 +132,7 @@ class AuthViewModel @Inject constructor(
                     user.delete().await()
 
                     // Clear Firestore and Room data
-                    repository.clearUserData()
+                    repository.clearUserData(uid)
                     
                     // Clear Storage data
                     try {

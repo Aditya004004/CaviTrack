@@ -20,5 +20,5 @@ interface InventoryRepository {
     suspend fun saveHistoryLog(log: HistoryLog): Result<Unit>
     
     suspend fun refreshData()
-    suspend fun clearUserData()
+    suspend fun clearUserData(uid: String)
 }
