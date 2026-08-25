@@ -25,27 +25,24 @@ sealed class AuthState {
 class AuthViewModel @Inject constructor(
     private val tokenManager: TokenManager,
     private val firebaseAuth: FirebaseAuth,
-    private val repository: com.company.cavitrack.domain.repository.InventoryRepository
+    private val repository: com.company.cavitrack.domain.repository.InventoryRepository,
+    sessionManager: com.company.cavitrack.util.SessionManager,
+    private val syncScheduler: com.company.cavitrack.util.SyncScheduler
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(if (tokenManager.hasValidToken()) AuthState.Authenticated else AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
-        if (auth.currentUser != null) {
-            _authState.value = AuthState.Authenticated
-        } else {
-            _authState.value = AuthState.Unauthenticated
-        }
-    }
-
     init {
-        firebaseAuth.addAuthStateListener(authStateListener)
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        firebaseAuth.removeAuthStateListener(authStateListener)
+        viewModelScope.launch {
+            sessionManager.currentUser.collect { user ->
+                if (user != null) {
+                    _authState.value = AuthState.Authenticated
+                } else {
+                    _authState.value = AuthState.Unauthenticated
+                }
+            }
+        }
     }
 
     fun login(email: String, password: String) {
@@ -118,6 +115,10 @@ class AuthViewModel @Inject constructor(
             tokenManager.clearToken()
             _authState.value = AuthState.Unauthenticated
         }
+    }
+
+    fun syncData() {
+        syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.REPLACE)
     }
 
     fun deleteAccount() {

@@ -58,14 +58,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                     actions = {
                         val context = androidx.compose.ui.platform.LocalContext.current
                         IconButton(onClick = {
-                            val workManager = androidx.work.WorkManager.getInstance(context)
-                            val constraints = androidx.work.Constraints.Builder()
-                                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                                .build()
-                            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>()
-                                .setConstraints(constraints)
-                                .build()
-                            workManager.enqueueUniqueWork("ManualSync", androidx.work.ExistingWorkPolicy.REPLACE, syncRequest)
+                            authViewModel.syncData()
                         }) {
                             Icon(Icons.Filled.Refresh, contentDescription = "Sync Data")
                         }

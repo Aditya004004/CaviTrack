@@ -58,113 +58,96 @@ class ManualUpdateViewModel @Inject constructor(
         }
     }
 
-    fun updateQuantity(
-        entityType: String, 
-        entityId: String?, 
-        newQuantity: Int, 
-        note: String, 
-        name: String = "", 
-        sku: String = "", 
-        category: String = "",
-        phone: String = "",
-        email: String = "",
-        address: String = ""
-    ) {
+    fun updateComponentQuantity(entityId: String, newQuantity: Int, note: String) {
         viewModelScope.launch {
             _isSaving.value = true
             try {
-                if (entityId != null) {
-                if (entityType == "Component") {
-                    val result = repository.getComponent(entityId)
-                    if (result is Result.Success) {
-                        val component = result.data
-                        val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
-                        val saveResult = repository.saveComponent(updated)
-                        if (saveResult is Result.Success) {
-                            writeHistory(entityType, component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
-                            _isSaved.value = true
-                        } else if (saveResult is Result.Error) {
-                            _error.value = saveResult.message
-                        }
-                    } else if (result is Result.Error) {
-                        _error.value = result.message
+                val result = repository.getComponent(entityId)
+                if (result is Result.Success) {
+                    val component = result.data
+                    val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
+                    val saveResult = repository.saveComponent(updated)
+                    if (saveResult is Result.Success) {
+                        writeHistory("Component", component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
+                        _isSaved.value = true
+                    } else if (saveResult is Result.Error) {
+                        _error.value = saveResult.message
                     }
-                } else {
-                    _error.value = "Editing existing $entityType is not supported yet."
+                } else if (result is Result.Error) {
+                    _error.value = result.message
                 }
-            } else {
-                when (entityType) {
-                    "Component" -> {
-                        if (name.isBlank()) {
-                            _error.value = "Name is required."
-                            return@launch
-                        }
-                        if (sku.isBlank()) {
-                            _error.value = "SKU is required."
-                            return@launch
-                        }
-                        val component = Component(
-                            id = UUID.randomUUID().toString(),
-                            name = name,
-                            sku = sku,
-                            category = category.ifBlank { "General" },
-                            qty = newQuantity,
-                            unit = "pcs",
-                            minStockThreshold = 10
-                        )
-                        val result = repository.saveComponent(component)
-                        if (result is Result.Success) {
-                            writeHistory(entityType, component.id, component.name, "Created", null, newQuantity.toString(), note)
-                            _isSaved.value = true
-                        } else if (result is Result.Error) {
-                            _error.value = result.message
-                        }
-                    }
-                    "Customer" -> {
-                        if (name.isBlank()) {
-                            _error.value = "Name is required."
-                            return@launch
-                        }
-                        val customer = com.company.cavitrack.domain.model.Customer(
-                            id = UUID.randomUUID().toString(),
-                            name = name,
-                            phone = phone,
-                            email = email,
-                            address = address
-                        )
-                        val result = repository.saveCustomer(customer)
-                        if (result is Result.Success) {
-                            writeHistory(entityType, customer.id, customer.name, "Created", null, null, note)
-                            _isSaved.value = true
-                        } else if (result is Result.Error) {
-                            _error.value = result.message
-                        }
-                    }
-                    "Mold" -> {
-                        if (sku.isBlank()) {
-                            _error.value = "Mold Code is required."
-                            return@launch
-                        }
-                        val mold = com.company.cavitrack.domain.model.Mold(
-                            id = UUID.randomUUID().toString(),
-                            moldCode = sku,
-                            cavityCount = newQuantity.takeIf { it > 0 } ?: 1,
-                            status = com.company.cavitrack.domain.model.MoldStatus.Active,
-                            location = category.ifBlank { "Storage" }
-                        )
-                        val result = repository.saveMold(mold)
-                        if (result is Result.Success) {
-                            writeHistory(entityType, mold.id, mold.moldCode, "Created", null, null, note)
-                            _isSaved.value = true
-                        } else if (result is Result.Error) {
-                            _error.value = result.message
-                        }
-                    }
-                }
-            } // closes else
             } finally {
                 _isSaving.value = false
-            } // closes try
-        } // closes launch
+            }
+        }
+    }
+
+    fun createComponent(name: String, sku: String, category: String, initialQuantity: Int, note: String) {
+        viewModelScope.launch {
+            _isSaving.value = true
+            try {
+                if (name.isBlank()) { _error.value = "Name is required."; return@launch }
+                if (sku.isBlank()) { _error.value = "SKU is required."; return@launch }
+                val component = Component(
+                    id = UUID.randomUUID().toString(), name = name, sku = sku,
+                    category = category.ifBlank { "General" }, qty = initialQuantity,
+                    unit = "pcs", minStockThreshold = 10
+                )
+                val result = repository.saveComponent(component)
+                if (result is Result.Success) {
+                    writeHistory("Component", component.id, component.name, "Created", null, initialQuantity.toString(), note)
+                    _isSaved.value = true
+                } else if (result is Result.Error) {
+                    _error.value = result.message
+                }
+            } finally {
+                _isSaving.value = false
+            }
+        }
+    }
+
+    fun createCustomer(name: String, phone: String, email: String, address: String, note: String) {
+        viewModelScope.launch {
+            _isSaving.value = true
+            try {
+                if (name.isBlank()) { _error.value = "Name is required."; return@launch }
+                val customer = com.company.cavitrack.domain.model.Customer(
+                    id = UUID.randomUUID().toString(), name = name, phone = phone, email = email, address = address
+                )
+                val result = repository.saveCustomer(customer)
+                if (result is Result.Success) {
+                    writeHistory("Customer", customer.id, customer.name, "Created", null, null, note)
+                    _isSaved.value = true
+                } else if (result is Result.Error) {
+                    _error.value = result.message
+                }
+            } finally {
+                _isSaving.value = false
+            }
+        }
+    }
+
+    fun createMold(moldCode: String, cavityCount: Int, location: String, note: String) {
+        viewModelScope.launch {
+            _isSaving.value = true
+            try {
+                if (moldCode.isBlank()) { _error.value = "Mold Code is required."; return@launch }
+                val mold = com.company.cavitrack.domain.model.Mold(
+                    id = UUID.randomUUID().toString(), moldCode = moldCode,
+                    cavityCount = cavityCount.takeIf { it > 0 } ?: 1,
+                    status = com.company.cavitrack.domain.model.MoldStatus.Active,
+                    location = location.ifBlank { "Storage" }
+                )
+                val result = repository.saveMold(mold)
+                if (result is Result.Success) {
+                    writeHistory("Mold", mold.id, mold.moldCode, "Created", null, null, note)
+                    _isSaved.value = true
+                } else if (result is Result.Error) {
+                    _error.value = result.message
+                }
+            } finally {
+                _isSaving.value = false
+            }
+        }
     } // closes fun
 } // closes class

@@ -166,18 +166,19 @@ fun ManualUpdateScreen(
             onClick = {
                 val parsedQty = if (entityType == "Customer") 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
                 if (parsedQty != null) {
-                    viewModel.updateQuantity(
-                        entityType = entityType, 
-                        entityId = entityId, 
-                        newQuantity = parsedQty, 
-                        note = note, 
-                        name = name, 
-                        sku = sku, 
-                        category = category,
-                        phone = phone,
-                        email = email,
-                        address = address
-                    )
+                    if (entityId != null) {
+                        if (entityType == "Component") {
+                            viewModel.updateComponentQuantity(entityId, parsedQty, note)
+                        } else {
+                            hasError = true // Only Component updates are supported right now
+                        }
+                    } else {
+                        when (entityType) {
+                            "Component" -> viewModel.createComponent(name, sku, category, parsedQty, note)
+                            "Customer" -> viewModel.createCustomer(name, phone, email, address, note)
+                            "Mold" -> viewModel.createMold(sku, parsedQty, category, note)
+                        }
+                    }
                 } else {
                     hasError = true
                 }

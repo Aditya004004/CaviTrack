@@ -25,7 +25,8 @@ data class HomeData(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: InventoryRepository
+    private val repository: InventoryRepository,
+    sessionManager: com.company.cavitrack.util.SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
@@ -33,22 +34,17 @@ class HomeViewModel @Inject constructor(
     
     private var loadJob: Job? = null
 
-    private val authStateListener = com.google.firebase.auth.FirebaseAuth.AuthStateListener { auth ->
-        if (auth.currentUser != null) {
-            loadData()
-        } else {
-            loadJob?.cancel()
-            _uiState.value = UiState.Loading
-        }
-    }
-
     init {
-        com.google.firebase.auth.FirebaseAuth.getInstance().addAuthStateListener(authStateListener)
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        com.google.firebase.auth.FirebaseAuth.getInstance().removeAuthStateListener(authStateListener)
+        viewModelScope.launch {
+            sessionManager.currentUser.collect { user ->
+                if (user != null) {
+                    loadData()
+                } else {
+                    loadJob?.cancel()
+                    _uiState.value = UiState.Loading
+                }
+            }
+        }
     }
 
     fun loadData() {

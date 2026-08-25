@@ -17,6 +17,9 @@ import javax.inject.Inject
 class CaviTrackApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+    
+    @Inject
+    lateinit var syncScheduler: com.company.cavitrack.util.SyncScheduler
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -25,28 +28,7 @@ class CaviTrackApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        setupPeriodicSync()
-        
-        // Trigger initial sync on startup
-        val initialSync = androidx.work.OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .build()
-        WorkManager.getInstance(this).enqueueUniqueWork("InitialSync", androidx.work.ExistingWorkPolicy.KEEP, initialSync)
-    }
-
-    private fun setupPeriodicSync() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "PeriodicSync",
-            ExistingPeriodicWorkPolicy.KEEP,
-            syncRequest
-        )
+        syncScheduler.schedulePeriodicSync()
+        syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.KEEP)
     }
 }

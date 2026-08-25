@@ -42,9 +42,14 @@ class InventoryViewModelTest {
         every { repository.getComponents() } returns flowOf(Result.Success(components))
         every { repository.getCustomers() } returns flowOf(Result.Success(emptyList()))
         every { repository.getMolds() } returns flowOf(Result.Success(emptyList()))
+        
+        val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true)
+        val sessionManager = mockk<com.company.cavitrack.util.SessionManager> {
+            every { currentUser } returns kotlinx.coroutines.flow.MutableStateFlow(mockUser)
+        }
 
         // Act
-        viewModel = InventoryViewModel(repository)
+        viewModel = InventoryViewModel(repository, sessionManager)
         advanceUntilIdle()
 
         // Assert
@@ -62,8 +67,13 @@ class InventoryViewModelTest {
         every { repository.getCustomers() } returns flowOf(Result.Success(emptyList()))
         every { repository.getMolds() } returns flowOf(Result.Success(emptyList()))
 
+        val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true)
+        val sessionManager = mockk<com.company.cavitrack.util.SessionManager> {
+            every { currentUser } returns kotlinx.coroutines.flow.MutableStateFlow(mockUser)
+        }
+
         // Act
-        viewModel = InventoryViewModel(repository)
+        viewModel = InventoryViewModel(repository, sessionManager)
         advanceUntilIdle()
 
         // Assert

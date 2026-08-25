@@ -34,7 +34,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
     private val dao: InventoryDao,
     private val firestore: FirebaseFirestore,
     private val firebaseAuth: FirebaseAuth,
-    @param:ApplicationContext private val context: Context
+    private val syncScheduler: com.company.cavitrack.util.SyncScheduler
 ) : InventoryRepository {
 
     private val currentUserId: String
@@ -133,16 +133,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
                 payloadJson = payloadJson
             )
         )
-        
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        
-        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(constraints)
-            .build()
-            
-        WorkManager.getInstance(context).enqueueUniqueWork("DataSync", androidx.work.ExistingWorkPolicy.APPEND_OR_REPLACE, syncRequest)
+        syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.APPEND_OR_REPLACE)
     }
 
     override suspend fun refreshData() {

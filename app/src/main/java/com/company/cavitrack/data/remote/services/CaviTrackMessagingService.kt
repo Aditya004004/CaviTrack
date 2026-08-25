@@ -44,6 +44,9 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         }
     }
 
+    @javax.inject.Inject
+    lateinit var syncScheduler: com.company.cavitrack.util.SyncScheduler
+
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
@@ -51,14 +54,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         if (message.data.isNotEmpty()) {
             // Trigger a sync if requested
             if (message.data["action"] == "SYNC") {
-                val workManager = androidx.work.WorkManager.getInstance(applicationContext)
-                val constraints = androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
-                val syncRequest = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.local.worker.SyncWorker>()
-                    .setConstraints(constraints)
-                    .build()
-                workManager.enqueueUniqueWork("RemoteSync", androidx.work.ExistingWorkPolicy.REPLACE, syncRequest)
+                syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.REPLACE)
             }
         }
 
