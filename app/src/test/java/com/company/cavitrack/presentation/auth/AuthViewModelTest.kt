@@ -6,6 +6,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.just
+import io.mockk.Runs
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.coVerify
@@ -41,6 +43,7 @@ class AuthViewModelTest {
         repository = mockk(relaxed = true)
         syncScheduler = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
+        every { sessionManager.currentUser } returns kotlinx.coroutines.flow.MutableStateFlow(null)
 
         viewModel = AuthViewModel(tokenManager, firebaseAuth, repository, sessionManager, syncScheduler)
     }
@@ -59,8 +62,8 @@ class AuthViewModelTest {
         
         // Mock successful deletion tasks
         every { mockUser.delete() } returns Tasks.forResult(null)
-        coEvery { repository.clearUserData("test_uid") } returns Unit
-        every { tokenManager.clearToken() } returns Unit
+        coEvery { repository.clearUserData("test_uid") } just Runs
+        every { tokenManager.clearToken() } just Runs
 
         // Act
         viewModel.deleteAccount()
@@ -71,8 +74,8 @@ class AuthViewModelTest {
         coVerify { repository.clearUserData("test_uid") }
         verify { tokenManager.clearToken() }
         
-        val state = viewModel.uiState.value
-        assertTrue(state is com.company.cavitrack.presentation.components.UiState.Success)
+        val state = viewModel.authState.value
+        assertTrue(state is AuthState.Unauthenticated)
     }
     
     @Test
@@ -81,7 +84,7 @@ class AuthViewModelTest {
         val mockUser = mockk<FirebaseUser>(relaxed = true)
         every { mockUser.uid } returns "test_uid"
         every { firebaseAuth.currentUser } returns mockUser
-        every { tokenManager.clearToken() } returns Unit
+        every { tokenManager.clearToken() } just Runs
         
         // Mock Firebase Messaging - This might be hard to mock since it's a static call in AuthViewModel
         // The test will just verify tokenManager.clearToken() is called for now
@@ -93,7 +96,7 @@ class AuthViewModelTest {
         // Assert
         verify { tokenManager.clearToken() }
         
-        val state = viewModel.uiState.value
-        assertTrue(state is com.company.cavitrack.presentation.components.UiState.Success)
+        val state = viewModel.authState.value
+        assertTrue(state is AuthState.Unauthenticated)
     }
 }

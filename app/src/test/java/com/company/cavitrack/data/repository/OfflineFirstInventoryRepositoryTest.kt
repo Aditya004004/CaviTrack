@@ -45,7 +45,7 @@ class OfflineFirstInventoryRepositoryTest {
     fun `saveComponent returns Error when user is not authenticated`() = runTest {
         // Arrange
         every { firebaseAuth.currentUser } returns null
-        val component = Component(id = "1", name = "Test", sku = "SKU1", category = "Cat", minStockThreshold = 10, unit = "pcs", ownerId = "")
+        val component = Component(id = "1", name = "Test", sku = "SKU1", category = "Cat", qty = 5, minStockThreshold = 10, unit = "pcs", ownerId = "")
 
         // Act
         val result = repository.saveComponent(component)
@@ -65,7 +65,7 @@ class OfflineFirstInventoryRepositoryTest {
         
         coEvery { dao.getComponent("1", "test_uid") } returns null
         
-        val component = Component(id = "1", name = "Test", sku = "SKU1", category = "Cat", minStockThreshold = 10, unit = "pcs", ownerId = "test_uid")
+        val component = Component(id = "1", name = "Test", sku = "SKU1", category = "Cat", qty = 5, minStockThreshold = 10, unit = "pcs", ownerId = "test_uid")
 
         // Act
         val result = repository.saveComponent(component)
