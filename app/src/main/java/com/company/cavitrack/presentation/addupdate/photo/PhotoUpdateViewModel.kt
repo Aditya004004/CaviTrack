@@ -74,13 +74,16 @@ class PhotoUpdateViewModel @Inject constructor(
                     val decodeOptions = android.graphics.BitmapFactory.Options().apply {
                         this.inSampleSize = inSampleSize
                     }
-                    val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath, decodeOptions)
-                    
-                    if (bitmap != null) {
-                        java.io.FileOutputStream(photoFile).use { out ->
-                            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                    try {
+                        val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath, decodeOptions)
+                        if (bitmap != null) {
+                            java.io.FileOutputStream(photoFile).use { out ->
+                                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                            }
+                            bitmap.recycle()
                         }
-                        bitmap.recycle()
+                    } catch (t: Throwable) {
+                        // Handle OOM or decode errors gracefully
                     }
                 }
                 
@@ -109,6 +112,7 @@ class PhotoUpdateViewModel @Inject constructor(
                     _error.value = "Attaching photos to existing $entityType is not supported yet."
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _error.value = e.message
             } finally {
                 _isUploading.value = false

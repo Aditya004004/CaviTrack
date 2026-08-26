@@ -63,7 +63,8 @@ class SyncWorker @AssistedInject constructor(
                     dao.deletePendingAction(action)
                 } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
                     if (e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE || 
-                        e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.DEADLINE_EXCEEDED) {
+                        e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.DEADLINE_EXCEEDED ||
+                        e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) {
                         allSuccess = false
                     } else {
                         android.util.Log.e("SyncWorker", "Permanent Firestore error syncing action: ${action.id}", e)
@@ -76,6 +77,7 @@ class SyncWorker @AssistedInject constructor(
                     android.util.Log.e("SyncWorker", "Illegal argument error for action: ${action.id}", e)
                     dao.deletePendingAction(action) // Permanent error (e.g. empty ID)
                 } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
                     allSuccess = false // Retry on other exceptions
                 }
             }
@@ -85,6 +87,7 @@ class SyncWorker @AssistedInject constructor(
         try {
             repository.refreshData()
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             return Result.retry()
         }
         

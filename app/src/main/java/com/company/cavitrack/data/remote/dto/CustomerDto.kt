@@ -3,7 +3,7 @@ package com.company.cavitrack.data.remote.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CustomerDto(
+data class CustomerDto @JvmOverloads constructor(
     val id: String = "",
     val ownerId: String = "",
     val name: String = "",

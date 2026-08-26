@@ -56,6 +56,9 @@ interface InventoryDao {
     @Query("SELECT * FROM pending_actions ORDER BY timestamp ASC")
     suspend fun getPendingActions(): List<PendingActionEntity>
 
+    @Query("SELECT COUNT(*) FROM pending_actions")
+    suspend fun getPendingActionsCount(): Int
+
     @Insert
     suspend fun insertPendingAction(action: PendingActionEntity)
 

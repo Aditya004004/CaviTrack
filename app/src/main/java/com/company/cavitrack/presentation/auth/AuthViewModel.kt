@@ -52,6 +52,7 @@ class AuthViewModel @Inject constructor(
                 firebaseAuth.signInWithEmailAndPassword(email, password).await()
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 val errorMessage = when (e) {
                     is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException -> "Invalid email or password."
                     is com.google.firebase.auth.FirebaseAuthInvalidUserException -> "No account found with this email."
@@ -78,6 +79,7 @@ class AuthViewModel @Inject constructor(
                 
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 val errorMessage = when (e) {
                     is com.google.firebase.auth.FirebaseAuthUserCollisionException -> "An account already exists with this email."
                     is com.google.firebase.auth.FirebaseAuthWeakPasswordException -> "Password is too weak."
@@ -100,6 +102,10 @@ class AuthViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             try {
+                if (repository.hasPendingActions()) {
+                    _authState.value = AuthState.Error("You have unsynced changes. Please sync before logging out.")
+                    return@launch
+                }
                 val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
                 val uid = firebaseAuth.currentUser?.uid
                 if (uid != null && token.isNotEmpty()) {
@@ -110,6 +116,7 @@ class AuthViewModel @Inject constructor(
                 }
                 com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken().await()
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 // Ignore failure if not connected
             }
             tokenManager.clearToken()
@@ -151,6 +158,7 @@ class AuthViewModel @Inject constructor(
             } catch (e: com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
                 _authState.value = AuthState.Error("Recent login required. Please log out, log back in, and try again.")
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _authState.value = AuthState.Error(e.message ?: "Failed to delete account.")
             }
         }

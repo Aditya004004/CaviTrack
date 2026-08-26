@@ -73,6 +73,7 @@ class InventoryViewModel @Inject constructor(
                     _uiState.value = combinedState
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.value = UiState.Error(e.message ?: "Unknown error")
             }
         }

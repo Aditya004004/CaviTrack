@@ -45,9 +45,14 @@ class OfflineFirstInventoryRepository @Inject constructor(
         .catch { emit(Result.Error(it.message ?: "Database error")) }
 
     override suspend fun getComponent(id: String): Result<Component> {
-        val entity = dao.getComponent(id, currentUserId)
-        return if (entity != null) Result.Success(entity.toDomain())
-        else Result.Error("Not found locally")
+        return try {
+            val entity = dao.getComponent(id, currentUserId)
+            if (entity != null) Result.Success(entity.toDomain())
+            else Result.Error("Not found locally")
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Result.Error(e.message ?: "Database error")
+        }
     }
 
     override fun getCustomers(): Flow<Result<List<Customer>>> = dao.getCustomers(currentUserId)
@@ -77,6 +82,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
             queueAction(action, "COMPONENT", component.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Result.Error(e.message ?: "Failed to save locally")
         }
     }
@@ -92,6 +98,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
             queueAction("CREATE", "CUSTOMER", customer.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Result.Error(e.message ?: "Failed to save locally")
         }
     }
@@ -178,6 +185,10 @@ class OfflineFirstInventoryRepository @Inject constructor(
         dao.refreshCustomers(uid, emptyList())
         dao.refreshMolds(uid, emptyList())
         dao.refreshHistoryLogs(uid, emptyList())
+    }
+
+    override suspend fun hasPendingActions(): Boolean {
+        return dao.getPendingActionsCount() > 0
     }
 }
 

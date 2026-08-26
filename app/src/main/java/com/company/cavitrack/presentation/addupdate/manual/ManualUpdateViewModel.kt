@@ -51,9 +51,14 @@ class ManualUpdateViewModel @Inject constructor(
 
     fun loadComponent(entityId: String) {
         viewModelScope.launch {
-            val result = repository.getComponent(entityId)
-            if (result is Result.Success) {
-                _currentQty.value = result.data.qty
+            try {
+                val result = repository.getComponent(entityId)
+                if (result is Result.Success) {
+                    _currentQty.value = result.data.qty
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _error.value = e.message ?: "Failed to load component"
             }
         }
     }
@@ -76,6 +81,9 @@ class ManualUpdateViewModel @Inject constructor(
                 } else if (result is Result.Error) {
                     _error.value = result.message
                 }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _error.value = e.message ?: "Failed to update component"
             } finally {
                 _isSaving.value = false
             }
