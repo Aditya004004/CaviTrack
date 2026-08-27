@@ -113,6 +113,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
             queueAction("CREATE", "MOLD", mold.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Result.Error(e.message ?: "Failed to save locally")
         }
     }
@@ -127,6 +128,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
             queueAction("CREATE", "HISTORY", log.id, Json.encodeToString(dto))
             Result.Success(Unit)
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Result.Error(e.message ?: "Failed to save locally")
         }
     }
@@ -185,10 +187,15 @@ class OfflineFirstInventoryRepository @Inject constructor(
         dao.refreshCustomers(uid, emptyList())
         dao.refreshMolds(uid, emptyList())
         dao.refreshHistoryLogs(uid, emptyList())
+        dao.clearAllPendingActions()
     }
 
     override suspend fun hasPendingActions(): Boolean {
         return dao.getPendingActionsCount() > 0
+    }
+
+    override suspend fun clearAllPendingActions() {
+        dao.clearAllPendingActions()
     }
 }
 

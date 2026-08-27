@@ -33,6 +33,13 @@ class AuthViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(if (tokenManager.hasValidToken()) AuthState.Authenticated else AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
+    private val _authError = MutableStateFlow<String?>(null)
+    val authError: StateFlow<String?> = _authError.asStateFlow()
+
+    fun clearAuthError() {
+        _authError.value = null
+    }
+
     init {
         viewModelScope.launch {
             sessionManager.currentUser.collect { user ->
@@ -99,12 +106,15 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun logout() {
+    fun logout(force: Boolean = false) {
         viewModelScope.launch {
             try {
-                if (repository.hasPendingActions()) {
-                    _authState.value = AuthState.Error("You have unsynced changes. Please sync before logging out.")
+                if (!force && repository.hasPendingActions()) {
+                    _authError.value = "You have unsynced changes. Please sync before logging out."
                     return@launch
+                }
+                if (force) {
+                    repository.clearAllPendingActions()
                 }
                 val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
                 val uid = firebaseAuth.currentUser?.uid
@@ -128,8 +138,15 @@ class AuthViewModel @Inject constructor(
         syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.REPLACE)
     }
 
-    fun deleteAccount() {
+    fun deleteAccount(force: Boolean = false) {
         viewModelScope.launch {
+            if (!force && repository.hasPendingActions()) {
+                _authError.value = "You have unsynced changes. Please sync before deleting your account."
+                return@launch
+            }
+            if (force) {
+                repository.clearAllPendingActions()
+            }
             _authState.value = AuthState.Deleting
             try {
                 val user = firebaseAuth.currentUser
@@ -156,10 +173,12 @@ class AuthViewModel @Inject constructor(
                 tokenManager.clearToken()
                 _authState.value = AuthState.Unauthenticated
             } catch (e: com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
-                _authState.value = AuthState.Error("Recent login required. Please log out, log back in, and try again.")
+                _authError.value = "Recent login required. Please log out, log back in, and try again."
+                _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                _authState.value = AuthState.Error(e.message ?: "Failed to delete account.")
+                _authError.value = e.message ?: "Failed to delete account."
+                _authState.value = AuthState.Authenticated
             }
         }
     }

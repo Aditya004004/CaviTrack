@@ -22,4 +22,5 @@ interface InventoryRepository {
     suspend fun refreshData()
     suspend fun clearUserData(uid: String)
     suspend fun hasPendingActions(): Boolean
+    suspend fun clearAllPendingActions()
 }

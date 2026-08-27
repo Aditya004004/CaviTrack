@@ -65,6 +65,9 @@ interface InventoryDao {
     @Delete
     suspend fun deletePendingAction(action: PendingActionEntity)
 
+    @Query("DELETE FROM pending_actions")
+    suspend fun clearAllPendingActions()
+
     @Query("DELETE FROM components WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
     suspend fun deleteComponentsNotIn(ownerId: String, ids: List<String>)
 

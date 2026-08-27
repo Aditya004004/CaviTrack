@@ -84,6 +84,7 @@ class PhotoUpdateViewModel @Inject constructor(
                         }
                     } catch (t: Throwable) {
                         // Handle OOM or decode errors gracefully
+                        android.util.Log.e("PhotoUpdateViewModel", "Error processing photo", t)
                     }
                 }
                 

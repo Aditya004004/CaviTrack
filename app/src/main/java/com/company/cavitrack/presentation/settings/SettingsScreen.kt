@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.presentation.auth.AuthViewModel
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -21,6 +22,34 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val userEmail = currentUser?.email ?: "No Email"
     var showLogoutDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showDeleteAccountDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val authError by authViewModel.authError.collectAsStateWithLifecycle()
+
+    if (authError != null) {
+        AlertDialog(
+            onDismissRequest = { authViewModel.clearAuthError() },
+            title = { Text("Error") },
+            text = { Text(authError ?: "") },
+            confirmButton = {
+                TextButton(onClick = { authViewModel.clearAuthError() }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                if (authError?.contains("unsynced changes") == true) {
+                    TextButton(onClick = {
+                        authViewModel.clearAuthError()
+                        if (authError?.contains("deleting") == true) {
+                            authViewModel.deleteAccount(force = true)
+                        } else {
+                            authViewModel.logout(force = true)
+                        }
+                    }) {
+                        Text("Discard & Proceed", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
