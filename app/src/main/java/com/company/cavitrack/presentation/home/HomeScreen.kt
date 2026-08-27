@@ -1,5 +1,18 @@
 package com.company.cavitrack.presentation.home
 
+
+
+
+
+
+
+import androidx.compose.ui.res.stringResource
+import com.company.cavitrack.R
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,11 +20,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.ListCard
 import com.company.cavitrack.presentation.components.LoadingState
@@ -41,7 +52,7 @@ fun HomeScreen(
             ) {
                 item {
                     Text(
-                        text = "Dashboard",
+                        text = stringResource(R.string.title_dashboard),
                         style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -133,13 +144,13 @@ fun SummaryCard(
     modifier: Modifier = Modifier,
     isWarning: Boolean = false
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = isSystemInDarkTheme()
     val warningColor = if (isDark) com.company.cavitrack.presentation.theme.WarningDark else com.company.cavitrack.presentation.theme.WarningLight
 
     Card(
         modifier = modifier,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         colors = CardDefaults.cardColors(
             containerColor = if (isWarning) warningColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
         )
@@ -160,3 +171,6 @@ fun SummaryCard(
         }
     }
 }
+
+
+

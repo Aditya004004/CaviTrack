@@ -1,5 +1,18 @@
 package com.company.cavitrack.presentation.navigation
 
+
+
+
+
+
+
+import androidx.compose.ui.res.stringResource
+import com.company.cavitrack.R
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.mutableStateOf
+import androidx.hilt.navigation.compose.hiltViewModel
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
@@ -21,7 +34,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.company.cavitrack.presentation.auth.AuthState
 import com.company.cavitrack.presentation.auth.AuthViewModel
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.compose.runtime.setValue
@@ -34,7 +46,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
-    var showUpdateSheet by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var showUpdateSheet by remember { mutableStateOf(false) }
 
     if (authState is AuthState.Deleting) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -54,11 +66,12 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("CaviTrack") },
+                    title = { Text(stringResource(R.string.app_name)) },
                     actions = {
-                        val context = androidx.compose.ui.platform.LocalContext.current
+                        val context = LocalContext.current
                         IconButton(onClick = {
                             authViewModel.syncData()
+                            Toast.makeText(context, "Sync started...", Toast.LENGTH_SHORT).show()
                         }) {
                             Icon(Icons.Filled.Refresh, contentDescription = "Sync Data")
                         }
@@ -72,10 +85,10 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             bottomBar = {
                 NavigationBar {
                     val items = listOf(
-                        BottomNavItem("Home", Route.Home::class, Route.Home, Icons.Filled.Home),
-                        BottomNavItem("Inventory", Route.Inventory::class, Route.Inventory, Icons.AutoMirrored.Filled.List),
-                        BottomNavItem("History", Route.History::class, Route.History, Icons.Filled.History),
-                        BottomNavItem("Settings", Route.Settings::class, Route.Settings, Icons.Filled.Settings)
+                        BottomNavItem(stringResource(R.string.nav_home), Route.Home::class, Route.Home, Icons.Filled.Home),
+                        BottomNavItem(stringResource(R.string.nav_inventory), Route.Inventory::class, Route.Inventory, Icons.AutoMirrored.Filled.List),
+                        BottomNavItem(stringResource(R.string.nav_history), Route.History::class, Route.History, Icons.Filled.History),
+                        BottomNavItem(stringResource(R.string.nav_settings), Route.Settings::class, Route.Settings, Icons.Filled.Settings)
                     )
                     items.forEach { item ->
                         val selected = currentDestination?.hierarchy?.any { 
@@ -134,11 +147,11 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         entityType = null,
                         onNavigateToManual = { type ->
                             showUpdateSheet = false
-                            navController.navigate(Route.ManualUpdate(type ?: "Component", null))
+                            navController.navigate(Route.ManualUpdate(type ?: com.company.cavitrack.domain.model.EntityType.Component, null))
                         },
                         onNavigateToPhoto = { type ->
                             showUpdateSheet = false
-                            navController.navigate(Route.PhotoUpdate(type ?: "Component", null))
+                            navController.navigate(Route.PhotoUpdate(type ?: com.company.cavitrack.domain.model.EntityType.Component, null))
                         }
                     )
                 }
@@ -153,5 +166,9 @@ data class BottomNavItem(
     val routeObj: Any, 
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
+
+
+
+
 
 

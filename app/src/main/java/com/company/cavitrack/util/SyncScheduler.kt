@@ -16,7 +16,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SyncScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     fun scheduleOneTimeSync(policy: ExistingWorkPolicy = ExistingWorkPolicy.APPEND_OR_REPLACE) {
         val constraints = Constraints.Builder()
@@ -46,3 +46,4 @@ class SyncScheduler @Inject constructor(
         )
     }
 }
+

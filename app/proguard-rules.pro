@@ -42,3 +42,8 @@
     @kotlinx.serialization.Serializable <methods>;
 }
 -keep,includedescriptorclasses class **$$serializer { *; }
+
+# Explicitly keep DTOs used by Firestore reflection
+-keep class com.company.cavitrack.data.remote.dto.** { *; }
+-keepclassmembers class com.company.cavitrack.data.remote.dto.** { *; }
+

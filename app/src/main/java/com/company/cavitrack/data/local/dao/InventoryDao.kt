@@ -68,43 +68,79 @@ interface InventoryDao {
     @Query("DELETE FROM pending_actions")
     suspend fun clearAllPendingActions()
 
-    @Query("DELETE FROM components WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
-    suspend fun deleteComponentsNotIn(ownerId: String, ids: List<String>)
+    @Query("SELECT id FROM components WHERE ownerId = :ownerId")
+    suspend fun getComponentIds(ownerId: String): List<String>
 
-    @Query("DELETE FROM customers WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
-    suspend fun deleteCustomersNotIn(ownerId: String, ids: List<String>)
+    @Query("SELECT id FROM customers WHERE ownerId = :ownerId")
+    suspend fun getCustomerIds(ownerId: String): List<String>
 
-    @Query("DELETE FROM molds WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
-    suspend fun deleteMoldsNotIn(ownerId: String, ids: List<String>)
+    @Query("SELECT id FROM molds WHERE ownerId = :ownerId")
+    suspend fun getMoldIds(ownerId: String): List<String>
 
-    @Query("DELETE FROM history_logs WHERE ownerId = :ownerId AND id NOT IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
-    suspend fun deleteHistoryLogsNotIn(ownerId: String, ids: List<String>)
+    @Query("SELECT id FROM history_logs WHERE ownerId = :ownerId")
+    suspend fun getHistoryLogIds(ownerId: String): List<String>
+
+    @Query("DELETE FROM components WHERE ownerId = :ownerId AND id IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'COMPONENT')")
+    suspend fun deleteComponentsByIds(ownerId: String, ids: List<String>)
+
+    @Query("DELETE FROM customers WHERE ownerId = :ownerId AND id IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'CUSTOMER')")
+    suspend fun deleteCustomersByIds(ownerId: String, ids: List<String>)
+
+    @Query("DELETE FROM molds WHERE ownerId = :ownerId AND id IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'MOLD')")
+    suspend fun deleteMoldsByIds(ownerId: String, ids: List<String>)
+
+    @Query("DELETE FROM history_logs WHERE ownerId = :ownerId AND id IN (:ids) AND id NOT IN (SELECT entityId FROM pending_actions WHERE entityType = 'HISTORY')")
+    suspend fun deleteHistoryLogsByIds(ownerId: String, ids: List<String>)
 
     @Transaction
     suspend fun refreshComponents(ownerId: String, components: List<ComponentEntity>) {
-        if (components.isNotEmpty()) deleteComponentsNotIn(ownerId, components.map { it.id })
-        else clearComponents(ownerId)
+        if (components.isNotEmpty()) {
+            val toKeep = components.map { it.id }.toSet()
+            val existing = getComponentIds(ownerId)
+            val toDelete = existing.filterNot { toKeep.contains(it) }
+            toDelete.chunked(900).forEach { deleteComponentsByIds(ownerId, it) }
+        } else {
+            clearComponents(ownerId)
+        }
         insertComponents(components)
     }
 
     @Transaction
     suspend fun refreshCustomers(ownerId: String, customers: List<CustomerEntity>) {
-        if (customers.isNotEmpty()) deleteCustomersNotIn(ownerId, customers.map { it.id })
-        else clearCustomers(ownerId)
+        if (customers.isNotEmpty()) {
+            val toKeep = customers.map { it.id }.toSet()
+            val existing = getCustomerIds(ownerId)
+            val toDelete = existing.filterNot { toKeep.contains(it) }
+            toDelete.chunked(900).forEach { deleteCustomersByIds(ownerId, it) }
+        } else {
+            clearCustomers(ownerId)
+        }
         insertCustomers(customers)
     }
 
     @Transaction
     suspend fun refreshMolds(ownerId: String, molds: List<MoldEntity>) {
-        if (molds.isNotEmpty()) deleteMoldsNotIn(ownerId, molds.map { it.id })
-        else clearMolds(ownerId)
+        if (molds.isNotEmpty()) {
+            val toKeep = molds.map { it.id }.toSet()
+            val existing = getMoldIds(ownerId)
+            val toDelete = existing.filterNot { toKeep.contains(it) }
+            toDelete.chunked(900).forEach { deleteMoldsByIds(ownerId, it) }
+        } else {
+            clearMolds(ownerId)
+        }
         insertMolds(molds)
     }
 
     @Transaction
     suspend fun refreshHistoryLogs(ownerId: String, logs: List<HistoryLogEntity>) {
-        if (logs.isNotEmpty()) deleteHistoryLogsNotIn(ownerId, logs.map { it.id })
-        else clearHistoryLogs(ownerId)
+        if (logs.isNotEmpty()) {
+            val toKeep = logs.map { it.id }.toSet()
+            val existing = getHistoryLogIds(ownerId)
+            val toDelete = existing.filterNot { toKeep.contains(it) }
+            toDelete.chunked(900).forEach { deleteHistoryLogsByIds(ownerId, it) }
+        } else {
+            clearHistoryLogs(ownerId)
+        }
         insertHistoryLogs(logs)
     }
 }

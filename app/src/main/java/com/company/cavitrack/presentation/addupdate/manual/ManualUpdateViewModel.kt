@@ -1,22 +1,26 @@
 package com.company.cavitrack.presentation.addupdate.manual
 
+
+
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.google.firebase.auth.FirebaseAuth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.repository.InventoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.company.cavitrack.util.Result
+import com.company.cavitrack.util.DataResult
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.HistoryLog
 import java.util.UUID
 
 @HiltViewModel
 class ManualUpdateViewModel @Inject constructor(
-    private val repository: InventoryRepository
+    private val repository: InventoryRepository,
+    private val firebaseAuth: FirebaseAuth
 ) : ViewModel() {
 
     private val _isSaved = MutableStateFlow(false)
@@ -30,7 +34,7 @@ class ManualUpdateViewModel @Inject constructor(
     
     private suspend fun writeHistory(entityType: String, entityId: String, entityName: String, action: String, before: String? = null, after: String? = null, note: String = "") {
         val source = if (note.isNotBlank()) "Manual - $note" else "Manual"
-        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        val user = firebaseAuth.currentUser
         val performer = user?.displayName?.takeIf { it.isNotBlank() } ?: user?.email ?: "Unknown"
         val log = HistoryLog(
             id = UUID.randomUUID().toString(),
@@ -43,7 +47,10 @@ class ManualUpdateViewModel @Inject constructor(
             afterValue = after,
             performedBy = performer
         )
-        repository.saveHistoryLog(log)
+        val saveResult = repository.saveHistoryLog(log)
+        if (saveResult is DataResult.Error) {
+            android.util.Log.e("History", "Failed to save history log: ${saveResult.message}")
+        }
     }
 
     private val _currentQty = MutableStateFlow<Int?>(null)
@@ -53,7 +60,7 @@ class ManualUpdateViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = repository.getComponent(entityId)
-                if (result is Result.Success) {
+                if (result is DataResult.Success) {
                     _currentQty.value = result.data.qty
                 }
             } catch (e: Exception) {
@@ -68,17 +75,17 @@ class ManualUpdateViewModel @Inject constructor(
             _isSaving.value = true
             try {
                 val result = repository.getComponent(entityId)
-                if (result is Result.Success) {
+                if (result is DataResult.Success) {
                     val component = result.data
                     val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
                     val saveResult = repository.saveComponent(updated)
-                    if (saveResult is Result.Success) {
-                        writeHistory("Component", component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
+                    if (saveResult is DataResult.Success) {
+                        writeHistory(com.company.cavitrack.domain.model.EntityType.Component.name, component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
                         _isSaved.value = true
-                    } else if (saveResult is Result.Error) {
+                    } else if (saveResult is DataResult.Error) {
                         _error.value = saveResult.message
                     }
-                } else if (result is Result.Error) {
+                } else if (result is DataResult.Error) {
                     _error.value = result.message
                 }
             } catch (e: Exception) {
@@ -102,10 +109,10 @@ class ManualUpdateViewModel @Inject constructor(
                     unit = "pcs", minStockThreshold = 10
                 )
                 val result = repository.saveComponent(component)
-                if (result is Result.Success) {
-                    writeHistory("Component", component.id, component.name, "Created", null, initialQuantity.toString(), note)
+                if (result is DataResult.Success) {
+                    writeHistory(com.company.cavitrack.domain.model.EntityType.Component.name, component.id, component.name, "Created", null, initialQuantity.toString(), note)
                     _isSaved.value = true
-                } else if (result is Result.Error) {
+                } else if (result is DataResult.Error) {
                     _error.value = result.message
                 }
             } finally {
@@ -123,10 +130,10 @@ class ManualUpdateViewModel @Inject constructor(
                     id = UUID.randomUUID().toString(), name = name, phone = phone, email = email, address = address
                 )
                 val result = repository.saveCustomer(customer)
-                if (result is Result.Success) {
-                    writeHistory("Customer", customer.id, customer.name, "Created", null, null, note)
+                if (result is DataResult.Success) {
+                    writeHistory(com.company.cavitrack.domain.model.EntityType.Customer.name, customer.id, customer.name, "Created", null, null, note)
                     _isSaved.value = true
-                } else if (result is Result.Error) {
+                } else if (result is DataResult.Error) {
                     _error.value = result.message
                 }
             } finally {
@@ -147,10 +154,10 @@ class ManualUpdateViewModel @Inject constructor(
                     location = location.ifBlank { "Storage" }
                 )
                 val result = repository.saveMold(mold)
-                if (result is Result.Success) {
-                    writeHistory("Mold", mold.id, mold.moldCode, "Created", null, null, note)
+                if (result is DataResult.Success) {
+                    writeHistory(com.company.cavitrack.domain.model.EntityType.Mold.name, mold.id, mold.moldCode, "Created", null, null, note)
                     _isSaved.value = true
-                } else if (result is Result.Error) {
+                } else if (result is DataResult.Error) {
                     _error.value = result.message
                 }
             } finally {
@@ -159,3 +166,10 @@ class ManualUpdateViewModel @Inject constructor(
         }
     } // closes fun
 } // closes class
+
+
+
+
+
+
+

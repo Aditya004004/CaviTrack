@@ -1,7 +1,8 @@
 package com.company.cavitrack.util
 
-import android.content.Context
+
 import com.google.firebase.auth.FirebaseAuth
+import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,3 +20,5 @@ class TokenManager @Inject constructor(
         firebaseAuth.signOut()
     }
 }
+
+

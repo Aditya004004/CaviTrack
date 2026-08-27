@@ -1,5 +1,7 @@
 package com.company.cavitrack.presentation.navigation
 
+
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -24,7 +26,7 @@ fun CaviTrackNavGraph(
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier
 ) {
-    val inventoryViewModel: com.company.cavitrack.presentation.inventory.InventoryViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val inventoryViewModel: com.company.cavitrack.presentation.inventory.InventoryViewModel = hiltViewModel()
     
     NavHost(
         navController = navController,
@@ -35,9 +37,9 @@ fun CaviTrackNavGraph(
             HomeScreen(
                 onNavigateToDetail = { type, id -> 
                     when(type) {
-                        "Component" -> navController.navigate(Route.ComponentDetail(id))
-                        "Customer" -> navController.navigate(Route.CustomerDetail(id))
-                        "Mold" -> navController.navigate(Route.MoldDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id))
                     }
                 }
             ) 
@@ -54,9 +56,9 @@ fun CaviTrackNavGraph(
             HistoryScreen(
                 onNavigateToDetail = { type, id -> 
                     when(type) {
-                        "Component" -> navController.navigate(Route.ComponentDetail(id))
-                        "Customer" -> navController.navigate(Route.CustomerDetail(id))
-                        "Mold" -> navController.navigate(Route.MoldDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id))
                     }
                 }
             ) 
@@ -88,8 +90,8 @@ fun CaviTrackNavGraph(
             com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(
                 entityId = route.id,
                 viewModel = inventoryViewModel,
-                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate("Component", id)) },
-                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate("Component", id)) }
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) }
             )
         }
         composable<Route.CustomerDetail> { backStackEntry -> 
@@ -123,3 +125,5 @@ fun CaviTrackAuthGraph(authViewModel: AuthViewModel, onAuthSuccess: () -> Unit) 
         }
     }
 }
+
+

@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">CaviTrack</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+    
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_components">Components</string>
+    <string name="title_customers">Customers</string>
+    <string name="title_molds">Molds</string>
+    
+    <string name="error_default">An unexpected error occurred.</string>
+    <string name="error_network">Network error, please check your connection.</string>
 </resources>

@@ -1,14 +1,15 @@
 package com.company.cavitrack.presentation.history
 
+
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.util.Result
+import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -44,10 +45,14 @@ class HistoryViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             repository.getHistory().collect { result ->
                 when (result) {
-                    is Result.Success -> _uiState.value = UiState.Success(result.data)
-                    is Result.Error -> _uiState.value = UiState.Error(result.message ?: "Unknown Error")
+                    is DataResult.Success -> _uiState.value = UiState.Success(result.data)
+                    is DataResult.Error -> _uiState.value = UiState.Error(result.message)
                 }
             }
         }
     }
 }
+
+
+
+

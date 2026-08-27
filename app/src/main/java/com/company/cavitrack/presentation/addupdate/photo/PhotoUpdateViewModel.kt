@@ -1,22 +1,35 @@
 package com.company.cavitrack.presentation.addupdate.photo
 
+
+
+
+
+
+
+
+import android.net.Uri
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.auth.FirebaseAuth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.repository.InventoryRepository
-import com.google.firebase.storage.FirebaseStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.io.File
 import javax.inject.Inject
-import com.company.cavitrack.util.Result
+import com.company.cavitrack.util.DataResult
 
 @HiltViewModel
 class PhotoUpdateViewModel @Inject constructor(
-    private val repository: InventoryRepository
+    private val repository: InventoryRepository,
+    private val firebaseAuth: FirebaseAuth,
+    private val firebaseStorage: FirebaseStorage
 ) : ViewModel() {
 
     private val _isSaved = MutableStateFlow(false)
@@ -28,34 +41,37 @@ class PhotoUpdateViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    private suspend fun writeHistory(entityType: String, entityId: String, entityName: String, action: String) {
-        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+    private suspend fun writeHistory(entityType: com.company.cavitrack.domain.model.EntityType, entityId: String, entityName: String, action: String) {
+        val user = firebaseAuth.currentUser
         val performer = user?.displayName?.takeIf { it.isNotBlank() } ?: user?.email ?: "Unknown"
         val log = com.company.cavitrack.domain.model.HistoryLog(
             id = java.util.UUID.randomUUID().toString(),
-            entityType = entityType,
+            entityType = entityType.name,
             entityId = entityId,
             entityName = entityName,
             action = action,
             changeSource = "Photo",
             performedBy = performer
         )
-        repository.saveHistoryLog(log)
+        val saveResult = repository.saveHistoryLog(log)
+        if (saveResult is DataResult.Error) {
+            android.util.Log.e("History", "Failed to save history log: ${saveResult.message}")
+        }
     }
 
-    fun uploadPhotoAndUpdateEntity(entityType: String, entityId: String, photoFile: File) {
+    fun uploadPhotoAndUpdateEntity(entityType: com.company.cavitrack.domain.model.EntityType, entityId: String, photoFile: File) {
         viewModelScope.launch {
             _isUploading.value = true
             _error.value = null
             var success = false
             try {
-                val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                val user = firebaseAuth.currentUser
                 val uid = user?.uid ?: "unknown"
-                val storageRef = FirebaseStorage.getInstance().reference
+                val storageRef = firebaseStorage.reference
                 val fileRef = storageRef.child("photos/$uid/${photoFile.name}")
                 
                 // Downscale image before upload
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                withContext(Dispatchers.IO) {
                     val options = android.graphics.BitmapFactory.Options().apply {
                         inJustDecodeBounds = true
                     }
@@ -88,25 +104,25 @@ class PhotoUpdateViewModel @Inject constructor(
                     }
                 }
                 
-                val uri = android.net.Uri.fromFile(photoFile)
+                val uri = Uri.fromFile(photoFile)
                 
                 fileRef.putFile(uri).await()
                 val downloadUrl = fileRef.downloadUrl.await().toString()
 
-                if (entityType == "Component") {
+                if (entityType == com.company.cavitrack.domain.model.EntityType.Component) {
                     // It's a suspend method now!
                     val result = repository.getComponent(entityId)
-                    if (result is Result.Success) {
+                    if (result is DataResult.Success) {
                         val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
                         val saveResult = repository.saveComponent(updated)
-                        if (saveResult is Result.Success) {
+                        if (saveResult is DataResult.Success) {
                             writeHistory(entityType, updated.id, updated.name, "Photo Added")
                             success = true
                             _isSaved.value = true
-                        } else if (saveResult is Result.Error) {
+                        } else if (saveResult is DataResult.Error) {
                             _error.value = saveResult.message
                         }
-                    } else if (result is Result.Error) {
+                    } else if (result is DataResult.Error) {
                         _error.value = result.message
                     }
                 } else {
@@ -114,13 +130,34 @@ class PhotoUpdateViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                _error.value = e.message
+                if (entityType == com.company.cavitrack.domain.model.EntityType.Component) {
+                    repository.queuePhotoUpload(entityId, photoFile.absolutePath)
+                    
+                    val result = repository.getComponent(entityId)
+                    if (result is DataResult.Success) {
+                        val updated = result.data.copy(photoUrl = "file://${photoFile.absolutePath}", updatedAt = System.currentTimeMillis())
+                        repository.saveComponent(updated)
+                        writeHistory(entityType, updated.id, updated.name, "Photo Added (Offline Pending)")
+                    }
+                    success = true
+                    _isSaved.value = true
+                    _error.value = "Photo queued for upload when online."
+                } else {
+                    _error.value = e.message
+                }
             } finally {
                 _isUploading.value = false
-                if (photoFile.exists()) {
+                if (!success && photoFile.exists()) {
                     photoFile.delete()
                 }
             }
         }
     }
 }
+
+
+
+
+
+
+

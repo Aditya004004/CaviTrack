@@ -1,12 +1,15 @@
 package com.company.cavitrack.presentation.inventory
 
+
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.util.Result
+import com.company.cavitrack.util.DataResult
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.*
@@ -39,13 +42,13 @@ class InventoryViewModelTest {
         val components = listOf(
             Component(id = "1", name = "Screw", sku = "SKU1", category = "Fastener", qty = 100, unit = "pcs", minStockThreshold = 50)
         )
-        every { repository.getComponents() } returns flowOf(Result.Success(components))
-        every { repository.getCustomers() } returns flowOf(Result.Success(emptyList()))
-        every { repository.getMolds() } returns flowOf(Result.Success(emptyList()))
+        every { repository.getComponents() } returns flowOf(DataResult.Success(components))
+        every { repository.getCustomers() } returns flowOf(DataResult.Success(emptyList()))
+        every { repository.getMolds() } returns flowOf(DataResult.Success(emptyList()))
         
         val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true)
         val sessionManager = mockk<com.company.cavitrack.util.SessionManager> {
-            every { currentUser } returns kotlinx.coroutines.flow.MutableStateFlow(mockUser)
+            every { currentUser } returns MutableStateFlow(mockUser)
         }
 
         // Act
@@ -63,13 +66,13 @@ class InventoryViewModelTest {
     @Test
     fun `loadData error updates uiState with error message`() = runTest {
         // Arrange
-        every { repository.getComponents() } returns flowOf(Result.Error("Network Error"))
-        every { repository.getCustomers() } returns flowOf(Result.Success(emptyList()))
-        every { repository.getMolds() } returns flowOf(Result.Success(emptyList()))
+        every { repository.getComponents() } returns flowOf(DataResult.Error("Network Error"))
+        every { repository.getCustomers() } returns flowOf(DataResult.Success(emptyList()))
+        every { repository.getMolds() } returns flowOf(DataResult.Success(emptyList()))
 
         val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true)
         val sessionManager = mockk<com.company.cavitrack.util.SessionManager> {
-            every { currentUser } returns kotlinx.coroutines.flow.MutableStateFlow(mockUser)
+            every { currentUser } returns MutableStateFlow(mockUser)
         }
 
         // Act
@@ -82,3 +85,6 @@ class InventoryViewModelTest {
         assertEquals("Network Error", (state as UiState.Error).message)
     }
 }
+
+
+

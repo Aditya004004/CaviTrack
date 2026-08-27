@@ -1,13 +1,17 @@
 package com.company.cavitrack.di
 
+
+
+
+
+import kotlinx.coroutines.Dispatchers
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 import android.content.Context
 import androidx.room.Room
 import com.company.cavitrack.data.local.AppDatabase
 import com.company.cavitrack.data.local.dao.InventoryDao
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,7 +32,19 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideFirebaseFirestore(): FirebaseFirestore {
-        return Firebase.firestore
+        return FirebaseFirestore.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseStorage(): FirebaseStorage {
+        return FirebaseStorage.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseMessaging(): com.google.firebase.messaging.FirebaseMessaging {
+        return com.google.firebase.messaging.FirebaseMessaging.getInstance()
     }
 
     val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
@@ -61,10 +77,13 @@ object NetworkModule {
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(): kotlinx.coroutines.CoroutineScope {
-        return kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        return kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default)
     }
 }
 
 @javax.inject.Qualifier
 @Retention(AnnotationRetention.RUNTIME)
 annotation class ApplicationScope
+
+
+

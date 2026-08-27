@@ -1,8 +1,10 @@
 package com.company.cavitrack.util
 
+
+
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
@@ -26,3 +28,6 @@ class SessionManager @Inject constructor(
     // Usually we don't remove this listener since it's an application-scoped singleton.
     // If needed, we could provide a teardown method.
 }
+
+
+

@@ -1,11 +1,24 @@
 package com.company.cavitrack.presentation.auth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 
+
+
+
+
+
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import androidx.work.ExistingWorkPolicy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.util.TokenManager
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -14,10 +27,10 @@ import javax.inject.Inject
 
 sealed class AuthState {
 
-    object Unauthenticated : AuthState()
-    object Loading : AuthState()
-    object Deleting : AuthState()
-    object Authenticated : AuthState()
+    data object Unauthenticated : AuthState()
+    data object Loading : AuthState()
+    data object Deleting : AuthState()
+    data object Authenticated : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -27,7 +40,10 @@ class AuthViewModel @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val repository: com.company.cavitrack.domain.repository.InventoryRepository,
     sessionManager: com.company.cavitrack.util.SessionManager,
-    private val syncScheduler: com.company.cavitrack.util.SyncScheduler
+    private val syncScheduler: com.company.cavitrack.util.SyncScheduler,
+    private val firebaseFirestore: FirebaseFirestore,
+    private val firebaseStorage: FirebaseStorage,
+    private val firebaseMessaging: com.google.firebase.messaging.FirebaseMessaging
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(if (tokenManager.hasValidToken()) AuthState.Authenticated else AuthState.Unauthenticated)
@@ -36,8 +52,16 @@ class AuthViewModel @Inject constructor(
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
 
+    val currentUser = sessionManager.currentUser
+
     fun clearAuthError() {
         _authError.value = null
+    }
+
+    fun resetAuthState() {
+        if (_authState.value is AuthState.Error) {
+            _authState.value = AuthState.Unauthenticated
+        }
     }
 
     init {
@@ -61,8 +85,8 @@ class AuthViewModel @Inject constructor(
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 val errorMessage = when (e) {
-                    is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException -> "Invalid email or password."
-                    is com.google.firebase.auth.FirebaseAuthInvalidUserException -> "No account found with this email."
+                    is FirebaseAuthInvalidCredentialsException -> "Invalid email or password."
+                    is FirebaseAuthInvalidUserException -> "No account found with this email."
                     else -> e.message ?: "Login failed"
                 }
                 _authState.value = AuthState.Error(errorMessage)
@@ -88,9 +112,9 @@ class AuthViewModel @Inject constructor(
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 val errorMessage = when (e) {
-                    is com.google.firebase.auth.FirebaseAuthUserCollisionException -> "An account already exists with this email."
-                    is com.google.firebase.auth.FirebaseAuthWeakPasswordException -> "Password is too weak."
-                    is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException -> "Invalid email format."
+                    is FirebaseAuthUserCollisionException -> "An account already exists with this email."
+                    is FirebaseAuthWeakPasswordException -> "Password is too weak."
+                    is FirebaseAuthInvalidCredentialsException -> "Invalid email format."
                     else -> e.message ?: "Registration failed"
                 }
                 _authState.value = AuthState.Error(errorMessage)
@@ -106,6 +130,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
     fun logout(force: Boolean = false) {
         viewModelScope.launch {
             try {
@@ -116,15 +141,15 @@ class AuthViewModel @Inject constructor(
                 if (force) {
                     repository.clearAllPendingActions()
                 }
-                val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                val token = firebaseMessaging.token.await()
                 val uid = firebaseAuth.currentUser?.uid
                 if (uid != null && token.isNotEmpty()) {
-                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    firebaseFirestore
                         .collection("users").document(uid)
                         .collection("fcmTokens").document(token)
                         .delete().await()
                 }
-                com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken().await()
+                firebaseMessaging.deleteToken().await()
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 // Ignore failure if not connected
@@ -135,7 +160,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun syncData() {
-        syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.REPLACE)
+        syncScheduler.scheduleOneTimeSync(ExistingWorkPolicy.REPLACE)
     }
 
     fun deleteAccount(force: Boolean = false) {
@@ -152,27 +177,23 @@ class AuthViewModel @Inject constructor(
                 val user = firebaseAuth.currentUser
                 if (user != null) {
                     val uid = user.uid
-                    // NOTE: We delete the Auth user first to catch FirebaseAuthRecentLoginRequiredException early.
-                    // This creates a theoretical race where the user account is gone but their data remains if the subsequent
-                    // clearUserData() call fails. However, Firebase does not immediately invalidate already-issued JWTs
-                    // upon account deletion; the cached token remains valid for its original 1-hour lifespan,
-                    // allowing the subsequent backend Firestore/Storage deletes to succeed and cleanly wipe the data.
-                    user.delete().await()
-
-                    // Clear Firestore and Room data
+                    // Clear Firestore and Room data first
                     repository.clearUserData(uid)
                     
                     // Clear Storage data
                     try {
-                        val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference.child("photos/$uid")
+                        val storageRef = firebaseStorage.reference.child("photos/$uid")
                         storageRef.listAll().await().items.forEach { it.delete().await() }
                     } catch (e: Exception) {
                         // Ignore storage errors if folder doesn't exist
                     }
+
+                    // Finally, delete the Auth user
+                    user.delete().await()
                 }
                 tokenManager.clearToken()
                 _authState.value = AuthState.Unauthenticated
-            } catch (e: com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
+            } catch (e: FirebaseAuthRecentLoginRequiredException) {
                 _authError.value = "Recent login required. Please log out, log back in, and try again."
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
@@ -183,4 +204,10 @@ class AuthViewModel @Inject constructor(
         }
     }
 }
+
+
+
+
+
+
 

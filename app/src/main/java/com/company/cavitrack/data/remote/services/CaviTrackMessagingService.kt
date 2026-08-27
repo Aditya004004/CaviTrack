@@ -1,17 +1,24 @@
 package com.company.cavitrack.data.remote.services
 
+
+
+
+
+
+import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import androidx.work.ExistingWorkPolicy
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlin.time.Duration.Companion.seconds
@@ -19,20 +26,26 @@ import kotlin.time.Duration.Companion.seconds
 @AndroidEntryPoint
 class CaviTrackMessagingService : FirebaseMessagingService() {
 
-    @javax.inject.Inject
+    @Inject
     @com.company.cavitrack.di.ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
+    @Inject
+    lateinit var firebaseAuth: FirebaseAuth
+
+    @Inject
+    lateinit var firebaseFirestore: FirebaseFirestore
+
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         
         applicationScope.launch {
             kotlinx.coroutines.withTimeoutOrNull(5.seconds) {
                 try {
-                    val user = FirebaseAuth.getInstance().currentUser
+                    val user = firebaseAuth.currentUser
                     if (user != null) {
-                        val db = FirebaseFirestore.getInstance()
-                        db.collection("users").document(user.uid)
+                        firebaseFirestore.collection("users").document(user.uid)
                             .collection("fcmTokens").document(token)
                             .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
                             .await()
@@ -44,7 +57,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         }
     }
 
-    @javax.inject.Inject
+    @Inject
     lateinit var syncScheduler: com.company.cavitrack.util.SyncScheduler
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -54,7 +67,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         if (message.data.isNotEmpty()) {
             // Trigger a sync if requested
             if (message.data["action"] == "SYNC") {
-                syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.REPLACE)
+                syncScheduler.scheduleOneTimeSync(ExistingWorkPolicy.REPLACE)
             }
         }
 
@@ -87,7 +100,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(com.company.cavitrack.R.drawable.ic_launcher_foreground)
+            .setSmallIcon(com.company.cavitrack.R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
@@ -96,5 +109,11 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         notificationManager.notify(notificationId.incrementAndGet(), notificationBuilder.build())
     }
 }
+
+
+
+
+
+
 
 

@@ -1,5 +1,7 @@
 package com.company.cavitrack.presentation.auth
 
+
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -8,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 
 import androidx.compose.runtime.saveable.rememberSaveable
 
@@ -20,9 +21,13 @@ fun RegisterScreen(
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
 
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        authViewModel.resetAuthState()
+    }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
@@ -87,6 +92,8 @@ fun RegisterScreen(
         }
     }
 }
+
+
 
 
 

@@ -1,14 +1,15 @@
 package com.company.cavitrack.presentation.home
 
+
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.util.Result
+import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -57,15 +58,15 @@ class HomeViewModel @Inject constructor(
                 repository.getMolds(),
                 repository.getHistory()
             ) { compRes, custRes, moldRes, histRes ->
-                if (compRes is Result.Error) return@combine UiState.Error(compRes.message)
-                if (custRes is Result.Error) return@combine UiState.Error(custRes.message)
-                if (moldRes is Result.Error) return@combine UiState.Error(moldRes.message)
-                if (histRes is Result.Error) return@combine UiState.Error(histRes.message)
+                if (compRes is DataResult.Error) return@combine UiState.Error(compRes.message)
+                if (custRes is DataResult.Error) return@combine UiState.Error(custRes.message)
+                if (moldRes is DataResult.Error) return@combine UiState.Error(moldRes.message)
+                if (histRes is DataResult.Error) return@combine UiState.Error(histRes.message)
 
-                val components = (compRes as Result.Success).data
-                val customers = (custRes as Result.Success).data
-                val molds = (moldRes as Result.Success).data
-                val history = (histRes as Result.Success).data
+                val components = (compRes as DataResult.Success).data
+                val customers = (custRes as DataResult.Success).data
+                val molds = (moldRes as DataResult.Success).data
+                val history = (histRes as DataResult.Success).data
 
                 val lowStockCount = components.count { it.qty < it.minStockThreshold }
                 val activeMolds = molds.count { it.status == com.company.cavitrack.domain.model.MoldStatus.Active }
@@ -85,4 +86,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 }
+
+
+
 

@@ -1,5 +1,17 @@
 package com.company.cavitrack.presentation.addupdate.photo
 
+
+
+
+
+
+
+import androidx.compose.ui.platform.LocalContext
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import androidx.hilt.navigation.compose.hiltViewModel
+import android.widget.Toast
+import kotlinx.coroutines.withContext
 import android.content.Context
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -13,20 +25,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import java.io.File
 import java.util.concurrent.Executor
 import kotlinx.coroutines.launch
 
 @Composable
 fun PhotoUpdateScreen(
-    entityType: String,
+    entityType: com.company.cavitrack.domain.model.EntityType,
     entityId: String?,
-    viewModel: PhotoUpdateViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    viewModel: PhotoUpdateViewModel = hiltViewModel(),
     onUpdateComplete: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -111,7 +121,7 @@ fun PhotoUpdateScreen(
                             )
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            android.widget.Toast.makeText(context, "Failed to bind camera: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Failed to bind camera: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                     }, executor)
                     previewView
@@ -146,13 +156,20 @@ fun PhotoUpdateScreen(
                             } else {
                                 // Realistically, we should either save the photo path to pass to the creation screen,
                                 // or block photo capture until the entity is created. For now, show an explicit error.
-                                android.widget.Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", android.widget.Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", Toast.LENGTH_LONG).show()
                             }
                         }, enabled = !isUploading) {
                             Text("Upload and Save")
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { photoUri = null }, enabled = !isUploading) {
+                        Button(onClick = { 
+                            val currentUri = photoUri
+                            photoUri = null
+                            if (currentUri != null) {
+                                val file = File(currentUri)
+                                if (file.exists()) file.delete()
+                            }
+                        }, enabled = !isUploading) {
                             Text("Retake")
                         }
                     }
@@ -169,7 +186,7 @@ fun PhotoUpdateScreen(
                     contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
                 ) { uri ->
                     if (uri != null) {
-                        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        coroutineScope.launch(Dispatchers.IO) {
                             val inputStream = context.contentResolver.openInputStream(uri)
                             val file = File(context.cacheDir, "${System.currentTimeMillis()}_gallery.jpg")
                             inputStream?.use { input ->
@@ -178,7 +195,7 @@ fun PhotoUpdateScreen(
                                 }
                             }
                             if (file.exists()) {
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                withContext(Dispatchers.Main) {
                                     photoUri = file.absolutePath
                                 }
                             }
@@ -204,7 +221,7 @@ fun PhotoUpdateScreen(
                                 }
                                 override fun onError(exc: ImageCaptureException) {
                                     exc.printStackTrace()
-                                    android.widget.Toast.makeText(context, "Failed to capture image: ${exc.message}", android.widget.Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Failed to capture image: ${exc.message}", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
@@ -216,3 +233,6 @@ fun PhotoUpdateScreen(
         }
     }
 }
+
+
+

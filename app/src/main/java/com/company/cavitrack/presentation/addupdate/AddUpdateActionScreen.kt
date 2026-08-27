@@ -1,5 +1,13 @@
 package com.company.cavitrack.presentation.addupdate
 
+
+
+
+
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -13,16 +21,16 @@ import androidx.compose.runtime.setValue
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddUpdateActionScreen(
-    entityType: String?,
-    onNavigateToManual: (String?) -> Unit,
-    onNavigateToPhoto: (String?) -> Unit
+    entityType: com.company.cavitrack.domain.model.EntityType?,
+    onNavigateToManual: (com.company.cavitrack.domain.model.EntityType?) -> Unit,
+    onNavigateToPhoto: (com.company.cavitrack.domain.model.EntityType?) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        var selectedType by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(entityType ?: "Component") }
+        var selectedType by remember { mutableStateOf(entityType ?: com.company.cavitrack.domain.model.EntityType.Component) }
         
         Text(
             text = "Update Entry",
@@ -36,12 +44,12 @@ fun AddUpdateActionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                listOf("Component", "Customer", "Mold").forEachIndexed { index, type ->
+                listOf(com.company.cavitrack.domain.model.EntityType.Component, com.company.cavitrack.domain.model.EntityType.Customer, com.company.cavitrack.domain.model.EntityType.Mold).forEachIndexed { index, type ->
                     FilterChip(
                         selected = selectedType == type,
                         onClick = { selectedType = type },
-                        label = { Text(type, style = MaterialTheme.typography.labelLarge) },
-                        shape = androidx.compose.foundation.shape.CircleShape,
+                        label = { Text(type.name, style = MaterialTheme.typography.labelLarge) },
+                        shape = CircleShape,
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                             selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -58,7 +66,7 @@ fun AddUpdateActionScreen(
         Button(
             onClick = { onNavigateToManual(selectedType) },
             modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(8.dp),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
         ) {
             Column(horizontalAlignment = Alignment.Start, modifier = Modifier.weight(1f)) {
@@ -67,17 +75,25 @@ fun AddUpdateActionScreen(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
+        val isPhotoUpdateSupported = selectedType == com.company.cavitrack.domain.model.EntityType.Component
         FilledTonalButton(
             onClick = { onNavigateToPhoto(selectedType) },
+            enabled = isPhotoUpdateSupported,
             modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(8.dp),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
         ) {
             Column(horizontalAlignment = Alignment.Start, modifier = Modifier.weight(1f)) {
                 Text("Photo Update", style = MaterialTheme.typography.titleMedium)
-                Text("Attach image from camera/gallery", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f))
+                Text(
+                    if (isPhotoUpdateSupported) "Attach image from camera/gallery" else "Coming soon for ${selectedType.name}", 
+                    style = MaterialTheme.typography.bodySmall, 
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                )
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
+
+

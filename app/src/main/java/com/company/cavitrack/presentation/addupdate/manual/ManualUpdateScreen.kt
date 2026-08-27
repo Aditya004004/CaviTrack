@@ -1,5 +1,7 @@
 package com.company.cavitrack.presentation.addupdate.manual
 
+
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -7,12 +9,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun ManualUpdateScreen(
-    entityType: String,
+    entityType: com.company.cavitrack.domain.model.EntityType,
     entityId: String?,
     viewModel: ManualUpdateViewModel = hiltViewModel(),
     onUpdateComplete: () -> Unit = {}
@@ -20,6 +21,7 @@ fun ManualUpdateScreen(
     var quantity by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
     var hasError by rememberSaveable { mutableStateOf(false) }
+    var hasUnsupportedError by rememberSaveable { mutableStateOf(false) }
     
     var name by rememberSaveable { mutableStateOf("") }
     var sku by rememberSaveable { mutableStateOf("") }
@@ -58,11 +60,14 @@ fun ManualUpdateScreen(
         if (error != null) {
             Text(error ?: "", color = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(16.dp))
+        } else if (hasUnsupportedError) {
+            Text("Update not supported for this entity yet.", color = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         if (entityId == null) {
             when (entityType) {
-                "Component" -> {
+                com.company.cavitrack.domain.model.EntityType.Component -> {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
@@ -85,7 +90,7 @@ fun ManualUpdateScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                "Customer" -> {
+                com.company.cavitrack.domain.model.EntityType.Customer -> {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
@@ -117,7 +122,7 @@ fun ManualUpdateScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                "Mold" -> {
+                com.company.cavitrack.domain.model.EntityType.Mold -> {
                     OutlinedTextField(
                         value = sku,
                         onValueChange = { sku = it },
@@ -133,10 +138,11 @@ fun ManualUpdateScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+                else -> {}
             }
         }
 
-        if (entityType != "Customer") {
+        if (entityType != com.company.cavitrack.domain.model.EntityType.Customer) {
             OutlinedTextField(
                 value = quantity,
                 onValueChange = { 
@@ -164,19 +170,20 @@ fun ManualUpdateScreen(
 
         Button(
             onClick = {
-                val parsedQty = if (entityType == "Customer") 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
+                val parsedQty = if (entityType == com.company.cavitrack.domain.model.EntityType.Customer) 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
                 if (parsedQty != null) {
                     if (entityId != null) {
-                        if (entityType == "Component") {
+                        if (entityType == com.company.cavitrack.domain.model.EntityType.Component) {
                             viewModel.updateComponentQuantity(entityId, parsedQty, note)
                         } else {
-                            hasError = true // Only Component updates are supported right now
+                            hasUnsupportedError = true // Only Component updates are supported right now
                         }
                     } else {
                         when (entityType) {
-                            "Component" -> viewModel.createComponent(name, sku, category, parsedQty, note)
-                            "Customer" -> viewModel.createCustomer(name, phone, email, address, note)
-                            "Mold" -> viewModel.createMold(sku, parsedQty, category, note)
+                            com.company.cavitrack.domain.model.EntityType.Component -> viewModel.createComponent(name, sku, category, parsedQty, note)
+                            com.company.cavitrack.domain.model.EntityType.Customer -> viewModel.createCustomer(name, phone, email, address, note)
+                            com.company.cavitrack.domain.model.EntityType.Mold -> viewModel.createMold(sku, parsedQty, category, note)
+                            else -> hasUnsupportedError = true
                         }
                     }
                 } else {
@@ -190,3 +197,6 @@ fun ManualUpdateScreen(
         }
     }
 }
+
+
+

@@ -1,5 +1,7 @@
 package com.company.cavitrack.presentation.inventory
 
+
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.Component
@@ -7,10 +9,9 @@ import com.company.cavitrack.domain.model.Customer
 import com.company.cavitrack.domain.model.Mold
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.util.Result
+import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -58,15 +59,11 @@ class InventoryViewModel @Inject constructor(
                     repository.getCustomers(),
                     repository.getMolds()
                 ) { compRes, custRes, moldRes ->
-                    if (compRes is Result.Error) return@combine UiState.Error(compRes.message)
-                    if (custRes is Result.Error) return@combine UiState.Error(custRes.message)
-                    if (moldRes is Result.Error) return@combine UiState.Error(moldRes.message)
-
                     UiState.Success(
                         InventoryData(
-                            components = (compRes as Result.Success).data,
-                            customers = (custRes as Result.Success).data,
-                            molds = (moldRes as Result.Success).data
+                            components = if (compRes is DataResult.Success) compRes.data else emptyList(),
+                            customers = if (custRes is DataResult.Success) custRes.data else emptyList(),
+                            molds = if (moldRes is DataResult.Success) moldRes.data else emptyList()
                         )
                     )
                 }.collect { combinedState ->
@@ -79,4 +76,7 @@ class InventoryViewModel @Inject constructor(
         }
     }
 }
+
+
+
 

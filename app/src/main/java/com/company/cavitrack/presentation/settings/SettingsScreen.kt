@@ -1,5 +1,19 @@
 package com.company.cavitrack.presentation.settings
 
+
+
+
+
+
+
+
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalContext
+import android.net.Uri
+import androidx.hilt.navigation.compose.hiltViewModel
+import android.widget.Toast
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -8,16 +22,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.presentation.auth.AuthViewModel
-import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.foundation.clickable
 
 @Composable
 fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
-    val currentUser = FirebaseAuth.getInstance().currentUser
+    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     val userName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
     val userEmail = currentUser?.email ?: "No Email"
     var showLogoutDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
@@ -55,7 +67,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
         Card(
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier.fillMaxWidth()
@@ -65,7 +77,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 modifier = Modifier.padding(16.dp)
             ) {
                 Surface(
-                    shape = androidx.compose.foundation.shape.CircleShape,
+                    shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.size(48.dp)
                 ) {
@@ -86,15 +98,15 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        val context = androidx.compose.ui.platform.LocalContext.current
+        val context = LocalContext.current
         ListItem(
             headlineContent = { Text("Privacy Policy") },
             modifier = Modifier.clickable {
                 try {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://aditya004004.github.io/CaviTrack/PRIVACY.html"))
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://github.com/Aditya004004/CaviTrack/blob/main/PRIVACY.md"))
                     context.startActivity(intent)
                 } catch (e: android.content.ActivityNotFoundException) {
-                    android.widget.Toast.makeText(context, "No web browser installed.", android.widget.Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -108,7 +120,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         Button(
             onClick = { showLogoutDialog = true },
             modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
             Text("Logout")
@@ -163,3 +175,6 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         )
     }
 }
+
+
+

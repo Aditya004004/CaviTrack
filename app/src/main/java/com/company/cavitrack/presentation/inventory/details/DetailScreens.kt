@@ -1,5 +1,7 @@
 package com.company.cavitrack.presentation.inventory.details
 
+
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -7,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.presentation.components.UiState
@@ -26,7 +27,7 @@ fun ComponentDetailScreen(
         is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
         is UiState.Success -> {
-            val component = state.data.components.find { it.id == entityId || it.sku == entityId }
+            val component = state.data.components.find { it.id == entityId }
             if (component != null) {
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Component Details", style = MaterialTheme.typography.headlineMedium)
@@ -118,7 +119,7 @@ fun MoldDetailScreen(
         is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
         is UiState.Success -> {
-            val mold = state.data.molds.find { it.id == entityId || it.moldCode == entityId }
+            val mold = state.data.molds.find { it.id == entityId }
             if (mold != null) {
                 Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Text("Mold Details", style = MaterialTheme.typography.headlineMedium)
@@ -143,3 +144,5 @@ fun MoldDetailScreen(
         }
     }
 }
+
+

@@ -1,9 +1,12 @@
 package com.company.cavitrack.data.repository
 
+
+
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 import com.company.cavitrack.data.local.dao.InventoryDao
 import com.company.cavitrack.domain.model.Component
-import com.company.cavitrack.util.Result
-import com.google.firebase.auth.FirebaseAuth
+import com.company.cavitrack.util.DataResult
 import com.google.firebase.auth.FirebaseUser
 import io.mockk.coEvery
 import io.mockk.every
@@ -15,7 +18,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import androidx.work.WorkManager
-import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OfflineFirstInventoryRepositoryTest {
@@ -51,8 +53,8 @@ class OfflineFirstInventoryRepositoryTest {
         val result = repository.saveComponent(component)
 
         // Assert
-        assertTrue(result is Result.Error)
-        assertTrue((result as Result.Error).message.contains("Must be authenticated"))
+        assertTrue(result is DataResult.Error)
+        assertTrue((result as DataResult.Error).message.contains("Must be authenticated"))
         coVerify(exactly = 0) { dao.insertComponent(any()) }
     }
 
@@ -71,8 +73,11 @@ class OfflineFirstInventoryRepositoryTest {
         val result = repository.saveComponent(component)
 
         // Assert
-        assertTrue(result is Result.Success)
+        assertTrue(result is DataResult.Success)
         coVerify { dao.insertComponent(any()) }
         coVerify { dao.insertPendingAction(any()) }
     }
 }
+
+
+
