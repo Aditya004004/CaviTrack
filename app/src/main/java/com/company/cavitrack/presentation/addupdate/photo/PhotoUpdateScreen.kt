@@ -188,7 +188,8 @@ fun PhotoUpdateScreen(
                     if (uri != null) {
                         coroutineScope.launch(Dispatchers.IO) {
                             val inputStream = context.contentResolver.openInputStream(uri)
-                            val file = File(context.cacheDir, "${System.currentTimeMillis()}_gallery.jpg")
+                            val offlinePhotosDir = File(context.filesDir, "offline_photos").apply { mkdirs() }
+                            val file = File(offlinePhotosDir, "${System.currentTimeMillis()}_gallery.jpg")
                             inputStream?.use { input ->
                                 file.outputStream().use { output ->
                                     input.copyTo(output)
@@ -207,7 +208,8 @@ fun PhotoUpdateScreen(
                 }
                 Button(
                     onClick = {
-                        val file = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
+                        val offlinePhotosDir = File(context.filesDir, "offline_photos").apply { mkdirs() }
+                        val file = File(offlinePhotosDir, "${System.currentTimeMillis()}.jpg")
                         val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
                         imageCapture.takePicture(
                             outputOptions,
@@ -233,6 +235,8 @@ fun PhotoUpdateScreen(
         }
     }
 }
+
+
 
 
 

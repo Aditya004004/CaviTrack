@@ -155,28 +155,44 @@ class OfflineFirstInventoryRepository @Inject constructor(
             .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .limit(1000).get().await()
         val comps = compDocs.toObjects(ComponentDto::class.java)
-        dao.refreshComponents(currentUserId, comps.map { it.toEntity() })
+        if (comps.size >= 1000) {
+            dao.insertComponents(comps.map { it.toEntity() })
+        } else {
+            dao.refreshComponents(currentUserId, comps.map { it.toEntity() })
+        }
 
         val custDocs = firestore.collection("customers")
             .whereEqualTo("ownerId", currentUserId)
             .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .limit(1000).get().await()
         val custs = custDocs.toObjects(CustomerDto::class.java)
-        dao.refreshCustomers(currentUserId, custs.map { it.toEntity() })
+        if (custs.size >= 1000) {
+            dao.insertCustomers(custs.map { it.toEntity() })
+        } else {
+            dao.refreshCustomers(currentUserId, custs.map { it.toEntity() })
+        }
 
         val moldDocs = firestore.collection("molds")
             .whereEqualTo("ownerId", currentUserId)
             .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .limit(1000).get().await()
         val molds = moldDocs.toObjects(MoldDto::class.java)
-        dao.refreshMolds(currentUserId, molds.map { it.toEntity() })
+        if (molds.size >= 1000) {
+            dao.insertMolds(molds.map { it.toEntity() })
+        } else {
+            dao.refreshMolds(currentUserId, molds.map { it.toEntity() })
+        }
 
         val histDocs = firestore.collection("history")
             .whereEqualTo("ownerId", currentUserId)
             .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .limit(1000).get().await()
         val hists = histDocs.toObjects(HistoryLogDto::class.java)
-        dao.refreshHistoryLogs(currentUserId, hists.map { it.toEntity() })
+        if (hists.size >= 1000) {
+            dao.insertHistoryLogs(hists.map { it.toEntity() })
+        } else {
+            dao.refreshHistoryLogs(currentUserId, hists.map { it.toEntity() })
+        }
     }
 
     override suspend fun clearUserData(uid: String) {
@@ -217,6 +233,8 @@ class OfflineFirstInventoryRepository @Inject constructor(
         queueAction("UPLOAD_PHOTO", "COMPONENT", entityId, payload)
     }
 }
+
+
 
 
 

@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -47,6 +49,24 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val currentDestination = navBackStackEntry?.destination
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     var showUpdateSheet by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val workInfos by remember(context) { 
+        androidx.work.WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow("DataSync") 
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val snackbarHostState = remember { SnackbarHostState() }
+    var previousSyncState by remember { mutableStateOf<androidx.work.WorkInfo.State?>(null) }
+    
+    androidx.compose.runtime.LaunchedEffect(workInfos) {
+        val currentState = workInfos.firstOrNull()?.state
+        if (previousSyncState == androidx.work.WorkInfo.State.RUNNING) {
+            if (currentState == androidx.work.WorkInfo.State.SUCCEEDED) {
+                snackbarHostState.showSnackbar("Sync completed successfully.")
+            } else if (currentState == androidx.work.WorkInfo.State.FAILED) {
+                snackbarHostState.showSnackbar("Sync failed.")
+            }
+        }
+        previousSyncState = currentState
+    }
 
     if (authState is AuthState.Deleting) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -64,6 +84,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         )
     } else {
         Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = { Text(stringResource(R.string.app_name)) },
@@ -166,6 +187,7 @@ data class BottomNavItem(
     val routeObj: Any, 
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
+
 
 
 
