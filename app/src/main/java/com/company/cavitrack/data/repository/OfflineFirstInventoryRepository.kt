@@ -16,6 +16,8 @@ import com.company.cavitrack.domain.model.Mold
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.util.DataResult
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -69,6 +71,10 @@ class OfflineFirstInventoryRepository @Inject constructor(
         .map { entities -> DataResult.Success(entities.map { it.toDomain() }) as DataResult<List<HistoryLog>> }
         .catch { emit(DataResult.Error(it.message ?: "Database error")) }
 
+    override fun getRecentHistory(limit: Int): Flow<DataResult<List<HistoryLog>>> = dao.getRecentHistoryLogs(currentUserId, limit)
+        .map { entities -> DataResult.Success(entities.map { it.toDomain() }) as DataResult<List<HistoryLog>> }
+        .catch { emit(DataResult.Error(it.message ?: "Database error")) }
+
     override suspend fun saveComponent(component: Component): DataResult<Unit> {
         return try {
             val uid = currentUserId
@@ -76,16 +82,25 @@ class OfflineFirstInventoryRepository @Inject constructor(
             val componentWithOwner = component.copy(ownerId = uid)
             val dto = componentWithOwner.toDto()
             
-            // Check if it exists to decide CREATE vs UPDATE
-            val exists = dao.getComponent(component.id, uid) != null
-            val action = if (exists) "UPDATE" else "CREATE"
-            
             dao.insertComponent(dto.toEntity())
-            queueAction(action, "COMPONENT", component.id, Json.encodeToString(dto))
+            queueAction("UPSERT", "COMPONENT", component.id, Json.encodeToString(dto))
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
             DataResult.Error(e.message ?: "Failed to save locally")
+        }
+    }
+
+    override suspend fun deleteComponent(id: String): DataResult<Unit> {
+        return try {
+            val uid = currentUserId
+            if (uid.isBlank()) return DataResult.Error("Must be authenticated to delete")
+            dao.deleteComponent(id, uid)
+            queueAction("DELETE", "COMPONENT", id, "{}")
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to delete locally")
         }
     }
 
@@ -97,11 +112,24 @@ class OfflineFirstInventoryRepository @Inject constructor(
             val dto = customerWithOwner.toDto()
             // Simplified: could do the same exists check if updates were fully supported
             dao.insertCustomers(listOf(dto.toEntity()))
-            queueAction("CREATE", "CUSTOMER", customer.id, Json.encodeToString(dto))
+            queueAction("UPSERT", "CUSTOMER", customer.id, Json.encodeToString(dto))
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
             DataResult.Error(e.message ?: "Failed to save locally")
+        }
+    }
+
+    override suspend fun deleteCustomer(id: String): DataResult<Unit> {
+        return try {
+            val uid = currentUserId
+            if (uid.isBlank()) return DataResult.Error("Must be authenticated to delete")
+            dao.deleteCustomer(id, uid)
+            queueAction("DELETE", "CUSTOMER", id, "{}")
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to delete locally")
         }
     }
 
@@ -112,11 +140,24 @@ class OfflineFirstInventoryRepository @Inject constructor(
             val moldWithOwner = mold.copy(ownerId = uid)
             val dto = moldWithOwner.toDto()
             dao.insertMolds(listOf(dto.toEntity()))
-            queueAction("CREATE", "MOLD", mold.id, Json.encodeToString(dto))
+            queueAction("UPSERT", "MOLD", mold.id, Json.encodeToString(dto))
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
             DataResult.Error(e.message ?: "Failed to save locally")
+        }
+    }
+
+    override suspend fun deleteMold(id: String): DataResult<Unit> {
+        return try {
+            val uid = currentUserId
+            if (uid.isBlank()) return DataResult.Error("Must be authenticated to delete")
+            dao.deleteMold(id, uid)
+            queueAction("DELETE", "MOLD", id, "{}")
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to delete locally")
         }
     }
 
@@ -127,7 +168,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
             val logWithOwner = log.copy(ownerId = uid)
             val dto = logWithOwner.toDto()
             dao.insertHistoryLogs(listOf(dto.toEntity()))
-            queueAction("CREATE", "HISTORY", log.id, Json.encodeToString(dto))
+            queueAction("UPSERT", "HISTORY", log.id, Json.encodeToString(dto))
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
@@ -150,48 +191,63 @@ class OfflineFirstInventoryRepository @Inject constructor(
     override suspend fun refreshData() {
         if (currentUserId.isBlank()) return // Don't fetch if no user
 
-        val compDocs = firestore.collection("components")
-            .whereEqualTo("ownerId", currentUserId)
-            .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(1000).get().await()
-        val comps = compDocs.toObjects(ComponentDto::class.java)
-        if (comps.size >= 1000) {
-            dao.insertComponents(comps.map { it.toEntity() })
-        } else {
-            dao.refreshComponents(currentUserId, comps.map { it.toEntity() })
-        }
+        coroutineScope {
+            val compDeferred = async {
+                val compDocs = firestore.collection("components")
+                    .whereEqualTo("ownerId", currentUserId)
+                    .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(1000).get().await()
+                val comps = compDocs.toObjects(ComponentDto::class.java)
+                if (comps.size >= 1000) {
+                    dao.insertComponents(comps.map { it.toEntity() })
+                } else {
+                    dao.refreshComponents(currentUserId, comps.map { it.toEntity() })
+                }
+            }
 
-        val custDocs = firestore.collection("customers")
-            .whereEqualTo("ownerId", currentUserId)
-            .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(1000).get().await()
-        val custs = custDocs.toObjects(CustomerDto::class.java)
-        if (custs.size >= 1000) {
-            dao.insertCustomers(custs.map { it.toEntity() })
-        } else {
-            dao.refreshCustomers(currentUserId, custs.map { it.toEntity() })
-        }
+            val custDeferred = async {
+                val custDocs = firestore.collection("customers")
+                    .whereEqualTo("ownerId", currentUserId)
+                    .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(1000).get().await()
+                val custs = custDocs.toObjects(CustomerDto::class.java)
+                if (custs.size >= 1000) {
+                    dao.insertCustomers(custs.map { it.toEntity() })
+                } else {
+                    dao.refreshCustomers(currentUserId, custs.map { it.toEntity() })
+                }
+            }
 
-        val moldDocs = firestore.collection("molds")
-            .whereEqualTo("ownerId", currentUserId)
-            .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(1000).get().await()
-        val molds = moldDocs.toObjects(MoldDto::class.java)
-        if (molds.size >= 1000) {
-            dao.insertMolds(molds.map { it.toEntity() })
-        } else {
-            dao.refreshMolds(currentUserId, molds.map { it.toEntity() })
-        }
+            val moldDeferred = async {
+                val moldDocs = firestore.collection("molds")
+                    .whereEqualTo("ownerId", currentUserId)
+                    .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(1000).get().await()
+                val molds = moldDocs.toObjects(MoldDto::class.java)
+                if (molds.size >= 1000) {
+                    dao.insertMolds(molds.map { it.toEntity() })
+                } else {
+                    dao.refreshMolds(currentUserId, molds.map { it.toEntity() })
+                }
+            }
 
-        val histDocs = firestore.collection("history")
-            .whereEqualTo("ownerId", currentUserId)
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(1000).get().await()
-        val hists = histDocs.toObjects(HistoryLogDto::class.java)
-        if (hists.size >= 1000) {
-            dao.insertHistoryLogs(hists.map { it.toEntity() })
-        } else {
-            dao.refreshHistoryLogs(currentUserId, hists.map { it.toEntity() })
+            val histDeferred = async {
+                val histDocs = firestore.collection("history")
+                    .whereEqualTo("ownerId", currentUserId)
+                    .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(1000).get().await()
+                val hists = histDocs.toObjects(HistoryLogDto::class.java)
+                if (hists.size >= 1000) {
+                    dao.insertHistoryLogs(hists.map { it.toEntity() })
+                } else {
+                    dao.refreshHistoryLogs(currentUserId, hists.map { it.toEntity() })
+                }
+            }
+
+            compDeferred.await()
+            custDeferred.await()
+            moldDeferred.await()
+            histDeferred.await()
         }
     }
 

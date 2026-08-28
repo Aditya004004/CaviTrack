@@ -20,7 +20,7 @@ fun LoginScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 

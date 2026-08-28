@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,14 +38,16 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sessionManager.currentUser.collect { user ->
-                if (user != null) {
-                    loadData()
-                } else {
-                    loadJob?.cancel()
-                    _uiState.value = UiState.Loading
+            sessionManager.currentUser
+                .distinctUntilChanged { old, new -> old?.uid == new?.uid }
+                .collect { user ->
+                    if (user != null) {
+                        loadData()
+                    } else {
+                        loadJob?.cancel()
+                        _uiState.value = UiState.Loading
+                    }
                 }
-            }
         }
     }
 
@@ -56,7 +59,7 @@ class HomeViewModel @Inject constructor(
                 repository.getComponents(),
                 repository.getCustomers(),
                 repository.getMolds(),
-                repository.getHistory()
+                repository.getRecentHistory(5)
             ) { compRes, custRes, moldRes, histRes ->
                 if (compRes is DataResult.Error) return@combine UiState.Error(compRes.message)
                 if (custRes is DataResult.Error) return@combine UiState.Error(custRes.message)
@@ -77,7 +80,7 @@ class HomeViewModel @Inject constructor(
                         lowStockCount = lowStockCount,
                         totalCustomers = customers.size,
                         activeMolds = activeMolds,
-                        recentActivity = history.take(5)
+                        recentActivity = history
                     )
                 )
             }.collect { state ->

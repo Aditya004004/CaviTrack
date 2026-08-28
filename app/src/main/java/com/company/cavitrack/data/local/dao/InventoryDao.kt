@@ -13,6 +13,9 @@ interface InventoryDao {
     @Query("SELECT * FROM components WHERE id = :id AND ownerId = :ownerId")
     suspend fun getComponent(id: String, ownerId: String): ComponentEntity?
 
+    @Query("DELETE FROM components WHERE id = :id AND ownerId = :ownerId")
+    suspend fun deleteComponent(id: String, ownerId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComponents(components: List<ComponentEntity>)
 
@@ -26,6 +29,9 @@ interface InventoryDao {
     @Query("SELECT * FROM customers WHERE ownerId = :ownerId")
     fun getCustomers(ownerId: String): Flow<List<CustomerEntity>>
 
+    @Query("DELETE FROM customers WHERE id = :id AND ownerId = :ownerId")
+    suspend fun deleteCustomer(id: String, ownerId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomers(customers: List<CustomerEntity>)
 
@@ -36,6 +42,9 @@ interface InventoryDao {
     @Query("SELECT * FROM molds WHERE ownerId = :ownerId")
     fun getMolds(ownerId: String): Flow<List<MoldEntity>>
 
+    @Query("DELETE FROM molds WHERE id = :id AND ownerId = :ownerId")
+    suspend fun deleteMold(id: String, ownerId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMolds(molds: List<MoldEntity>)
 
@@ -45,6 +54,9 @@ interface InventoryDao {
     // History
     @Query("SELECT * FROM history_logs WHERE ownerId = :ownerId ORDER BY timestamp DESC")
     fun getHistoryLogs(ownerId: String): Flow<List<HistoryLogEntity>>
+
+    @Query("SELECT * FROM history_logs WHERE ownerId = :ownerId ORDER BY timestamp DESC LIMIT :limit")
+    fun getRecentHistoryLogs(ownerId: String, limit: Int): Flow<List<HistoryLogEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHistoryLogs(logs: List<HistoryLogEntity>)

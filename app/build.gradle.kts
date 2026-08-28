@@ -19,7 +19,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.cavitrack.app"
+        applicationId = "com.company.cavitrack"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

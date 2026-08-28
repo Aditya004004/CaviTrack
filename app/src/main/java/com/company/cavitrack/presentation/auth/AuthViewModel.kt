@@ -76,11 +76,29 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
+    private suspend fun registerFcmToken() {
+        try {
+            val token = firebaseMessaging.getToken().await()
+            val uid = firebaseAuth.currentUser?.uid
+            if (uid != null && token.isNotEmpty()) {
+                firebaseFirestore.collection("users").document(uid)
+                    .collection("fcmTokens").document(token)
+                    .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
+                    .await()
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            android.util.Log.e("AuthViewModel", "Failed to register FCM token", e)
+        }
+    }
+
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 firebaseAuth.signInWithEmailAndPassword(email, password).await()
+                registerFcmToken()
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
@@ -108,6 +126,7 @@ class AuthViewModel @Inject constructor(
                     .build()
                 user?.updateProfile(profileUpdates)?.await()
                 
+                registerFcmToken()
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
@@ -141,7 +160,7 @@ class AuthViewModel @Inject constructor(
                 if (force) {
                     repository.clearAllPendingActions()
                 }
-                val token = firebaseMessaging.token.await()
+                val token = firebaseMessaging.getToken().await()
                 val uid = firebaseAuth.currentUser?.uid
                 if (uid != null && token.isNotEmpty()) {
                     firebaseFirestore

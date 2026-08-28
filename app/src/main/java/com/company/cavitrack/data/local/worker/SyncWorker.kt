@@ -77,7 +77,7 @@ class SyncWorker @AssistedInject constructor(
                             val file = File(filePath)
                             if (file.exists()) {
                                 val user = firebaseAuth.currentUser
-                                val uid = user?.uid ?: "unknown"
+                                val uid = user?.uid ?: throw IllegalArgumentException("User not authenticated, cannot upload photo")
                                 val storageRef = firebaseStorage.reference
                                 val fileRef = storageRef.child("photos/$uid/${file.name}")
                                 val uri = Uri.fromFile(file)

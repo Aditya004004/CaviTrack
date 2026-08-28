@@ -64,6 +64,7 @@ object NetworkModule {
             AppDatabase::class.java,
             "cavitrack.db"
         ).addMigrations(MIGRATION_1_2)
+         .fallbackToDestructiveMigration(true)
          .build()
     }
 
@@ -77,7 +78,10 @@ object NetworkModule {
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(): kotlinx.coroutines.CoroutineScope {
-        return kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default)
+        val exceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+            android.util.Log.e("ApplicationScope", "Unhandled coroutine exception", throwable)
+        }
+        return kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default + exceptionHandler)
     }
 }
 

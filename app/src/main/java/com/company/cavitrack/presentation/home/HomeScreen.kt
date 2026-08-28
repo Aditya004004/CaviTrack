@@ -61,9 +61,9 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        SummaryCard(title = "Total Components", value = data.totalComponents.toString(), modifier = Modifier.weight(1f))
+                        SummaryCard(title = stringResource(R.string.label_total_components), value = data.totalComponents.toString(), modifier = Modifier.weight(1f))
                         SummaryCard(
-                            title = "Low Stock", 
+                            title = stringResource(R.string.label_low_stock), 
                             value = data.lowStockCount.toString(), 
                             modifier = Modifier.weight(1f),
                             isWarning = data.lowStockCount > 0
@@ -74,13 +74,13 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        SummaryCard(title = "Total Customers", value = data.totalCustomers.toString(), modifier = Modifier.weight(1f))
-                        SummaryCard(title = "Active Molds", value = data.activeMolds.toString(), modifier = Modifier.weight(1f))
+                        SummaryCard(title = stringResource(R.string.label_total_customers), value = data.totalCustomers.toString(), modifier = Modifier.weight(1f))
+                        SummaryCard(title = stringResource(R.string.label_active_molds), value = data.activeMolds.toString(), modifier = Modifier.weight(1f))
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
-                        text = "Recent Activity",
+                        text = stringResource(R.string.label_recent_activity),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -102,7 +102,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "No recent activity recorded",
+                                text = stringResource(R.string.msg_no_recent_activity),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

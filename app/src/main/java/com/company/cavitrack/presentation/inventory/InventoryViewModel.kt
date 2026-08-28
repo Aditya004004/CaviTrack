@@ -14,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,14 +38,16 @@ class InventoryViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sessionManager.currentUser.collect { user ->
-                if (user != null) {
-                    loadData()
-                } else {
-                    loadJob?.cancel()
-                    _uiState.value = UiState.Loading
+            sessionManager.currentUser
+                .distinctUntilChanged { old, new -> old?.uid == new?.uid }
+                .collect { user ->
+                    if (user != null) {
+                        loadData()
+                    } else {
+                        loadJob?.cancel()
+                        _uiState.value = UiState.Loading
+                    }
                 }
-            }
         }
     }
 
@@ -59,11 +62,15 @@ class InventoryViewModel @Inject constructor(
                     repository.getCustomers(),
                     repository.getMolds()
                 ) { compRes, custRes, moldRes ->
+                    if (compRes is DataResult.Error) return@combine UiState.Error(compRes.message)
+                    if (custRes is DataResult.Error) return@combine UiState.Error(custRes.message)
+                    if (moldRes is DataResult.Error) return@combine UiState.Error(moldRes.message)
+                    
                     UiState.Success(
                         InventoryData(
-                            components = if (compRes is DataResult.Success) compRes.data else emptyList(),
-                            customers = if (custRes is DataResult.Success) custRes.data else emptyList(),
-                            molds = if (moldRes is DataResult.Success) moldRes.data else emptyList()
+                            components = (compRes as DataResult.Success).data,
+                            customers = (custRes as DataResult.Success).data,
+                            molds = (moldRes as DataResult.Success).data
                         )
                     )
                 }.collect { combinedState ->

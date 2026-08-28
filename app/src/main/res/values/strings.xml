@@ -12,4 +12,11 @@
     
     <string name="error_default">An unexpected error occurred.</string>
     <string name="error_network">Network error, please check your connection.</string>
+
+    <string name="label_total_components">Total Components</string>
+    <string name="label_low_stock">Low Stock</string>
+    <string name="label_total_customers">Total Customers</string>
+    <string name="label_active_molds">Active Molds</string>
+    <string name="label_recent_activity">Recent Activity</string>
+    <string name="msg_no_recent_activity">No recent activity recorded</string>
 </resources>
