@@ -36,6 +36,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var firebaseFirestore: FirebaseFirestore
 
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         

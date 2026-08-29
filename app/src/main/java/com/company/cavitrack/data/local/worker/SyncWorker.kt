@@ -17,6 +17,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.company.cavitrack.data.local.dao.InventoryDao
+import com.company.cavitrack.data.local.entity.PendingActionEntity
 import com.company.cavitrack.data.remote.dto.*
 import com.google.firebase.firestore.FirebaseFirestoreException
 import dagger.assisted.Assisted
