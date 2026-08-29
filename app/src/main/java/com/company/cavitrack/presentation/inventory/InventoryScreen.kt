@@ -116,7 +116,7 @@ fun InventoryScreen(
                     when (selectedTabIndex) {
                         0 -> {
                             if (filteredComponents.isEmpty()) {
-                                item { com.company.cavitrack.presentation.components.EmptyState("No components registered", Icons.AutoMirrored.Filled.List) }
+                                item { com.company.cavitrack.presentation.components.EmptyState("No components registered") }
                             } else {
                                 items(filteredComponents, key = { it.id }) { component ->
                                     ComponentItem(component, onClick = { onComponentClick(component.id) })
@@ -125,7 +125,7 @@ fun InventoryScreen(
                         }
                         1 -> {
                             if (filteredCustomers.isEmpty()) {
-                                item { com.company.cavitrack.presentation.components.EmptyState("No customers registered", Icons.Default.Person) }
+                                item { com.company.cavitrack.presentation.components.EmptyState("No customers registered") }
                             } else {
                                 items(filteredCustomers, key = { it.id }) { customer ->
                                     CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
@@ -134,7 +134,7 @@ fun InventoryScreen(
                         }
                         2 -> {
                             if (filteredMolds.isEmpty()) {
-                                item { com.company.cavitrack.presentation.components.EmptyState("No molds registered", Icons.Default.Build) }
+                                item { com.company.cavitrack.presentation.components.EmptyState("No molds registered") }
                             }
                             items(filteredMolds, key = { it.id }) { mold ->
                                 MoldItem(mold, onClick = { onMoldClick(mold.id) })

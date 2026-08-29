@@ -151,10 +151,10 @@ fun PhotoUpdateScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .androidx.compose.foundation.background(androidx.compose.material3.MaterialTheme.colorScheme.background),
-                        contentAlignment = androidx.compose.ui.Alignment.Center
+                            .background(MaterialTheme.colorScheme.background),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             coil.compose.AsyncImage(
                                 model = photoUri,
                                 contentDescription = "Captured Photo",
