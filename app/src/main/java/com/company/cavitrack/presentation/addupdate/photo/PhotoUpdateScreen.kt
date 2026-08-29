@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import androidx.hilt.navigation.compose.hiltViewModel
 import android.widget.Toast
 import kotlinx.coroutines.withContext
-import android.content.Context
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -22,6 +21,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -32,7 +32,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import java.util.concurrent.Executor
 import kotlinx.coroutines.launch
 
 @Composable
@@ -83,7 +82,7 @@ fun PhotoUpdateScreen(
 
     val hasCameraHardware = remember { context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY) }
     if (!hasCameraHardware) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Text("No camera available on this device.")
             Button(onClick = onUpdateComplete, modifier = Modifier.padding(top = 16.dp)) {
                 Text("Go Back")
@@ -99,7 +98,7 @@ fun PhotoUpdateScreen(
     }
 
     val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
-    val isSavedState = rememberUpdatedState(viewModel.isSaved.value)
+    val isSavedState = rememberUpdatedState(isSaved)
     val isUploadingState = rememberUpdatedState(isUploading)
 
     DisposableEffect(photoUri) {
@@ -116,7 +115,7 @@ fun PhotoUpdateScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (error != null) {
-            Text("Error: $error", color = androidx.compose.material3.MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+            Text("Error: $error", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
         }
 
         if (hasCameraPermission) {
@@ -129,7 +128,7 @@ fun PhotoUpdateScreen(
                         cameraProviderFuture.addListener({
                             val cameraProvider = cameraProviderFuture.get()
                             val preview = Preview.Builder().build().also {
-                                it.setSurfaceProvider(previewView.surfaceProvider)
+                                it.surfaceProvider = previewView.surfaceProvider
                             }
                             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                             try {
@@ -165,10 +164,8 @@ fun PhotoUpdateScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             
-                            val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
-                            
                             if (isUploading) {
-                                androidx.compose.material3.CircularProgressIndicator()
+                                CircularProgressIndicator()
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Uploading...")
                             } else {
@@ -179,7 +176,7 @@ fun PhotoUpdateScreen(
                                     } else {
                                         Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", Toast.LENGTH_LONG).show()
                                     }
-                                }, enabled = !isUploading) {
+                                }, enabled = true) {
                                     Text("Upload and Save")
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -190,7 +187,7 @@ fun PhotoUpdateScreen(
                                         val file = File(currentUri)
                                         if (file.exists()) file.delete()
                                     }
-                                }, enabled = !isUploading) {
+                                }, enabled = true) {
                                     Text("Retake")
                                 }
                             }
@@ -198,9 +195,9 @@ fun PhotoUpdateScreen(
                     }
                 }
             }
-        } else if (!hasCameraPermission) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+        } else {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Camera permission is required.")
                     Button(onClick = onUpdateComplete, modifier = Modifier.padding(top = 16.dp)) {
                         Text("Go Back")
@@ -229,7 +226,7 @@ fun PhotoUpdateScreen(
                             }
                             if (file.exists()) {
                                 // Downscale immediately to save disk space and memory
-                                withContext(Dispatchers.Default) {
+                                withContext(Dispatchers.IO) {
                                     val options = android.graphics.BitmapFactory.Options().apply {
                                         inJustDecodeBounds = true
                                     }

@@ -27,6 +27,7 @@ object DatabaseModule {
     val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE pending_actions ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_components_ownerId_sku` ON `components` (`ownerId`, `sku`)")
         }
     }
 
