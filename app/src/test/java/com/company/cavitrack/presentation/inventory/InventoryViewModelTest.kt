@@ -46,7 +46,9 @@ class InventoryViewModelTest {
         every { repository.getCustomers() } returns flowOf(DataResult.Success(emptyList()))
         every { repository.getMolds() } returns flowOf(DataResult.Success(emptyList()))
         
-        val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true)
+        val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true) {
+            every { uid } returns "123"
+        }
         val sessionManager = mockk<com.company.cavitrack.util.SessionManager> {
             every { currentUser } returns MutableStateFlow(mockUser)
         }
@@ -70,7 +72,9 @@ class InventoryViewModelTest {
         every { repository.getCustomers() } returns flowOf(DataResult.Success(emptyList()))
         every { repository.getMolds() } returns flowOf(DataResult.Success(emptyList()))
 
-        val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true)
+        val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true) {
+            every { uid } returns "123"
+        }
         val sessionManager = mockk<com.company.cavitrack.util.SessionManager> {
             every { currentUser } returns MutableStateFlow(mockUser)
         }

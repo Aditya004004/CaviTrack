@@ -35,6 +35,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     var showLogoutDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showDeleteAccountDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val authError by authViewModel.authError.collectAsStateWithLifecycle()
+    val pendingAction by authViewModel.pendingDestructiveAction.collectAsStateWithLifecycle()
 
     if (authError != null) {
         AlertDialog(
@@ -47,12 +48,13 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 }
             },
             dismissButton = {
-                if (authError?.contains("unsynced changes") == true) {
+                if (pendingAction != null) {
                     TextButton(onClick = {
+                        val actionToPerform = pendingAction
                         authViewModel.clearAuthError()
-                        if (authError?.contains("deleting") == true) {
+                        if (actionToPerform == com.company.cavitrack.presentation.auth.PendingDestructiveAction.DELETE_ACCOUNT) {
                             authViewModel.deleteAccount(force = true)
-                        } else {
+                        } else if (actionToPerform == com.company.cavitrack.presentation.auth.PendingDestructiveAction.LOGOUT) {
                             authViewModel.logout(force = true)
                         }
                     }) {
@@ -103,7 +105,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             headlineContent = { Text("Privacy Policy") },
             modifier = Modifier.clickable {
                 try {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://github.com/Aditya004004/CaviTrack/blob/main/PRIVACY.md"))
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://raw.githubusercontent.com/Aditya004004/CaviTrack/main/PRIVACY.md"))
                     context.startActivity(intent)
                 } catch (e: android.content.ActivityNotFoundException) {
                     Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()

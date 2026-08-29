@@ -78,12 +78,6 @@ fun PhotoUpdateScreen(
         }
     )
 
-    LaunchedEffect(Unit) {
-        if (!hasCameraPermission) {
-            permissionLauncher.launch(android.Manifest.permission.CAMERA)
-        }
-    }
-
     val hasCameraHardware = remember { context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY) }
     if (!hasCameraHardware) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
@@ -93,6 +87,24 @@ fun PhotoUpdateScreen(
             }
         }
         return
+    }
+
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) {
+            permissionLauncher.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+
+    DisposableEffect(photoUri) {
+        onDispose {
+            val uri = photoUri
+            if (uri != null && !viewModel.isSaved.value) {
+                val file = File(uri)
+                if (file.exists()) {
+                    file.delete()
+                }
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -129,7 +141,12 @@ fun PhotoUpdateScreen(
             )
         } else if (photoUri == null && !hasCameraPermission) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                Text("Camera permission is required.")
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Text("Camera permission is required.")
+                    Button(onClick = onUpdateComplete, modifier = Modifier.padding(top = 16.dp)) {
+                        Text("Go Back")
+                    }
+                }
             }
         } else {
             // Show captured photo or success
@@ -196,6 +213,35 @@ fun PhotoUpdateScreen(
                                 }
                             }
                             if (file.exists()) {
+                                // Downscale immediately to save disk space and memory
+                                val options = android.graphics.BitmapFactory.Options().apply {
+                                    inJustDecodeBounds = true
+                                }
+                                android.graphics.BitmapFactory.decodeFile(file.absolutePath, options)
+                                val maxDim = 1280
+                                var inSampleSize = 1
+                                if (options.outHeight > maxDim || options.outWidth > maxDim) {
+                                    val halfHeight = options.outHeight / 2
+                                    val halfWidth = options.outWidth / 2
+                                    while ((halfHeight / inSampleSize) >= maxDim && (halfWidth / inSampleSize) >= maxDim) {
+                                        inSampleSize *= 2
+                                    }
+                                }
+                                val decodeOptions = android.graphics.BitmapFactory.Options().apply {
+                                    this.inSampleSize = inSampleSize
+                                }
+                                try {
+                                    val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
+                                    if (bitmap != null) {
+                                        java.io.FileOutputStream(file).use { out ->
+                                            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                                        }
+                                        bitmap.recycle()
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+
                                 withContext(Dispatchers.Main) {
                                     photoUri = file.absolutePath
                                 }

@@ -29,6 +29,8 @@ fun ManualUpdateScreen(
     var phone by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var address by rememberSaveable { mutableStateOf("") }
+    var moldCode by rememberSaveable { mutableStateOf("") }
+    var location by rememberSaveable { mutableStateOf("") }
     
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
@@ -124,15 +126,15 @@ fun ManualUpdateScreen(
                 }
                 com.company.cavitrack.domain.model.EntityType.Mold -> {
                     OutlinedTextField(
-                        value = sku,
-                        onValueChange = { sku = it },
+                        value = moldCode,
+                        onValueChange = { moldCode = it },
                         label = { Text("Mold Code") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
-                        value = category,
-                        onValueChange = { category = it },
+                        value = location,
+                        onValueChange = { location = it },
                         label = { Text("Location") },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -182,7 +184,7 @@ fun ManualUpdateScreen(
                         when (entityType) {
                             com.company.cavitrack.domain.model.EntityType.Component -> viewModel.createComponent(name, sku, category, parsedQty, note)
                             com.company.cavitrack.domain.model.EntityType.Customer -> viewModel.createCustomer(name, phone, email, address, note)
-                            com.company.cavitrack.domain.model.EntityType.Mold -> viewModel.createMold(sku, parsedQty, category, note)
+                            com.company.cavitrack.domain.model.EntityType.Mold -> viewModel.createMold(moldCode, parsedQty, location, note)
                             else -> hasUnsupportedError = true
                         }
                     }

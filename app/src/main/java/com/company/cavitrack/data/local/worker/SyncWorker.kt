@@ -107,13 +107,16 @@ class SyncWorker @AssistedInject constructor(
                         allSuccess = false
                     } else {
                         android.util.Log.e("SyncWorker", "Permanent Firestore error syncing action: ${action.id}", e)
+                        cleanupPhotoFileIfNeeded(action)
                         dao.deletePendingAction(action) // Permanent error
                     }
                 } catch (e: kotlinx.serialization.SerializationException) {
                     android.util.Log.e("SyncWorker", "Serialization error for action: ${action.id}", e)
+                    cleanupPhotoFileIfNeeded(action)
                     dao.deletePendingAction(action) // Permanent error (JSON parse)
                 } catch (e: IllegalArgumentException) {
                     android.util.Log.e("SyncWorker", "Illegal argument error for action: ${action.id}", e)
+                    cleanupPhotoFileIfNeeded(action)
                     dao.deletePendingAction(action) // Permanent error (e.g. empty ID)
                 } catch (e: Exception) {
                     if (e is kotlinx.coroutines.CancellationException) throw e
@@ -131,6 +134,21 @@ class SyncWorker @AssistedInject constructor(
         }
         
         return Result.success()
+    }
+    private fun cleanupPhotoFileIfNeeded(action: PendingActionEntity) {
+        if (action.actionType == "UPLOAD_PHOTO") {
+            try {
+                val payloadObj = org.json.JSONObject(action.payloadJson)
+                if (payloadObj.has("filePath")) {
+                    val file = java.io.File(payloadObj.getString("filePath"))
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore parsing errors during cleanup
+            }
+        }
     }
 }
 

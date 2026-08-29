@@ -41,7 +41,7 @@ class PhotoUpdateViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    private suspend fun writeHistory(entityType: com.company.cavitrack.domain.model.EntityType, entityId: String, entityName: String, action: String) {
+    private suspend fun writeHistory(entityType: com.company.cavitrack.domain.model.EntityType, entityId: String, entityName: String, action: String, photoUrl: String?) {
         val user = firebaseAuth.currentUser
         val performer = user?.displayName?.takeIf { it.isNotBlank() } ?: user?.email ?: "Unknown"
         val log = com.company.cavitrack.domain.model.HistoryLog(
@@ -51,6 +51,7 @@ class PhotoUpdateViewModel @Inject constructor(
             entityName = entityName,
             action = action,
             changeSource = "Photo",
+            photoUrl = photoUrl,
             performedBy = performer
         )
         val saveResult = repository.saveHistoryLog(log)
@@ -116,7 +117,7 @@ class PhotoUpdateViewModel @Inject constructor(
                         val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
                         val saveResult = repository.saveComponent(updated)
                         if (saveResult is DataResult.Success) {
-                            writeHistory(entityType, updated.id, updated.name, "Photo Added")
+                            writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
                             success = true
                             _isSaved.value = true
                         } else if (saveResult is DataResult.Error) {
@@ -135,9 +136,10 @@ class PhotoUpdateViewModel @Inject constructor(
                     
                     val result = repository.getComponent(entityId)
                     if (result is DataResult.Success) {
-                        val updated = result.data.copy(photoUrl = "file://${photoFile.absolutePath}", updatedAt = System.currentTimeMillis())
+                        val photoUri = "file://${photoFile.absolutePath}"
+                        val updated = result.data.copy(photoUrl = photoUri, updatedAt = System.currentTimeMillis())
                         repository.saveComponent(updated)
-                        writeHistory(entityType, updated.id, updated.name, "Photo Added (Offline Pending)")
+                        writeHistory(entityType, updated.id, updated.name, "Photo Added (Offline Pending)", photoUri)
                     }
                     success = true
                     _isSaved.value = true

@@ -192,12 +192,18 @@ class OfflineFirstInventoryRepository @Inject constructor(
         if (currentUserId.isBlank()) return // Don't fetch if no user
 
         coroutineScope {
+            val pendingActions = dao.getPendingActions()
+            val pendingComps = pendingActions.filter { it.entityType == "COMPONENT" }.map { it.entityId }.toSet()
+            val pendingCusts = pendingActions.filter { it.entityType == "CUSTOMER" }.map { it.entityId }.toSet()
+            val pendingMolds = pendingActions.filter { it.entityType == "MOLD" }.map { it.entityId }.toSet()
+            val pendingHists = pendingActions.filter { it.entityType == "HISTORY" }.map { it.entityId }.toSet()
+
             val compDeferred = async {
                 val compDocs = firestore.collection("components")
                     .whereEqualTo("ownerId", currentUserId)
                     .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
                     .limit(1000).get().await()
-                val comps = compDocs.toObjects(ComponentDto::class.java)
+                val comps = compDocs.toObjects(ComponentDto::class.java).filterNot { it.id in pendingComps }
                 if (comps.size >= 1000) {
                     dao.insertComponents(comps.map { it.toEntity() })
                 } else {
@@ -210,7 +216,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
                     .whereEqualTo("ownerId", currentUserId)
                     .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
                     .limit(1000).get().await()
-                val custs = custDocs.toObjects(CustomerDto::class.java)
+                val custs = custDocs.toObjects(CustomerDto::class.java).filterNot { it.id in pendingCusts }
                 if (custs.size >= 1000) {
                     dao.insertCustomers(custs.map { it.toEntity() })
                 } else {
@@ -223,7 +229,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
                     .whereEqualTo("ownerId", currentUserId)
                     .orderBy("updatedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
                     .limit(1000).get().await()
-                val molds = moldDocs.toObjects(MoldDto::class.java)
+                val molds = moldDocs.toObjects(MoldDto::class.java).filterNot { it.id in pendingMolds }
                 if (molds.size >= 1000) {
                     dao.insertMolds(molds.map { it.toEntity() })
                 } else {
@@ -236,7 +242,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
                     .whereEqualTo("ownerId", currentUserId)
                     .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
                     .limit(1000).get().await()
-                val hists = histDocs.toObjects(HistoryLogDto::class.java)
+                val hists = histDocs.toObjects(HistoryLogDto::class.java).filterNot { it.id in pendingHists }
                 if (hists.size >= 1000) {
                     dao.insertHistoryLogs(hists.map { it.toEntity() })
                 } else {

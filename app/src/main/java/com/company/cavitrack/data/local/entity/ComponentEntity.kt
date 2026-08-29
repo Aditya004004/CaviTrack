@@ -4,7 +4,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.company.cavitrack.domain.model.Component
 
-@Entity(tableName = "components")
+@Entity(
+    tableName = "components",
+    indices = [androidx.room.Index(value = ["ownerId", "sku"], unique = true)]
+)
 data class ComponentEntity(
     @PrimaryKey val id: String,
     val ownerId: String = "",

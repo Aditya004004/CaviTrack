@@ -52,7 +52,10 @@ fun HistoryScreen(
                 val history = state.data
                 val filteredHistory = remember(history, selectedAction) {
                     history.filter {
-                        selectedAction == null || it.action.equals(selectedAction, ignoreCase = true)
+                        val currentAction = selectedAction
+                        currentAction == null || 
+                        if (currentAction == "Photo Added") it.action.startsWith("Photo Added", ignoreCase = true)
+                        else it.action.equals(currentAction, ignoreCase = true)
                     }
                 }
 

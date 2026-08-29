@@ -30,6 +30,18 @@ class SyncScheduler @Inject constructor(
         WorkManager.getInstance(context).enqueueUniqueWork("DataSync", policy, syncRequest)
     }
 
+    fun scheduleManualSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+            
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
+            
+        WorkManager.getInstance(context).enqueueUniqueWork("ManualDataSync", ExistingWorkPolicy.REPLACE, syncRequest)
+    }
+
     fun schedulePeriodicSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)

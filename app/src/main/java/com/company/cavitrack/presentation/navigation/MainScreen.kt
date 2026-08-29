@@ -51,7 +51,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     var showUpdateSheet by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val workInfos by remember(context) { 
-        androidx.work.WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow("DataSync") 
+        androidx.work.WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow("ManualDataSync") 
     }.collectAsStateWithLifecycle(initialValue = emptyList())
     val snackbarHostState = remember { SnackbarHostState() }
     var previousSyncState by remember { mutableStateOf<androidx.work.WorkInfo.State?>(null) }

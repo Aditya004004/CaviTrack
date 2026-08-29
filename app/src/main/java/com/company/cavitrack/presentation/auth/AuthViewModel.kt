@@ -25,6 +25,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
+enum class PendingDestructiveAction { LOGOUT, DELETE_ACCOUNT }
+
 sealed class AuthState {
 
     data object Unauthenticated : AuthState()
@@ -51,11 +53,15 @@ class AuthViewModel @Inject constructor(
 
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
+    
+    private val _pendingDestructiveAction = MutableStateFlow<PendingDestructiveAction?>(null)
+    val pendingDestructiveAction: StateFlow<PendingDestructiveAction?> = _pendingDestructiveAction.asStateFlow()
 
     val currentUser = sessionManager.currentUser
 
     fun clearAuthError() {
         _authError.value = null
+        _pendingDestructiveAction.value = null
     }
 
     fun resetAuthState() {
@@ -154,6 +160,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 if (!force && repository.hasPendingActions()) {
+                    _pendingDestructiveAction.value = PendingDestructiveAction.LOGOUT
                     _authError.value = "You have unsynced changes. Please sync before logging out."
                     return@launch
                 }
@@ -179,12 +186,13 @@ class AuthViewModel @Inject constructor(
     }
 
     fun syncData() {
-        syncScheduler.scheduleOneTimeSync(ExistingWorkPolicy.REPLACE)
+        syncScheduler.scheduleManualSync()
     }
 
     fun deleteAccount(force: Boolean = false) {
         viewModelScope.launch {
             if (!force && repository.hasPendingActions()) {
+                _pendingDestructiveAction.value = PendingDestructiveAction.DELETE_ACCOUNT
                 _authError.value = "You have unsynced changes. Please sync before deleting your account."
                 return@launch
             }

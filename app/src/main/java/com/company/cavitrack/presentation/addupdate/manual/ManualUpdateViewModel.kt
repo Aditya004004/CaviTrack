@@ -115,6 +115,9 @@ class ManualUpdateViewModel @Inject constructor(
                 } else if (result is DataResult.Error) {
                     _error.value = result.message
                 }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _error.value = e.message ?: "Failed to create component"
             } finally {
                 _isSaving.value = false
             }
@@ -136,6 +139,9 @@ class ManualUpdateViewModel @Inject constructor(
                 } else if (result is DataResult.Error) {
                     _error.value = result.message
                 }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _error.value = e.message ?: "Failed to create customer"
             } finally {
                 _isSaving.value = false
             }
@@ -160,6 +166,9 @@ class ManualUpdateViewModel @Inject constructor(
                 } else if (result is DataResult.Error) {
                     _error.value = result.message
                 }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                _error.value = e.message ?: "Failed to create mold"
             } finally {
                 _isSaving.value = false
             }

@@ -22,6 +22,6 @@ class ComponentUiTest {
             StatusBadge(text = "100 pcs", statusType = StatusType.SUCCESS)
         }
 
-        composeTestRule.onNodeWithText("100 pcs").assertIsDisplayed()
+        composeTestRule.onNodeWithText("100 PCS").assertIsDisplayed()
     }
 }

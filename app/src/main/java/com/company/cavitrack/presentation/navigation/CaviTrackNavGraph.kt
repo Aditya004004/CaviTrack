@@ -37,9 +37,10 @@ fun CaviTrackNavGraph(
             HomeScreen(
                 onNavigateToDetail = { type, id -> 
                     when(type) {
-                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id))
-                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id))
-                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true }
+                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true }
+                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true }
+                        else -> { /* Ignore unknown types like History */ }
                     }
                 }
             ) 
@@ -47,18 +48,19 @@ fun CaviTrackNavGraph(
         composable<Route.Inventory> { 
             InventoryScreen(
                 viewModel = inventoryViewModel,
-                onComponentClick = { id -> navController.navigate(Route.ComponentDetail(id)) },
-                onCustomerClick = { id -> navController.navigate(Route.CustomerDetail(id)) },
-                onMoldClick = { id -> navController.navigate(Route.MoldDetail(id)) }
+                onComponentClick = { id -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true } },
+                onCustomerClick = { id -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true } },
+                onMoldClick = { id -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true } }
             ) 
         }
         composable<Route.History> { 
             HistoryScreen(
                 onNavigateToDetail = { type, id -> 
                     when(type) {
-                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id))
-                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id))
-                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id))
+                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true }
+                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true }
+                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true }
+                        else -> { /* Ignore unknown types */ }
                     }
                 }
             ) 
@@ -90,8 +92,8 @@ fun CaviTrackNavGraph(
             com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(
                 entityId = route.id,
                 viewModel = inventoryViewModel,
-                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) },
-                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) }
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } }
             )
         }
         composable<Route.CustomerDetail> { backStackEntry -> 
