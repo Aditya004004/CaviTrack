@@ -15,7 +15,7 @@ import com.company.cavitrack.data.local.entity.*
         HistoryLogEntity::class,
         PendingActionEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

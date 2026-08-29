@@ -105,7 +105,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             headlineContent = { Text("Privacy Policy") },
             modifier = Modifier.clickable {
                 try {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://raw.githubusercontent.com/Aditya004004/CaviTrack/main/PRIVACY.md"))
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://github.com/Aditya004004/CaviTrack/blob/main/PRIVACY.md"))
                     context.startActivity(intent)
                 } catch (e: android.content.ActivityNotFoundException) {
                     Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()

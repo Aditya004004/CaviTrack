@@ -17,4 +17,10 @@ abstract class RepositoryModule {
     abstract fun bindInventoryRepository(
         offlineFirstInventoryRepository: OfflineFirstInventoryRepository
     ): InventoryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        authRepositoryImpl: com.company.cavitrack.data.repository.AuthRepositoryImpl
+    ): com.company.cavitrack.domain.repository.AuthRepository
 }

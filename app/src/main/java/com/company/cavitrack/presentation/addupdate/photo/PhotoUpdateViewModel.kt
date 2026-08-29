@@ -72,7 +72,7 @@ class PhotoUpdateViewModel @Inject constructor(
                 val fileRef = storageRef.child("photos/$uid/${photoFile.name}")
                 
                 // Downscale image before upload
-                withContext(Dispatchers.IO) {
+                withContext(Dispatchers.Default) {
                     val options = android.graphics.BitmapFactory.Options().apply {
                         inJustDecodeBounds = true
                     }
@@ -83,7 +83,7 @@ class PhotoUpdateViewModel @Inject constructor(
                     if (options.outHeight > maxDim || options.outWidth > maxDim) {
                         val halfHeight = options.outHeight / 2
                         val halfWidth = options.outWidth / 2
-                        while ((halfHeight / inSampleSize) >= maxDim && (halfWidth / inSampleSize) >= maxDim) {
+                        while ((halfHeight / inSampleSize) >= maxDim || (halfWidth / inSampleSize) >= maxDim) {
                             inSampleSize *= 2
                         }
                     }
@@ -94,10 +94,13 @@ class PhotoUpdateViewModel @Inject constructor(
                     try {
                         val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath, decodeOptions)
                         if (bitmap != null) {
-                            java.io.FileOutputStream(photoFile).use { out ->
-                                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                            try {
+                                java.io.FileOutputStream(photoFile).use { out ->
+                                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                                }
+                            } finally {
+                                bitmap.recycle()
                             }
-                            bitmap.recycle()
                         }
                     } catch (t: Throwable) {
                         // Handle OOM or decode errors gracefully
@@ -130,23 +133,33 @@ class PhotoUpdateViewModel @Inject constructor(
                     _error.value = "Attaching photos to existing $entityType is not supported yet."
                 }
             } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
+                val isCancellation = e is kotlinx.coroutines.CancellationException
+                
                 if (entityType == com.company.cavitrack.domain.model.EntityType.Component) {
-                    repository.queuePhotoUpload(entityId, photoFile.absolutePath)
-                    
-                    val result = repository.getComponent(entityId)
-                    if (result is DataResult.Success) {
-                        val photoUri = "file://${photoFile.absolutePath}"
-                        val updated = result.data.copy(photoUrl = photoUri, updatedAt = System.currentTimeMillis())
-                        repository.saveComponent(updated)
-                        writeHistory(entityType, updated.id, updated.name, "Photo Added (Offline Pending)", photoUri)
+                    // Even if cancelled mid-upload, queue it for background sync
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                        repository.queuePhotoUpload(entityId, photoFile.absolutePath)
+                        
+                        val result = repository.getComponent(entityId)
+                        if (result is DataResult.Success) {
+                            val photoUri = "file://${photoFile.absolutePath}"
+                            val updated = result.data.copy(photoUrl = photoUri, updatedAt = System.currentTimeMillis())
+                            repository.saveComponent(updated)
+                            writeHistory(entityType, updated.id, updated.name, "Photo Added (Offline Pending)", photoUri)
+                        }
                     }
                     success = true
                     _isSaved.value = true
-                    _error.value = "Photo queued for upload when online."
+                    if (!isCancellation) {
+                        _error.value = "Photo queued for upload when online."
+                    }
                 } else {
-                    _error.value = e.message
+                    if (!isCancellation) {
+                        _error.value = e.message
+                    }
                 }
+                
+                if (isCancellation) throw e
             } finally {
                 _isUploading.value = false
                 if (!success && photoFile.exists()) {

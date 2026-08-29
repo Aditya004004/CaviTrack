@@ -2,10 +2,16 @@
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="app_preferences"/>
+        <include domain="database" path="cavitrack.db" />
+        <include domain="database" path="cavitrack.db-wal" />
+        <include domain="database" path="cavitrack.db-shm" />
         <exclude domain="sharedpref" path="com.google.firebase.auth.api.Store"/>
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="app_preferences"/>
+        <include domain="database" path="cavitrack.db" />
+        <include domain="database" path="cavitrack.db-wal" />
+        <include domain="database" path="cavitrack.db-shm" />
         <exclude domain="sharedpref" path="com.google.firebase.auth.api.Store"/>
     </device-transfer>
 </data-extraction-rules>

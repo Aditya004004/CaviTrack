@@ -21,7 +21,10 @@ fun RegisterScreen(
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var nameError by rememberSaveable { mutableStateOf<String?>(null) }
+    var emailError by rememberSaveable { mutableStateOf<String?>(null) }
+    var passwordError by rememberSaveable { mutableStateOf<String?>(null) }
 
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
@@ -50,16 +53,20 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = { name = it; nameError = null },
             label = { Text("Name") },
+            isError = nameError != null,
+            supportingText = { nameError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { email = it; emailError = null },
             label = { Text("Email") },
+            isError = emailError != null,
+            supportingText = { emailError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
         )
@@ -67,8 +74,10 @@ fun RegisterScreen(
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { password = it; passwordError = null },
             label = { Text("Password") },
+            isError = passwordError != null,
+            supportingText = { passwordError?.let { Text(it) } },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password)
@@ -76,7 +85,13 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { authViewModel.register(name, email, password) },
+            onClick = { 
+                var hasError = false
+                if (name.isBlank()) { nameError = "Name cannot be empty"; hasError = true }
+                if (email.isBlank()) { emailError = "Email cannot be empty"; hasError = true }
+                if (password.isBlank()) { passwordError = "Password cannot be empty"; hasError = true }
+                if (!hasError) authViewModel.register(name, email, password) 
+            },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = authState !is AuthState.Loading
         ) {

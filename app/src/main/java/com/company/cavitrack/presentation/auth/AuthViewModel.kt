@@ -38,17 +38,14 @@ sealed class AuthState {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val tokenManager: TokenManager,
     private val firebaseAuth: FirebaseAuth,
+    private val authRepository: com.company.cavitrack.domain.repository.AuthRepository,
     private val repository: com.company.cavitrack.domain.repository.InventoryRepository,
     sessionManager: com.company.cavitrack.util.SessionManager,
-    private val syncScheduler: com.company.cavitrack.util.SyncScheduler,
-    private val firebaseFirestore: FirebaseFirestore,
-    private val firebaseStorage: FirebaseStorage,
-    private val firebaseMessaging: com.google.firebase.messaging.FirebaseMessaging
+    private val syncScheduler: com.company.cavitrack.util.SyncScheduler
 ) : ViewModel() {
 
-    private val _authState = MutableStateFlow<AuthState>(if (tokenManager.hasValidToken()) AuthState.Authenticated else AuthState.Unauthenticated)
+    private val _authState = MutableStateFlow<AuthState>(if (firebaseAuth.currentUser != null) AuthState.Authenticated else AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     private val _authError = MutableStateFlow<String?>(null)
@@ -82,29 +79,12 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    @Suppress("DEPRECATION")
-    private suspend fun registerFcmToken() {
-        try {
-            val token = firebaseMessaging.getToken().await()
-            val uid = firebaseAuth.currentUser?.uid
-            if (uid != null && token.isNotEmpty()) {
-                firebaseFirestore.collection("users").document(uid)
-                    .collection("fcmTokens").document(token)
-                    .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
-                    .await()
-            }
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            android.util.Log.e("AuthViewModel", "Failed to register FCM token", e)
-        }
-    }
-
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 firebaseAuth.signInWithEmailAndPassword(email, password).await()
-                registerFcmToken()
+                authRepository.registerFcmToken()
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
@@ -132,7 +112,7 @@ class AuthViewModel @Inject constructor(
                     .build()
                 user?.updateProfile(profileUpdates)?.await()
                 
-                registerFcmToken()
+                authRepository.registerFcmToken()
                 _authState.value = AuthState.Authenticated
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
@@ -148,7 +128,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun checkAuthStatus() {
-        if (tokenManager.hasValidToken()) {
+        if (firebaseAuth.currentUser != null) {
             _authState.value = AuthState.Authenticated
         } else {
             _authState.value = AuthState.Unauthenticated
@@ -167,20 +147,13 @@ class AuthViewModel @Inject constructor(
                 if (force) {
                     repository.clearAllPendingActions()
                 }
-                val token = firebaseMessaging.getToken().await()
-                val uid = firebaseAuth.currentUser?.uid
-                if (uid != null && token.isNotEmpty()) {
-                    firebaseFirestore
-                        .collection("users").document(uid)
-                        .collection("fcmTokens").document(token)
-                        .delete().await()
-                }
-                firebaseMessaging.deleteToken().await()
+                authRepository.clearFcmToken()
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 // Ignore failure if not connected
             }
-            tokenManager.clearToken()
+            syncScheduler.cancelAll()
+            firebaseAuth.signOut()
             _authState.value = AuthState.Unauthenticated
         }
     }
@@ -199,26 +172,31 @@ class AuthViewModel @Inject constructor(
             if (force) {
                 repository.clearAllPendingActions()
             }
+            
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                val lastSignIn = user.metadata?.lastSignInTimestamp ?: 0
+                // Require login within the last 5 minutes to proceed
+                if (System.currentTimeMillis() - lastSignIn > 5 * 60 * 1000) {
+                    _authError.value = "Recent login required. Please log out, log back in, and try again."
+                    return@launch
+                }
+            }
+
             _authState.value = AuthState.Deleting
             try {
-                val user = firebaseAuth.currentUser
                 if (user != null) {
                     val uid = user.uid
                     // Clear Firestore and Room data first
                     repository.clearUserData(uid)
                     
                     // Clear Storage data
-                    try {
-                        val storageRef = firebaseStorage.reference.child("photos/$uid")
-                        storageRef.listAll().await().items.forEach { it.delete().await() }
-                    } catch (e: Exception) {
-                        // Ignore storage errors if folder doesn't exist
-                    }
+                    authRepository.clearStorage()
 
                     // Finally, delete the Auth user
-                    user.delete().await()
+                    authRepository.deleteAccount()
                 }
-                tokenManager.clearToken()
+                firebaseAuth.signOut()
                 _authState.value = AuthState.Unauthenticated
             } catch (e: FirebaseAuthRecentLoginRequiredException) {
                 _authError.value = "Recent login required. Please log out, log back in, and try again."

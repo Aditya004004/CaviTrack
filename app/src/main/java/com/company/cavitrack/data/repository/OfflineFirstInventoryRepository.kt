@@ -182,7 +182,8 @@ class OfflineFirstInventoryRepository @Inject constructor(
                 actionType = actionType,
                 entityType = entityType,
                 entityId = entityId,
-                payloadJson = payloadJson
+                payloadJson = payloadJson,
+                ownerId = currentUserId
             )
         )
         syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.APPEND_OR_REPLACE)
@@ -192,7 +193,7 @@ class OfflineFirstInventoryRepository @Inject constructor(
         if (currentUserId.isBlank()) return // Don't fetch if no user
 
         coroutineScope {
-            val pendingActions = dao.getPendingActions()
+            val pendingActions = dao.getPendingActions(currentUserId)
             val pendingComps = pendingActions.filter { it.entityType == "COMPONENT" }.map { it.entityId }.toSet()
             val pendingCusts = pendingActions.filter { it.entityType == "CUSTOMER" }.map { it.entityId }.toSet()
             val pendingMolds = pendingActions.filter { it.entityType == "MOLD" }.map { it.entityId }.toSet()
@@ -279,19 +280,24 @@ class OfflineFirstInventoryRepository @Inject constructor(
         dao.refreshCustomers(uid, emptyList())
         dao.refreshMolds(uid, emptyList())
         dao.refreshHistoryLogs(uid, emptyList())
-        dao.clearAllPendingActions()
+        dao.clearAllPendingActions(uid)
     }
 
     override suspend fun hasPendingActions(): Boolean {
-        return dao.getPendingActionsCount() > 0
+        if (currentUserId.isBlank()) return false
+        return dao.getPendingActionsCount(currentUserId) > 0
     }
 
     override suspend fun clearAllPendingActions() {
-        dao.clearAllPendingActions()
+        if (currentUserId.isBlank()) return
+        dao.clearAllPendingActions(currentUserId)
     }
 
+    @kotlinx.serialization.Serializable
+    data class PhotoUploadPayload(val entityId: String, val filePath: String)
+
     override suspend fun queuePhotoUpload(entityId: String, photoFilePath: String) {
-        val payload = """{"entityId":"$entityId","filePath":"$photoFilePath"}"""
+        val payload = kotlinx.serialization.json.Json.encodeToString(PhotoUploadPayload(entityId, photoFilePath))
         queueAction("UPLOAD_PHOTO", "COMPONENT", entityId, payload)
     }
 }

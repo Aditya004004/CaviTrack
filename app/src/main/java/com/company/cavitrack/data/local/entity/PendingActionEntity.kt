@@ -10,5 +10,6 @@ data class PendingActionEntity(
     val entityType: String, // COMPONENT, CUSTOMER, MOLD
     val entityId: String,
     val payloadJson: String,
+    val ownerId: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )

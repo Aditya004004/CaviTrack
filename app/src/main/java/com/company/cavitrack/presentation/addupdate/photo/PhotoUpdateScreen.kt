@@ -95,10 +95,14 @@ fun PhotoUpdateScreen(
         }
     }
 
+    val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
+    val isSavedState = rememberUpdatedState(viewModel.isSaved.value)
+    val isUploadingState = rememberUpdatedState(isUploading)
+
     DisposableEffect(photoUri) {
         onDispose {
             val uri = photoUri
-            if (uri != null && !viewModel.isSaved.value) {
+            if (uri != null && !isSavedState.value && !isUploadingState.value) {
                 val file = File(uri)
                 if (file.exists()) {
                     file.delete()
@@ -112,83 +116,91 @@ fun PhotoUpdateScreen(
             Text("Error: $error", color = androidx.compose.material3.MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
         }
 
-        if (photoUri == null && hasCameraPermission) {
-            AndroidView(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                factory = { ctx ->
-                    val previewView = PreviewView(ctx)
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
-                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                        try {
-                            cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
-                                lifecycleOwner,
-                                cameraSelector,
-                                preview,
-                                imageCapture
+        if (hasCameraPermission) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                // Camera Preview (always mounted to prevent slow rebinding on retake)
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
+                        val previewView = PreviewView(ctx)
+                        cameraProviderFuture.addListener({
+                            val cameraProvider = cameraProviderFuture.get()
+                            val preview = Preview.Builder().build().also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
+                            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                            try {
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    cameraSelector,
+                                    preview,
+                                    imageCapture
+                                )
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                Toast.makeText(context, "Failed to bind camera: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }, executor)
+                        previewView
+                    }
+                )
+
+                // Overlay captured photo and controls if a photo is taken
+                if (photoUri != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .androidx.compose.foundation.background(androidx.compose.material3.MaterialTheme.colorScheme.background),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                            coil.compose.AsyncImage(
+                                model = photoUri,
+                                contentDescription = "Captured Photo",
+                                modifier = Modifier.fillMaxWidth().height(300.dp)
                             )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            Toast.makeText(context, "Failed to bind camera: ${e.message}", Toast.LENGTH_SHORT).show()
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
+                            
+                            if (isUploading) {
+                                androidx.compose.material3.CircularProgressIndicator()
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Uploading...")
+                            } else {
+                                Button(onClick = {
+                                    val currentUri = photoUri
+                                    if (entityId != null && currentUri != null) {
+                                        viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(currentUri))
+                                    } else {
+                                        Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", Toast.LENGTH_LONG).show()
+                                    }
+                                }, enabled = !isUploading) {
+                                    Text("Upload and Save")
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(onClick = { 
+                                    val currentUri = photoUri
+                                    photoUri = null
+                                    if (currentUri != null) {
+                                        val file = File(currentUri)
+                                        if (file.exists()) file.delete()
+                                    }
+                                }, enabled = !isUploading) {
+                                    Text("Retake")
+                                }
+                            }
                         }
-                    }, executor)
-                    previewView
+                    }
                 }
-            )
-        } else if (photoUri == null && !hasCameraPermission) {
+            }
+        } else if (!hasCameraPermission) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
                     Text("Camera permission is required.")
                     Button(onClick = onUpdateComplete, modifier = Modifier.padding(top = 16.dp)) {
                         Text("Go Back")
-                    }
-                }
-            }
-        } else {
-            // Show captured photo or success
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    coil.compose.AsyncImage(
-                        model = photoUri,
-                        contentDescription = "Captured Photo",
-                        modifier = Modifier.fillMaxWidth().height(300.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
-                    
-                    if (isUploading) {
-                        androidx.compose.material3.CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Uploading...")
-                    } else {
-                        Button(onClick = {
-                            val currentUri = photoUri
-                            if (entityId != null && currentUri != null) {
-                                viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(currentUri))
-                            } else {
-                                // Realistically, we should either save the photo path to pass to the creation screen,
-                                // or block photo capture until the entity is created. For now, show an explicit error.
-                                Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", Toast.LENGTH_LONG).show()
-                            }
-                        }, enabled = !isUploading) {
-                            Text("Upload and Save")
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { 
-                            val currentUri = photoUri
-                            photoUri = null
-                            if (currentUri != null) {
-                                val file = File(currentUri)
-                                if (file.exists()) file.delete()
-                            }
-                        }, enabled = !isUploading) {
-                            Text("Retake")
-                        }
                     }
                 }
             }
@@ -214,32 +226,37 @@ fun PhotoUpdateScreen(
                             }
                             if (file.exists()) {
                                 // Downscale immediately to save disk space and memory
-                                val options = android.graphics.BitmapFactory.Options().apply {
-                                    inJustDecodeBounds = true
-                                }
-                                android.graphics.BitmapFactory.decodeFile(file.absolutePath, options)
-                                val maxDim = 1280
-                                var inSampleSize = 1
-                                if (options.outHeight > maxDim || options.outWidth > maxDim) {
-                                    val halfHeight = options.outHeight / 2
-                                    val halfWidth = options.outWidth / 2
-                                    while ((halfHeight / inSampleSize) >= maxDim && (halfWidth / inSampleSize) >= maxDim) {
-                                        inSampleSize *= 2
+                                withContext(Dispatchers.Default) {
+                                    val options = android.graphics.BitmapFactory.Options().apply {
+                                        inJustDecodeBounds = true
                                     }
-                                }
-                                val decodeOptions = android.graphics.BitmapFactory.Options().apply {
-                                    this.inSampleSize = inSampleSize
-                                }
-                                try {
-                                    val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
-                                    if (bitmap != null) {
-                                        java.io.FileOutputStream(file).use { out ->
-                                            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                                    android.graphics.BitmapFactory.decodeFile(file.absolutePath, options)
+                                    val maxDim = 1280
+                                    var inSampleSize = 1
+                                    if (options.outHeight > maxDim || options.outWidth > maxDim) {
+                                        val halfHeight = options.outHeight / 2
+                                        val halfWidth = options.outWidth / 2
+                                        while ((halfHeight / inSampleSize) >= maxDim || (halfWidth / inSampleSize) >= maxDim) {
+                                            inSampleSize *= 2
                                         }
-                                        bitmap.recycle()
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    val decodeOptions = android.graphics.BitmapFactory.Options().apply {
+                                        this.inSampleSize = inSampleSize
+                                    }
+                                    try {
+                                        val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
+                                        if (bitmap != null) {
+                                            try {
+                                                java.io.FileOutputStream(file).use { out ->
+                                                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                                                }
+                                            } finally {
+                                                bitmap.recycle()
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
                                 }
 
                                 withContext(Dispatchers.Main) {

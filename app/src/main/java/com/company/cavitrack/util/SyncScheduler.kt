@@ -57,5 +57,9 @@ class SyncScheduler @Inject constructor(
             syncRequest
         )
     }
+
+    fun cancelAll() {
+        WorkManager.getInstance(context).cancelAllWork()
+    }
 }
 

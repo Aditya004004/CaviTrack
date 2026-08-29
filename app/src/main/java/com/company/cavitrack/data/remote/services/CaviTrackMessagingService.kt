@@ -81,16 +81,21 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         private val notificationId = java.util.concurrent.atomic.AtomicInteger(0)
     }
 
-    private fun showNotification(title: String, body: String) {
+    override fun onCreate() {
+        super.onCreate()
         val channelId = "cavi_track_alerts"
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
         val channel = NotificationChannel(
             channelId,
             "CaviTrack Alerts",
             NotificationManager.IMPORTANCE_DEFAULT
         )
         notificationManager.createNotificationChannel(channel)
+    }
+
+    private fun showNotification(title: String, body: String) {
+        val channelId = "cavi_track_alerts"
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val intent = android.content.Intent(this, com.company.cavitrack.MainActivity::class.java).apply {
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK

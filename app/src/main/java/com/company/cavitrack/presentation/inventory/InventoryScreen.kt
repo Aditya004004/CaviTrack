@@ -116,23 +116,25 @@ fun InventoryScreen(
                     when (selectedTabIndex) {
                         0 -> {
                             if (filteredComponents.isEmpty()) {
-                                item { StyledEmptyState("No components registered", Icons.AutoMirrored.Filled.List) }
-                            }
-                            items(filteredComponents, key = { it.id }) { component ->
-                                ComponentItem(component, onClick = { onComponentClick(component.id) })
+                                item { com.company.cavitrack.presentation.components.EmptyState("No components registered", Icons.AutoMirrored.Filled.List) }
+                            } else {
+                                items(filteredComponents, key = { it.id }) { component ->
+                                    ComponentItem(component, onClick = { onComponentClick(component.id) })
+                                }
                             }
                         }
                         1 -> {
                             if (filteredCustomers.isEmpty()) {
-                                item { StyledEmptyState("No customers registered", Icons.Default.Person) }
-                            }
-                            items(filteredCustomers, key = { it.id }) { customer ->
-                                CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
+                                item { com.company.cavitrack.presentation.components.EmptyState("No customers registered", Icons.Default.Person) }
+                            } else {
+                                items(filteredCustomers, key = { it.id }) { customer ->
+                                    CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
+                                }
                             }
                         }
                         2 -> {
                             if (filteredMolds.isEmpty()) {
-                                item { StyledEmptyState("No molds registered", Icons.Default.Build) }
+                                item { com.company.cavitrack.presentation.components.EmptyState("No molds registered", Icons.Default.Build) }
                             }
                             items(filteredMolds, key = { it.id }) { mold ->
                                 MoldItem(mold, onClick = { onMoldClick(mold.id) })
@@ -190,34 +192,14 @@ fun InventoryScreen(
     }
 }
 
-@Composable
-fun StyledEmptyState(message: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(message, style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Use the + button below to get started", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
+
 
 @Composable
 fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
     ListCard(onClick = onClick) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (component.photoUrl != null) {
+                if (!component.photoUrl.isNullOrEmpty()) {
                     AsyncImage(
                         model = component.photoUrl,
                         contentDescription = "Component Photo",

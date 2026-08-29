@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <include domain="sharedpref" path="app_preferences"/>
+    <include domain="database" path="cavitrack.db" />
+    <include domain="database" path="cavitrack.db-wal" />
+    <include domain="database" path="cavitrack.db-shm" />
     <exclude domain="sharedpref" path="com.google.firebase.auth.api.Store"/>
 </full-backup-content>

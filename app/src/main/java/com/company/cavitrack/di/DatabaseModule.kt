@@ -1,13 +1,5 @@
 package com.company.cavitrack.di
 
-
-
-
-
-import kotlinx.coroutines.Dispatchers
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.auth.FirebaseAuth
 import android.content.Context
 import androidx.room.Room
 import com.company.cavitrack.data.local.AppDatabase
@@ -21,31 +13,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
-
-    @Provides
-    @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth {
-        return FirebaseAuth.getInstance()
-    }
-
-    @Provides
-    @Singleton
-    fun provideFirebaseFirestore(): FirebaseFirestore {
-        return FirebaseFirestore.getInstance()
-    }
-
-    @Provides
-    @Singleton
-    fun provideFirebaseStorage(): FirebaseStorage {
-        return FirebaseStorage.getInstance()
-    }
-
-    @Provides
-    @Singleton
-    fun provideFirebaseMessaging(): com.google.firebase.messaging.FirebaseMessaging {
-        return com.google.firebase.messaging.FirebaseMessaging.getInstance()
-    }
+object DatabaseModule {
 
     val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
@@ -56,6 +24,12 @@ object NetworkModule {
         }
     }
 
+    val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE pending_actions ADD COLUMN ownerId TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -63,7 +37,7 @@ object NetworkModule {
             context,
             AppDatabase::class.java,
             "cavitrack.db"
-        ).addMigrations(MIGRATION_1_2)
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
          .fallbackToDestructiveMigration(true)
          .build()
     }
@@ -73,21 +47,4 @@ object NetworkModule {
     fun provideInventoryDao(db: AppDatabase): InventoryDao {
         return db.inventoryDao
     }
-
-    @Provides
-    @Singleton
-    @ApplicationScope
-    fun provideApplicationScope(): kotlinx.coroutines.CoroutineScope {
-        val exceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
-            android.util.Log.e("ApplicationScope", "Unhandled coroutine exception", throwable)
-        }
-        return kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default + exceptionHandler)
-    }
 }
-
-@javax.inject.Qualifier
-@Retention(AnnotationRetention.RUNTIME)
-annotation class ApplicationScope
-
-
-

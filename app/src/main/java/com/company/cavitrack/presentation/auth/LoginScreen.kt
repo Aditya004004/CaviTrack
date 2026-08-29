@@ -20,7 +20,9 @@ fun LoginScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     var email by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var emailError by rememberSaveable { mutableStateOf<String?>(null) }
+    var passwordError by rememberSaveable { mutableStateOf<String?>(null) }
 
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
@@ -49,8 +51,10 @@ fun LoginScreen(
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { email = it; emailError = null },
             label = { Text("Email") },
+            isError = emailError != null,
+            supportingText = { emailError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
         )
@@ -58,8 +62,10 @@ fun LoginScreen(
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { password = it; passwordError = null },
             label = { Text("Password") },
+            isError = passwordError != null,
+            supportingText = { passwordError?.let { Text(it) } },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password)
@@ -67,7 +73,12 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { authViewModel.login(email, password) },
+            onClick = { 
+                var hasError = false
+                if (email.isBlank()) { emailError = "Email cannot be empty"; hasError = true }
+                if (password.isBlank()) { passwordError = "Password cannot be empty"; hasError = true }
+                if (!hasError) authViewModel.login(email, password) 
+            },
             modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = authState !is AuthState.Loading
         ) {

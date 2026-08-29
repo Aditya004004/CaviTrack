@@ -37,7 +37,8 @@ class SyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val pendingActions = dao.getPendingActions()
+        val uid = firebaseAuth.currentUser?.uid ?: return Result.success()
+        val pendingActions = dao.getPendingActions(uid)
         if (pendingActions.isNotEmpty()) {
             var allSuccess = true
             for (action in pendingActions) {
@@ -106,6 +107,7 @@ class SyncWorker @AssistedInject constructor(
                     if (e.code == FirebaseFirestoreException.Code.UNAVAILABLE || 
                         e.code == FirebaseFirestoreException.Code.DEADLINE_EXCEEDED) {
                         allSuccess = false
+                        break // Stop processing to maintain queue order
                     } else {
                         android.util.Log.e("SyncWorker", "Permanent Firestore error syncing action: ${action.id}", e)
                         cleanupPhotoFileIfNeeded(action)
@@ -122,6 +124,7 @@ class SyncWorker @AssistedInject constructor(
                 } catch (e: Exception) {
                     if (e is kotlinx.coroutines.CancellationException) throw e
                     allSuccess = false // Retry on other exceptions
+                    break // Stop processing to maintain queue order
                 }
             }
             if (!allSuccess) return Result.retry()

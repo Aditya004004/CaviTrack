@@ -65,11 +65,11 @@ interface InventoryDao {
     suspend fun clearHistoryLogs(ownerId: String)
 
     // Pending Actions
-    @Query("SELECT * FROM pending_actions ORDER BY timestamp ASC")
-    suspend fun getPendingActions(): List<PendingActionEntity>
+    @Query("SELECT * FROM pending_actions WHERE ownerId = :ownerId ORDER BY timestamp ASC")
+    suspend fun getPendingActions(ownerId: String): List<PendingActionEntity>
 
-    @Query("SELECT COUNT(*) FROM pending_actions")
-    suspend fun getPendingActionsCount(): Int
+    @Query("SELECT COUNT(*) FROM pending_actions WHERE ownerId = :ownerId")
+    suspend fun getPendingActionsCount(ownerId: String): Int
 
     @Insert
     suspend fun insertPendingAction(action: PendingActionEntity)
@@ -77,8 +77,8 @@ interface InventoryDao {
     @Delete
     suspend fun deletePendingAction(action: PendingActionEntity)
 
-    @Query("DELETE FROM pending_actions")
-    suspend fun clearAllPendingActions()
+    @Query("DELETE FROM pending_actions WHERE ownerId = :ownerId")
+    suspend fun clearAllPendingActions(ownerId: String)
 
     @Query("SELECT id FROM components WHERE ownerId = :ownerId")
     suspend fun getComponentIds(ownerId: String): List<String>
