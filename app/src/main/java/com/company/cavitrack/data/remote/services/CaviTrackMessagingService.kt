@@ -26,50 +26,34 @@ import kotlin.time.Duration.Companion.seconds
 @AndroidEntryPoint
 class CaviTrackMessagingService : FirebaseMessagingService() {
 
-    @Inject
-    @com.company.cavitrack.di.ApplicationScope
-    lateinit var applicationScope: CoroutineScope
+    // Removed unused injected fields.
 
-    @Inject
-    lateinit var firebaseAuth: FirebaseAuth
-
-    @Inject
-    lateinit var firebaseFirestore: FirebaseFirestore
-
-    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         
-        applicationScope.launch {
-            kotlinx.coroutines.withTimeoutOrNull(5.seconds) {
-                try {
-                    val user = firebaseAuth.currentUser
-                    if (user != null) {
-                        firebaseFirestore.collection("users").document(user.uid)
-                            .collection("fcmTokens").document(token)
-                            .set(mapOf("token" to token, "updatedAt" to System.currentTimeMillis()))
-                            .await()
-                    }
-                } catch (e: Exception) {
-                    Log.e("FCM", "Failed to send token", e)
-                }
-            }
-        }
+        val workManager = androidx.work.WorkManager.getInstance(this)
+        val data = androidx.work.Data.Builder()
+            .putString("fcm_token", token)
+            .build()
+        val request = androidx.work.OneTimeWorkRequestBuilder<com.company.cavitrack.data.worker.TokenSyncWorker>()
+            .setInputData(data)
+            .setConstraints(
+                androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                    .build()
+            )
+            .setBackoffCriteria(
+                androidx.work.BackoffPolicy.EXPONENTIAL,
+                androidx.work.WorkRequest.MIN_BACKOFF_MILLIS,
+                java.util.concurrent.TimeUnit.MILLISECONDS
+            )
+            .build()
+            
+        workManager.enqueueUniqueWork("FCMTokenSync", ExistingWorkPolicy.REPLACE, request)
     }
-
-    @Inject
-    lateinit var syncScheduler: com.company.cavitrack.util.SyncScheduler
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-
-        // Handle data payload for background sync triggers
-        if (message.data.isNotEmpty()) {
-            // Trigger a sync if requested
-            if (message.data["action"] == "SYNC") {
-                syncScheduler.scheduleOneTimeSync(ExistingWorkPolicy.REPLACE)
-            }
-        }
 
         // Handle notification payload
         message.notification?.let {
@@ -81,24 +65,14 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         private val notificationId = java.util.concurrent.atomic.AtomicInteger(0)
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        val channelId = "cavi_track_alerts"
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
-            channelId,
-            "CaviTrack Alerts",
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
-        notificationManager.createNotificationChannel(channel)
-    }
+
 
     private fun showNotification(title: String, body: String) {
         val channelId = "cavi_track_alerts"
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val intent = android.content.Intent(this, com.company.cavitrack.MainActivity::class.java).apply {
-            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pendingIntent = android.app.PendingIntent.getActivity(
             this, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE

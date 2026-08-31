@@ -99,10 +99,10 @@ fun HistoryScreen(
                         val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 80.dp)
+                            contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             items(filteredHistory, key = { it.id }) { log ->
-                                ListCard(onClick = { onNavigateToDetail(log.entityType, log.entityId) }) {
+                                ListCard(onClick = { onNavigateToDetail(log.entityType.name, log.entityId) }) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -135,6 +135,7 @@ fun HistoryScreen(
                 }
                 
                 if (showFilterSheet) {
+                    androidx.activity.compose.BackHandler { showFilterSheet = false }
                     ModalBottomSheet(
                         onDismissRequest = { showFilterSheet = false },
                         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)

@@ -1,53 +1,69 @@
 package com.company.cavitrack.presentation.inventory.details
 
-
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.presentation.inventory.InventoryViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import coil.compose.AsyncImage
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ComponentDetailScreen(
     entityId: String,
-    viewModel: InventoryViewModel = hiltViewModel(),
+    viewModel: DetailViewModel = hiltViewModel(),
     onNavigateToUpdate: (String) -> Unit = {},
-    onNavigateToPhotoUpdate: (String) -> Unit = {}
+    onNavigateToPhotoUpdate: (String) -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.componentState.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
     
-    when (val state = uiState) {
-        is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
-        is UiState.Success -> {
-            val component = state.data.components.find { it.id == entityId }
-            if (component != null) {
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Text("Component Details", style = MaterialTheme.typography.headlineMedium)
-                    Spacer(modifier = Modifier.height(16.dp))
+    LaunchedEffect(entityId) { viewModel.loadComponent(entityId) }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Component Details") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        when (val state = uiState) {
+            is UiState.Loading -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            is UiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
+            is UiState.Success -> {
+                val component = state.data
+                Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(scrollState)) {
                     if (!component.photoUrl.isNullOrEmpty()) {
-                        coil.compose.AsyncImage(
+                        AsyncImage(
                             model = component.photoUrl,
                             contentDescription = "Component Photo",
                             modifier = Modifier.fillMaxWidth().height(200.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Text("ID: ${component.id}")
-                    Text("Name: ${component.name}")
-                    Text("SKU: ${component.sku}")
-                    Text("Category: ${component.category}")
-                    Text("Quantity: ${component.qty} ${component.unit}")
-                    Text("Min Stock: ${component.minStockThreshold}")
+                    Text("Name: ${component.name}", style = MaterialTheme.typography.titleMedium)
+                    Text("SKU: ${component.sku}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Category: ${component.category}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Quantity: ${component.qty} ${component.unit}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Min Stock: ${component.minStockThreshold}", style = MaterialTheme.typography.bodyLarge)
                     
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.height(32.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Button(
                             onClick = { onNavigateToPhotoUpdate(component.id) },
@@ -63,86 +79,118 @@ fun ComponentDetailScreen(
                         }
                     }
                 }
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Component not found") }
             }
         }
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerDetailScreen(
     entityId: String,
-    viewModel: InventoryViewModel = hiltViewModel()
+    viewModel: DetailViewModel = hiltViewModel(),
+    onBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.customerState.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
     
-    when (val state = uiState) {
-        is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
-        is UiState.Success -> {
-            val customer = state.data.customers.find { it.id == entityId }
-            if (customer != null) {
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Text("Customer Details", style = MaterialTheme.typography.headlineMedium)
-                    Spacer(modifier = Modifier.height(16.dp))
+    LaunchedEffect(entityId) { viewModel.loadCustomer(entityId) }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Customer Details") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        when (val state = uiState) {
+            is UiState.Loading -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            is UiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
+            is UiState.Success -> {
+                val customer = state.data
+                Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(scrollState)) {
                     if (!customer.photoUrl.isNullOrEmpty()) {
-                        coil.compose.AsyncImage(
+                        AsyncImage(
                             model = customer.photoUrl,
                             contentDescription = "Customer Photo",
                             modifier = Modifier.fillMaxWidth().height(200.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Text("ID: ${customer.id}")
-                    Text("Name: ${customer.name}")
-                    Text("Phone: ${customer.phone}")
-                    Text("Email: ${customer.email}")
-                    Text("Address: ${customer.address}")
-                    Text("Notes: ${customer.notes}")
+                    Text("Name: ${customer.name}", style = MaterialTheme.typography.titleMedium)
+                    Text("Phone: ${customer.phone}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Email: ${customer.email}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Address: ${customer.address}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Notes: ${customer.notes}", style = MaterialTheme.typography.bodyLarge)
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "Note: Edit and delete functionalities are a known v1 limitation and will be added in a future update.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Customer not found") }
             }
         }
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun MoldDetailScreen(
     entityId: String,
-    viewModel: InventoryViewModel = hiltViewModel()
+    viewModel: DetailViewModel = hiltViewModel(),
+    onBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.moldState.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
     
-    when (val state = uiState) {
-        is UiState.Loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        is UiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
-        is UiState.Success -> {
-            val mold = state.data.molds.find { it.id == entityId }
-            if (mold != null) {
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Text("Mold Details", style = MaterialTheme.typography.headlineMedium)
-                    Spacer(modifier = Modifier.height(16.dp))
+    LaunchedEffect(entityId) { viewModel.loadMold(entityId) }
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Mold Details") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        when (val state = uiState) {
+            is UiState.Loading -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            is UiState.Error -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("Error: ${state.message}") }
+            is UiState.Success -> {
+                val mold = state.data
+                Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(scrollState)) {
                     if (!mold.photoUrl.isNullOrEmpty()) {
-                        coil.compose.AsyncImage(
+                        AsyncImage(
                             model = mold.photoUrl,
                             contentDescription = "Mold Photo",
                             modifier = Modifier.fillMaxWidth().height(200.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Text("ID: ${mold.id}")
-                    Text("Mold Code: ${mold.moldCode}")
-                    Text("Cavity Count: ${mold.cavityCount}")
-                    Text("Status: ${mold.status.name}")
-                    Text("Location: ${mold.location}")
+                    Text("Mold Code: ${mold.moldCode}", style = MaterialTheme.typography.titleMedium)
+                    Text("Cavity Count: ${mold.cavityCount}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Status: ${mold.status.name}", style = MaterialTheme.typography.bodyLarge)
+                    Text("Location: ${mold.location}", style = MaterialTheme.typography.bodyLarge)
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "Note: Edit and delete functionalities are a known v1 limitation and will be added in a future update.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Mold not found") }
             }
         }
     }
 }
-
-

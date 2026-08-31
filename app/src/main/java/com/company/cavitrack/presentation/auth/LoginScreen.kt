@@ -2,6 +2,7 @@ package com.company.cavitrack.presentation.auth
 
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -12,6 +13,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.runtime.saveable.rememberSaveable
+
+private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
 
 @Composable
 fun LoginScreen(
@@ -26,22 +29,23 @@ fun LoginScreen(
 
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        authViewModel.resetAuthState()
-    }
-
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
             onLoginSuccess()
         }
     }
 
+    val scrollState = androidx.compose.foundation.rememberScrollState()
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .imePadding()
+            .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Login to CaviTrack", style = MaterialTheme.typography.headlineMedium)
+        Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_login), style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(32.dp))
 
         if (authState is AuthState.Error) {
@@ -49,10 +53,14 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+        val emptyEmailError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_email_empty)
+        val invalidEmailError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_email_invalid)
+        val emptyPasswordError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_password_empty)
+
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; emailError = null },
-            label = { Text("Email") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_email)) },
             isError = emailError != null,
             supportingText = { emailError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth(),
@@ -63,7 +71,7 @@ fun LoginScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; passwordError = null },
-            label = { Text("Password") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_password)) },
             isError = passwordError != null,
             supportingText = { passwordError?.let { Text(it) } },
             visualTransformation = PasswordVisualTransformation(),
@@ -75,8 +83,10 @@ fun LoginScreen(
         Button(
             onClick = { 
                 var hasError = false
-                if (email.isBlank()) { emailError = "Email cannot be empty"; hasError = true }
-                if (password.isBlank()) { passwordError = "Password cannot be empty"; hasError = true }
+                if (email.isBlank()) { emailError = emptyEmailError; hasError = true }
+                else if (!email.matches(EMAIL_REGEX)) { emailError = invalidEmailError; hasError = true }
+                
+                if (password.isBlank()) { passwordError = emptyPasswordError; hasError = true }
                 if (!hasError) authViewModel.login(email, password) 
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -85,12 +95,12 @@ fun LoginScreen(
             if (authState is AuthState.Loading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("Login")
+                Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.btn_login))
             }
         }
         
         TextButton(onClick = onNavigateToRegister) {
-            Text("Don't have an account? Register")
+            Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.link_to_register))
         }
     }
 }

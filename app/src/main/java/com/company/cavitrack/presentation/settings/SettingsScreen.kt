@@ -99,13 +99,41 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         }
 
         Spacer(modifier = Modifier.height(10.dp))
-
+        
         val context = LocalContext.current
+        
+        // Notification Permission Launcher
+        val requestPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(context, "Notifications enabled", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Notifications permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            ListItem(
+                headlineContent = { Text("Enable Notifications") },
+                supportingContent = { Text("Receive alerts for low inventory and sync status.") },
+                modifier = Modifier.clickable {
+                    val permission = android.Manifest.permission.POST_NOTIFICATIONS
+                    if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        requestPermissionLauncher.launch(permission)
+                    } else {
+                        Toast.makeText(context, "Notifications are already enabled.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+
+        val privacyPolicyUrl = androidx.compose.ui.res.stringResource(id = com.company.cavitrack.R.string.privacy_policy_url)
         ListItem(
             headlineContent = { Text("Privacy Policy") },
             modifier = Modifier.clickable {
                 try {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://github.com/Aditya004004/CaviTrack/blob/main/PRIVACY.md"))
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(privacyPolicyUrl))
                     context.startActivity(intent)
                 } catch (e: android.content.ActivityNotFoundException) {
                     Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()

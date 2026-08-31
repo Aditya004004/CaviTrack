@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.company.cavitrack.presentation.components.*
 import com.company.cavitrack.domain.model.*
@@ -38,7 +39,10 @@ fun InventoryScreen(
     onCustomerClick: (String) -> Unit = {},
     onMoldClick: (String) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val components = viewModel.componentsFlow.collectAsLazyPagingItems()
+    val customers = viewModel.customersFlow.collectAsLazyPagingItems()
+    val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
+    
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf("Components", "Customers", "Molds")
 
@@ -46,16 +50,15 @@ fun InventoryScreen(
     val customersListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val moldsListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
-    var lowStockOnly by rememberSaveable { mutableStateOf(false) }
-    var selectedMoldStatus by rememberSaveable { mutableStateOf<MoldStatus?>(null) } // null means All
+    val lowStockOnly by viewModel.lowStockOnly.collectAsStateWithLifecycle()
+    val selectedMoldStatus by viewModel.selectedMoldStatus.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = { searchQuery = it },
+            onValueChange = { viewModel.updateSearchQuery(it) },
             placeholder = { Text("Search inventory...") },
             modifier = Modifier
                 .fillMaxWidth()
@@ -80,64 +83,80 @@ fun InventoryScreen(
             }
         }
 
-        when (val state = uiState) {
-            is UiState.Loading -> LoadingState()
-            is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
-            is UiState.Success -> {
-                val data = state.data
-                val listState = when (selectedTabIndex) {
-                    0 -> componentsListState
-                    1 -> customersListState
-                    else -> moldsListState
-                }
-                
-                // Filtering
-                val filteredComponents = remember(data.components, searchQuery, lowStockOnly) {
-                    data.components.filter { 
-                        (it.name.contains(searchQuery, ignoreCase = true) || it.sku.contains(searchQuery, ignoreCase = true)) &&
-                        (!lowStockOnly || it.qty < it.minStockThreshold)
-                    }
-                }
-                val filteredCustomers = remember(data.customers, searchQuery) {
-                    data.customers.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                }
-                val filteredMolds = remember(data.molds, searchQuery, selectedMoldStatus) {
-                    data.molds.filter { 
-                        it.moldCode.contains(searchQuery, ignoreCase = true) &&
-                        (selectedMoldStatus == null || it.status == selectedMoldStatus)
-                    }
-                }
+        val listState = when (selectedTabIndex) {
+            0 -> componentsListState
+            1 -> customersListState
+            else -> moldsListState
+        }
 
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    when (selectedTabIndex) {
-                        0 -> {
-                            if (filteredComponents.isEmpty()) {
-                                item { com.company.cavitrack.presentation.components.EmptyState("No components registered") }
-                            } else {
-                                items(filteredComponents, key = { it.id }) { component ->
-                                    ComponentItem(component, onClick = { onComponentClick(component.id) })
-                                }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 88.dp) // Space for FAB
+        ) {
+            when (selectedTabIndex) {
+                0 -> {
+                    if (components.loadState.refresh is androidx.paging.LoadState.Loading) {
+                        item {
+                            Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
                         }
-                        1 -> {
-                            if (filteredCustomers.isEmpty()) {
-                                item { com.company.cavitrack.presentation.components.EmptyState("No customers registered") }
-                            } else {
-                                items(filteredCustomers, key = { it.id }) { customer ->
-                                    CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
-                                }
+                    }
+                    items(components.itemCount) { idx ->
+                        val component = components[idx]
+                        if (component != null) {
+                            ComponentItem(component, onClick = { onComponentClick(component.id) })
+                        }
+                    }
+                    if (components.loadState.append is androidx.paging.LoadState.Loading) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
                         }
-                        2 -> {
-                            if (filteredMolds.isEmpty()) {
-                                item { com.company.cavitrack.presentation.components.EmptyState("No molds registered") }
+                    }
+                }
+                1 -> {
+                    if (customers.loadState.refresh is androidx.paging.LoadState.Loading) {
+                        item {
+                            Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
-                            items(filteredMolds, key = { it.id }) { mold ->
-                                MoldItem(mold, onClick = { onMoldClick(mold.id) })
+                        }
+                    }
+                    items(customers.itemCount) { idx ->
+                        val customer = customers[idx]
+                        if (customer != null) {
+                            CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
+                        }
+                    }
+                    if (customers.loadState.append is androidx.paging.LoadState.Loading) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+                }
+                2 -> {
+                    if (molds.loadState.refresh is androidx.paging.LoadState.Loading) {
+                        item {
+                            Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+                    items(molds.itemCount) { idx ->
+                        val mold = molds[idx]
+                        if (mold != null) {
+                            MoldItem(mold, onClick = { onMoldClick(mold.id) })
+                        }
+                    }
+                    if (molds.loadState.append is androidx.paging.LoadState.Loading) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
                         }
                     }
@@ -147,6 +166,7 @@ fun InventoryScreen(
     }
     
     if (showFilterSheet) {
+        androidx.activity.compose.BackHandler { showFilterSheet = false }
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
@@ -157,8 +177,8 @@ fun InventoryScreen(
                 
                 when (selectedTabIndex) {
                     0 -> {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { lowStockOnly = !lowStockOnly }) {
-                            Checkbox(checked = lowStockOnly, onCheckedChange = { lowStockOnly = it })
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { viewModel.updateLowStockFilter(!lowStockOnly) }) {
+                            Checkbox(checked = lowStockOnly, onCheckedChange = { viewModel.updateLowStockFilter(it) })
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Low Stock Only")
                         }
@@ -170,9 +190,9 @@ fun InventoryScreen(
                         statuses.forEachIndexed { index, status ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().clickable { selectedMoldStatus = status }.padding(vertical = 4.dp)
+                                modifier = Modifier.fillMaxWidth().clickable { viewModel.updateMoldStatusFilter(status) }.padding(vertical = 4.dp)
                             ) {
-                                RadioButton(selected = selectedMoldStatus == status, onClick = { selectedMoldStatus = status })
+                                RadioButton(selected = selectedMoldStatus == status, onClick = { viewModel.updateMoldStatusFilter(status) })
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(labels[index])
                             }
@@ -233,7 +253,7 @@ fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
 fun CustomerItem(customer: Customer, onClick: () -> Unit = {}) {
     ListCard(onClick = onClick) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            if (customer.photoUrl != null) {
+            if (!customer.photoUrl.isNullOrEmpty()) {
                 AsyncImage(
                     model = customer.photoUrl,
                     contentDescription = "Customer Photo",
@@ -262,7 +282,7 @@ fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
     ListCard(onClick = onClick) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (mold.photoUrl != null) {
+                if (!mold.photoUrl.isNullOrEmpty()) {
                     AsyncImage(
                         model = mold.photoUrl,
                         contentDescription = "Mold Photo",

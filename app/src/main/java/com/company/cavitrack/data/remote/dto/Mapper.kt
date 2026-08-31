@@ -1,24 +1,12 @@
 package com.company.cavitrack.data.remote.dto
 
-import com.company.cavitrack.data.local.entity.*
-import com.company.cavitrack.domain.model.*
+import com.company.cavitrack.domain.model.Component
+import com.company.cavitrack.domain.model.Customer
+import com.company.cavitrack.domain.model.HistoryLog
+import com.company.cavitrack.domain.model.Mold
+import com.company.cavitrack.domain.model.MoldStatus
 
-fun ComponentDto.toEntity(): ComponentEntity {
-    return ComponentEntity(
-        id = id,
-        ownerId = ownerId,
-        name = name,
-        sku = sku,
-        category = category,
-        qty = qty,
-        unit = unit,
-        minStockThreshold = minStockThreshold,
-        linkedMoldIds = linkedMoldIds,
-        photoUrl = photoUrl,
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
-}
+// Domain -> DTO
 
 fun Component.toDto(): ComponentDto {
     return ComponentDto(
@@ -33,23 +21,8 @@ fun Component.toDto(): ComponentDto {
         linkedMoldIds = linkedMoldIds,
         photoUrl = photoUrl,
         createdAt = createdAt,
-        updatedAt = updatedAt
-    )
-}
-
-fun CustomerDto.toEntity(): CustomerEntity {
-    return CustomerEntity(
-        id = id,
-        ownerId = ownerId,
-        name = name,
-        phone = phone,
-        email = email,
-        address = address,
-        linkedComponentIds = linkedComponentIds,
-        notes = notes,
-        photoUrl = photoUrl,
-        createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        isLowStock = qty < minStockThreshold
     )
 }
 
@@ -69,21 +42,6 @@ fun Customer.toDto(): CustomerDto {
     )
 }
 
-fun MoldDto.toEntity(): MoldEntity {
-    return MoldEntity(
-        id = id,
-        ownerId = ownerId,
-        moldCode = moldCode,
-        cavityCount = cavityCount,
-        linkedComponentId = linkedComponentId,
-        status = status,
-        location = location,
-        photoUrl = photoUrl,
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
-}
-
 fun Mold.toDto() = MoldDto(
     id = id,
     ownerId = ownerId,
@@ -97,15 +55,16 @@ fun Mold.toDto() = MoldDto(
     updatedAt = updatedAt
 )
 
-fun HistoryLogDto.toEntity(): HistoryLogEntity {
-    return HistoryLogEntity(
+fun HistoryLog.toDto(): HistoryLogDto {
+    return HistoryLogDto(
         id = id,
         ownerId = ownerId,
-        entityType = entityType,
+        entityType = entityType.name,
         entityId = entityId,
         entityName = entityName,
         action = action,
-        changeSource = changeSource,
+        changeSource = changeSource.name,
+        changeNote = changeNote,
         beforeValue = beforeValue,
         afterValue = afterValue,
         photoUrl = photoUrl,
@@ -114,15 +73,66 @@ fun HistoryLogDto.toEntity(): HistoryLogEntity {
     )
 }
 
-fun HistoryLog.toDto(): HistoryLogDto {
-    return HistoryLogDto(
+// DTO -> Domain
+
+fun ComponentDto.toDomain(): Component {
+    return Component(
         id = id,
+        name = name,
+        sku = sku,
+        category = category,
+        qty = qty,
+        unit = unit,
+        minStockThreshold = minStockThreshold,
         ownerId = ownerId,
-        entityType = entityType,
+        linkedMoldIds = linkedMoldIds,
+        photoUrl = photoUrl,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+}
+
+fun CustomerDto.toDomain(): Customer {
+    return Customer(
+        id = id,
+        name = name,
+        phone = phone,
+        email = email,
+        address = address,
+        ownerId = ownerId,
+        linkedComponentIds = linkedComponentIds,
+        notes = notes,
+        photoUrl = photoUrl,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+}
+
+fun MoldDto.toDomain(): Mold {
+    return Mold(
+        id = id,
+        moldCode = moldCode,
+        cavityCount = cavityCount,
+        status = try { MoldStatus.valueOf(status) } catch (_: Exception) { MoldStatus.Unknown },
+        location = location,
+        ownerId = ownerId,
+        linkedComponentId = linkedComponentId,
+        photoUrl = photoUrl,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+}
+
+fun HistoryLogDto.toDomain(): HistoryLog {
+    return HistoryLog(
+        id = id,
+        entityType = try { com.company.cavitrack.domain.model.EntityType.valueOf(entityType) } catch (_: Exception) { com.company.cavitrack.domain.model.EntityType.Component },
         entityId = entityId,
         entityName = entityName,
         action = action,
-        changeSource = changeSource,
+        changeSource = try { com.company.cavitrack.domain.model.ChangeSource.valueOf(changeSource) } catch (_: Exception) { com.company.cavitrack.domain.model.ChangeSource.Unknown },
+        changeNote = changeNote,
+        ownerId = ownerId,
         beforeValue = beforeValue,
         afterValue = afterValue,
         photoUrl = photoUrl,

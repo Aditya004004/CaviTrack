@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.CaviTrack" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.CaviTrack.Starting" parent="Theme.CaviTrack">
+        <item name="android:windowBackground">@drawable/ic_launcher_background</item>
+    </style>
+
+    <style name="Theme.CaviTrack" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
 </resources>

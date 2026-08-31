@@ -26,8 +26,6 @@ fun CaviTrackNavGraph(
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier
 ) {
-    val inventoryViewModel: com.company.cavitrack.presentation.inventory.InventoryViewModel = hiltViewModel()
-    
     NavHost(
         navController = navController,
         startDestination = Route.Home,
@@ -47,7 +45,6 @@ fun CaviTrackNavGraph(
         }
         composable<Route.Inventory> { 
             InventoryScreen(
-                viewModel = inventoryViewModel,
                 onComponentClick = { id -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true } },
                 onCustomerClick = { id -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true } },
                 onMoldClick = { id -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true } }
@@ -74,7 +71,7 @@ fun CaviTrackNavGraph(
             ManualUpdateScreen(
                 entityType = route.entityType,
                 entityId = route.entityId,
-                onUpdateComplete = { navController.popBackStack(Route.Home, inclusive = false) }
+                onUpdateComplete = { navController.popBackStack() }
             )
         }
         
@@ -83,7 +80,7 @@ fun CaviTrackNavGraph(
             PhotoUpdateScreen(
                 entityType = route.entityType, 
                 entityId = route.entityId,
-                onUpdateComplete = { navController.popBackStack(Route.Home, inclusive = false) }
+                onUpdateComplete = { navController.popBackStack() }
             )
         }
         
@@ -91,18 +88,24 @@ fun CaviTrackNavGraph(
             val route: Route.ComponentDetail = backStackEntry.toRoute()
             com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(
                 entityId = route.id,
-                viewModel = inventoryViewModel,
                 onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } },
-                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } }
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } },
+                onBack = { navController.popBackStack() }
             )
         }
         composable<Route.CustomerDetail> { backStackEntry -> 
             val route: Route.CustomerDetail = backStackEntry.toRoute()
-            com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(entityId = route.id, viewModel = inventoryViewModel)
+            com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(
+                entityId = route.id,
+                onBack = { navController.popBackStack() }
+            )
         }
         composable<Route.MoldDetail> { backStackEntry -> 
             val route: Route.MoldDetail = backStackEntry.toRoute()
-            com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(entityId = route.id, viewModel = inventoryViewModel)
+            com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(
+                entityId = route.id,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
@@ -115,14 +118,22 @@ fun CaviTrackAuthGraph(authViewModel: AuthViewModel, onAuthSuccess: () -> Unit) 
             LoginScreen(
                 authViewModel = authViewModel,
                 onLoginSuccess = onAuthSuccess,
-                onNavigateToRegister = { navController.navigate(Route.Register) }
+                onNavigateToRegister = { 
+                    navController.navigate(Route.Register) {
+                        popUpTo(Route.Login) { inclusive = true }
+                    }
+                }
             )
         }
         composable<Route.Register> {
             RegisterScreen(
                 authViewModel = authViewModel,
                 onRegisterSuccess = onAuthSuccess,
-                onNavigateToLogin = { navController.navigate(Route.Login) }
+                onNavigateToLogin = { 
+                    navController.navigate(Route.Login) {
+                        popUpTo(Route.Register) { inclusive = true }
+                    }
+                }
             )
         }
     }

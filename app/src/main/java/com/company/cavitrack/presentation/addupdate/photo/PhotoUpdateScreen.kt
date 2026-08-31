@@ -6,6 +6,7 @@ package com.company.cavitrack.presentation.addupdate.photo
 
 
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -33,10 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
+import com.company.cavitrack.domain.model.EntityType
 
 @Composable
 fun PhotoUpdateScreen(
-    entityType: com.company.cavitrack.domain.model.EntityType,
+    entityType: EntityType,
     entityId: String?,
     viewModel: PhotoUpdateViewModel = hiltViewModel(),
     onUpdateComplete: () -> Unit = {}
@@ -46,23 +48,15 @@ fun PhotoUpdateScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val imageCapture = remember { ImageCapture.Builder().build() }
     val executor = ContextCompat.getMainExecutor(context)
-    var photoUri by remember { mutableStateOf<String?>(null) }
+    var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
     
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     
-    DisposableEffect(lifecycleOwner) {
-        onDispose {
-            if (cameraProviderFuture.isDone) {
-                cameraProviderFuture.get().unbindAll()
-            }
-        }
-    }
-    
-    val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
+
     val error by viewModel.error.collectAsStateWithLifecycle()
     
-    LaunchedEffect(isSaved) {
-        if (isSaved) {
+    LaunchedEffect(Unit) {
+        viewModel.isSaved.collect {
             onUpdateComplete()
         }
     }
@@ -91,25 +85,12 @@ fun PhotoUpdateScreen(
         return
     }
 
-    LaunchedEffect(Unit) {
-        if (!hasCameraPermission) {
-            permissionLauncher.launch(android.Manifest.permission.CAMERA)
-        }
-    }
-
     val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
-    val isSavedState = rememberUpdatedState(isSaved)
     val isUploadingState = rememberUpdatedState(isUploading)
 
-    DisposableEffect(photoUri) {
+    DisposableEffect(lifecycleOwner) {
         onDispose {
-            val uri = photoUri
-            if (uri != null && !isSavedState.value && !isUploadingState.value) {
-                val file = File(uri)
-                if (file.exists()) {
-                    file.delete()
-                }
-            }
+            // Unbinding is handled automatically by bindToLifecycle
         }
     }
 
@@ -120,7 +101,7 @@ fun PhotoUpdateScreen(
 
         if (hasCameraPermission) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                // Camera Preview (always mounted to prevent slow rebinding on retake)
+                // Camera Preview
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
@@ -133,11 +114,26 @@ fun PhotoUpdateScreen(
                             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                             try {
                                 cameraProvider.unbindAll()
+                                
+                                val imageAnalyzer = androidx.camera.core.ImageAnalysis.Builder()
+                                    .build()
+                                    .also {
+                                        it.setAnalyzer(
+                                            executor,
+                                            com.company.cavitrack.util.BarcodeAnalyzer { barcodeValue ->
+                                                // TODO: Handle the scanned barcode value here
+                                                // For example: viewModel.processBarcode(barcodeValue)
+                                                android.util.Log.d("BarcodeScanner", "Scanned: $barcodeValue")
+                                            }
+                                        )
+                                    }
+
                                 cameraProvider.bindToLifecycle(
                                     lifecycleOwner,
                                     cameraSelector,
                                     preview,
-                                    imageCapture
+                                    imageCapture,
+                                    imageAnalyzer
                                 )
                             } catch (e: Exception) {
                                 e.printStackTrace()
@@ -167,7 +163,7 @@ fun PhotoUpdateScreen(
                             if (isUploading) {
                                 CircularProgressIndicator()
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Uploading...")
+                                Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.msg_saving))
                             } else {
                                 Button(onClick = {
                                     val currentUri = photoUri
@@ -177,7 +173,7 @@ fun PhotoUpdateScreen(
                                         Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", Toast.LENGTH_LONG).show()
                                     }
                                 }, enabled = true) {
-                                    Text("Upload and Save")
+                                    Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.action_upload_save))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Button(onClick = { 
@@ -188,7 +184,7 @@ fun PhotoUpdateScreen(
                                         if (file.exists()) file.delete()
                                     }
                                 }, enabled = true) {
-                                    Text("Retake")
+                                    Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.action_retake))
                                 }
                             }
                         }
@@ -198,7 +194,10 @@ fun PhotoUpdateScreen(
         } else {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Camera permission is required.")
+                    Text("Camera permission is required.", modifier = Modifier.padding(bottom = 16.dp))
+                    Button(onClick = { permissionLauncher.launch(android.Manifest.permission.CAMERA) }) {
+                        Text("Grant Permission")
+                    }
                     Button(onClick = onUpdateComplete, modifier = Modifier.padding(top = 16.dp)) {
                         Text("Go Back")
                     }
@@ -216,51 +215,27 @@ fun PhotoUpdateScreen(
                 ) { uri ->
                     if (uri != null) {
                         coroutineScope.launch(Dispatchers.IO) {
-                            val inputStream = context.contentResolver.openInputStream(uri)
-                            val offlinePhotosDir = File(context.filesDir, "offline_photos").apply { mkdirs() }
-                            val file = File(offlinePhotosDir, "${System.currentTimeMillis()}_gallery.jpg")
-                            inputStream?.use { input ->
-                                file.outputStream().use { output ->
-                                    input.copyTo(output)
-                                }
-                            }
-                            if (file.exists()) {
-                                // Downscale immediately to save disk space and memory
-                                withContext(Dispatchers.IO) {
-                                    val options = android.graphics.BitmapFactory.Options().apply {
-                                        inJustDecodeBounds = true
-                                    }
-                                    android.graphics.BitmapFactory.decodeFile(file.absolutePath, options)
-                                    val maxDim = 1280
-                                    var inSampleSize = 1
-                                    if (options.outHeight > maxDim || options.outWidth > maxDim) {
-                                        val halfHeight = options.outHeight / 2
-                                        val halfWidth = options.outWidth / 2
-                                        while ((halfHeight / inSampleSize) >= maxDim || (halfWidth / inSampleSize) >= maxDim) {
-                                            inSampleSize *= 2
-                                        }
-                                    }
-                                    val decodeOptions = android.graphics.BitmapFactory.Options().apply {
-                                        this.inSampleSize = inSampleSize
-                                    }
-                                    try {
-                                        val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
-                                        if (bitmap != null) {
-                                            try {
-                                                java.io.FileOutputStream(file).use { out ->
-                                                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
-                                                }
-                                            } finally {
-                                                bitmap.recycle()
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
+                            try {
+                                val inputStream = context.contentResolver.openInputStream(uri)
+                                val offlinePhotosDir = File(context.cacheDir, "offline_photos").apply { mkdirs() }
+                                val file = File(offlinePhotosDir, "${System.currentTimeMillis()}_gallery.jpg")
+                                inputStream?.use { input ->
+                                    file.outputStream().use { output ->
+                                        input.copyTo(output)
                                     }
                                 }
+                                if (file.exists()) {
+                                    // Downscale immediately to save disk space and memory
+                                    com.company.cavitrack.util.ImageUtil.downscaleImage(file)
 
+                                    withContext(Dispatchers.Main) {
+                                        photoUri = file.absolutePath
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                                 withContext(Dispatchers.Main) {
-                                    photoUri = file.absolutePath
+                                    Toast.makeText(context, "Failed to load image: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
@@ -271,7 +246,7 @@ fun PhotoUpdateScreen(
                 }
                 Button(
                     onClick = {
-                        val offlinePhotosDir = File(context.filesDir, "offline_photos").apply { mkdirs() }
+                        val offlinePhotosDir = File(context.cacheDir, "offline_photos").apply { mkdirs() }
                         val file = File(offlinePhotosDir, "${System.currentTimeMillis()}.jpg")
                         val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
                         imageCapture.takePicture(
@@ -279,9 +254,6 @@ fun PhotoUpdateScreen(
                             executor,
                             object : ImageCapture.OnImageSavedCallback {
                                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                    if (cameraProviderFuture.isDone) {
-                                        cameraProviderFuture.get().unbindAll()
-                                    }
                                     photoUri = file.absolutePath
                                 }
                                 override fun onError(exc: ImageCaptureException) {

@@ -19,4 +19,51 @@
     <string name="label_active_molds">Active Molds</string>
     <string name="label_recent_activity">Recent Activity</string>
     <string name="msg_no_recent_activity">No recent activity recorded</string>
+    
+    <string name="manual_update_title">Manual Update</string>
+    <string name="unsupported_update">Update not supported for this entity yet.</string>
+    <string name="label_name">Name</string>
+    <string name="label_sku">SKU / Code</string>
+    <string name="label_category">Category / Location</string>
+    <string name="label_phone">Phone</string>
+    <string name="label_email">Email</string>
+    <string name="label_address">Address</string>
+    <string name="label_mold_code">Mold Code</string>
+    <string name="label_location">Location</string>
+    <string name="label_quantity">Quantity</string>
+    <string name="label_cavity_count">Cavity Count</string>
+    <string name="label_note">Note (Optional)</string>
+    <string name="btn_save">Save</string>
+    <string name="msg_saving">Saving...</string>
+    <string name="action_save_update">Save Update</string>
+    <string name="action_upload_save">Upload and Save</string>
+    <string name="action_retake">Retake</string>
+    <string name="msg_unsupported_update">Update not supported for this entity yet.</string>
+    <!-- Auth Strings -->
+    <string name="title_login">Login to CaviTrack</string>
+    <string name="title_register">Create an Account</string>
+    <string name="label_password">Password</string>
+    <string name="btn_login">Login</string>
+    <string name="btn_register">Register</string>
+    <string name="link_to_register">Don\'t have an account? Register</string>
+    <string name="link_to_login">Already have an account? Login</string>
+    <string name="error_email_empty">Email cannot be empty</string>
+    <string name="error_email_invalid">Invalid email format</string>
+    <string name="error_password_empty">Password cannot be empty</string>
+    <string name="privacy_policy_url">https://aditya004004.github.io/CaviTrack/privacy</string>
+    <!-- Detail Screens -->
+    <string name="title_component_details">Component Details</string>
+    <string name="title_customer_details">Customer Details</string>
+    <string name="title_mold_details">Mold Details</string>
+    <string name="label_update_photo">Update Photo</string>
+    <string name="label_adjust_stock">Adjust Stock</string>
+    <string name="msg_component_not_found">Component not found</string>
+    <string name="msg_customer_not_found">Customer not found</string>
+    <string name="msg_mold_not_found">Mold not found</string>
+    <string name="msg_v1_limitation">Note: Edit and delete functionalities are a known v1 limitation and will be added in a future update.</string>
+    <!-- Auth -->
+    <string name="error_name_empty">Name cannot be empty</string>
+    <string name="error_password_weak">Password must be at least 8 characters with a letter and a number</string>
+    <string name="msg_deleting_account">Deleting your account…</string>
+    <string name="msg_reauth_required">Please sign out and sign back in, then try again.</string>
 </resources>

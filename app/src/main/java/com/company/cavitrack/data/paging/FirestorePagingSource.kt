@@ -1,0 +1,35 @@
+package com.company.cavitrack.data.paging
+
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.tasks.await
+
+class FirestorePagingSource<T : Any>(
+    private val baseQuery: Query,
+    private val mapper: (DocumentSnapshot) -> T?
+) : PagingSource<DocumentSnapshot, T>() {
+    override suspend fun load(params: LoadParams<DocumentSnapshot>): LoadResult<DocumentSnapshot, T> {
+        return try {
+            var currentPage = baseQuery.limit(params.loadSize.toLong())
+            if (params.key != null) {
+                currentPage = currentPage.startAfter(params.key!!)
+            }
+            val snapshot = currentPage.get().await()
+            val lastDocumentSnapshot = if (snapshot.size() > 0) snapshot.documents.last() else null
+            
+            val data = snapshot.documents.mapNotNull { mapper(it) }
+            
+            LoadResult.Page(
+                data = data,
+                prevKey = null,
+                nextKey = lastDocumentSnapshot
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+    
+    override fun getRefreshKey(state: PagingState<DocumentSnapshot, T>): DocumentSnapshot? = null
+}

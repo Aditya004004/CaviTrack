@@ -110,7 +110,7 @@ fun HomeScreen(
                     }
                 } else {
                     items(data.recentActivity, key = { it.id }) { log ->
-                        ListCard(onClick = { onNavigateToDetail(log.entityType, log.entityId) }) {
+                        ListCard(onClick = { onNavigateToDetail(log.entityType.name, log.entityId) }) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),

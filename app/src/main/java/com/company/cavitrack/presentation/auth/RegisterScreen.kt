@@ -2,6 +2,7 @@ package com.company.cavitrack.presentation.auth
 
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -12,6 +13,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.runtime.saveable.rememberSaveable
+
+private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
 
 @Composable
 fun RegisterScreen(
@@ -28,22 +31,23 @@ fun RegisterScreen(
 
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        authViewModel.resetAuthState()
-    }
-
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
             onRegisterSuccess()
         }
     }
 
+    val scrollState = androidx.compose.foundation.rememberScrollState()
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .imePadding()
+            .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Create Account", style = MaterialTheme.typography.headlineMedium)
+        Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_register), style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(32.dp))
 
         if (authState is AuthState.Error) {
@@ -51,10 +55,14 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+        val emptyEmailError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_email_empty)
+        val invalidEmailError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_email_invalid)
+        val emptyPasswordError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_password_empty)
+
         OutlinedTextField(
             value = name,
             onValueChange = { name = it; nameError = null },
-            label = { Text("Name") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_name)) },
             isError = nameError != null,
             supportingText = { nameError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth()
@@ -64,7 +72,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; emailError = null },
-            label = { Text("Email") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_email)) },
             isError = emailError != null,
             supportingText = { emailError?.let { Text(it) } },
             modifier = Modifier.fillMaxWidth(),
@@ -75,7 +83,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; passwordError = null },
-            label = { Text("Password") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_password)) },
             isError = passwordError != null,
             supportingText = { passwordError?.let { Text(it) } },
             visualTransformation = PasswordVisualTransformation(),
@@ -88,8 +96,15 @@ fun RegisterScreen(
             onClick = { 
                 var hasError = false
                 if (name.isBlank()) { nameError = "Name cannot be empty"; hasError = true }
-                if (email.isBlank()) { emailError = "Email cannot be empty"; hasError = true }
-                if (password.isBlank()) { passwordError = "Password cannot be empty"; hasError = true }
+                
+                if (email.isBlank()) { emailError = emptyEmailError; hasError = true }
+                else if (!email.matches(EMAIL_REGEX)) { emailError = invalidEmailError; hasError = true }
+                
+                if (password.isBlank()) { passwordError = emptyPasswordError; hasError = true }
+                else if (password.length < 8 || !password.any { it.isLetter() } || !password.any { it.isDigit() }) {
+                    passwordError = "Password must be at least 8 characters with a letter and a number"
+                    hasError = true
+                }
                 if (!hasError) authViewModel.register(name, email, password) 
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -98,12 +113,12 @@ fun RegisterScreen(
             if (authState is AuthState.Loading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("Register")
+                Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.btn_register))
             }
         }
         
         TextButton(onClick = onNavigateToLogin) {
-            Text("Already have an account? Login")
+            Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.link_to_login))
         }
     }
 }

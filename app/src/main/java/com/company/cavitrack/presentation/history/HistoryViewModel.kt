@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.HistoryLog
-import com.company.cavitrack.domain.repository.InventoryRepository
+import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
 import com.company.cavitrack.presentation.components.UiState
 import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
-    private val repository: InventoryRepository,
+    private val useCases: InventoryUseCases,
     sessionManager: com.company.cavitrack.util.SessionManager
 ) : ViewModel() {
 
@@ -43,7 +43,7 @@ class HistoryViewModel @Inject constructor(
         loadJob?.cancel()
         _uiState.value = UiState.Loading
         loadJob = viewModelScope.launch {
-            repository.getHistory().collect { result ->
+            useCases.getHistory().collect { result ->
                 when (result) {
                     is DataResult.Success -> _uiState.value = UiState.Success(result.data)
                     is DataResult.Error -> _uiState.value = UiState.Error(result.message)

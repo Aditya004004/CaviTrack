@@ -1,5 +1,6 @@
 package com.company.cavitrack.data.remote.dto
 
+import com.google.firebase.firestore.PropertyName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -13,7 +14,9 @@ data class CustomerDto @JvmOverloads constructor(
     val linkedComponentIds: List<String> = emptyList(),
     val notes: String = "",
     val photoUrl: String? = null,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+    @get:PropertyName("isDeleted") @set:PropertyName("isDeleted")
+    var isDeleted: Boolean = false
 )
 

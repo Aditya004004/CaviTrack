@@ -1,6 +1,6 @@
 package com.company.cavitrack.di
 
-import com.company.cavitrack.data.repository.OfflineFirstInventoryRepository
+import com.company.cavitrack.data.repository.FirestoreInventoryRepository
 import com.company.cavitrack.domain.repository.InventoryRepository
 import dagger.Binds
 import dagger.Module
@@ -15,7 +15,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindInventoryRepository(
-        offlineFirstInventoryRepository: OfflineFirstInventoryRepository
+        firestoreInventoryRepository: FirestoreInventoryRepository
     ): InventoryRepository
 
     @Binds

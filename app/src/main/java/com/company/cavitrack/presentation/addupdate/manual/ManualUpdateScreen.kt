@@ -2,6 +2,7 @@ package com.company.cavitrack.presentation.addupdate.manual
 
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -10,10 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.company.cavitrack.domain.model.EntityType
 
 @Composable
 fun ManualUpdateScreen(
-    entityType: com.company.cavitrack.domain.model.EntityType,
+    entityType: EntityType,
     entityId: String?,
     viewModel: ManualUpdateViewModel = hiltViewModel(),
     onUpdateComplete: () -> Unit = {}
@@ -32,13 +34,14 @@ fun ManualUpdateScreen(
     var moldCode by rememberSaveable { mutableStateOf("") }
     var location by rememberSaveable { mutableStateOf("") }
     
-    val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val currentQty by viewModel.currentQty.collectAsStateWithLifecycle()
     
-    LaunchedEffect(entityId) {
-        if (entityId != null) {
+    val scrollState = androidx.compose.foundation.rememberScrollState()
+    
+    LaunchedEffect(entityId, entityType) {
+        if (entityId != null && entityType == EntityType.Component) {
             viewModel.loadComponent(entityId)
         }
     }
@@ -49,61 +52,68 @@ fun ManualUpdateScreen(
         }
     }
     
-    LaunchedEffect(isSaved) {
-        if (isSaved) {
+    LaunchedEffect(Unit) {
+        viewModel.isSaved.collect {
             onUpdateComplete()
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Manual Update - $entityType", style = MaterialTheme.typography.headlineMedium)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .imePadding()
+            .verticalScroll(scrollState)
+    ) {
+        val title = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.manual_update_title)
+        Text("$title - $entityType", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
 
         if (error != null) {
             Text(error ?: "", color = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(16.dp))
         } else if (hasUnsupportedError) {
-            Text("Update not supported for this entity yet.", color = MaterialTheme.colorScheme.error)
+            Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.unsupported_update), color = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
         if (entityId == null) {
             when (entityType) {
-                com.company.cavitrack.domain.model.EntityType.Component -> {
+                EntityType.Component -> {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Name") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_name)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = sku,
                         onValueChange = { sku = it },
-                        label = { Text("SKU / Code") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_sku)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = category,
                         onValueChange = { category = it },
-                        label = { Text("Category / Location") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_category)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                com.company.cavitrack.domain.model.EntityType.Customer -> {
+                EntityType.Customer -> {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Name") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_name)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = phone,
                         onValueChange = { phone = it },
-                        label = { Text("Phone") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_phone)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone)
                     )
@@ -111,7 +121,7 @@ fun ManualUpdateScreen(
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_email)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
                     )
@@ -119,23 +129,23 @@ fun ManualUpdateScreen(
                     OutlinedTextField(
                         value = address,
                         onValueChange = { address = it },
-                        label = { Text("Address") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_address)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                com.company.cavitrack.domain.model.EntityType.Mold -> {
+                EntityType.Mold -> {
                     OutlinedTextField(
                         value = moldCode,
                         onValueChange = { moldCode = it },
-                        label = { Text("Mold Code") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_mold_code)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = location,
                         onValueChange = { location = it },
-                        label = { Text("Location") },
+                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_location)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -144,14 +154,20 @@ fun ManualUpdateScreen(
             }
         }
 
-        if (entityType != com.company.cavitrack.domain.model.EntityType.Customer) {
+        if (entityType != EntityType.Customer) {
             OutlinedTextField(
                 value = quantity,
                 onValueChange = { 
                     quantity = it
                     hasError = it.toIntOrNull()?.takeIf { v -> v >= 0 } == null
                 },
-                label = { Text(if (entityId == null) "Value / Count" else "Quantity") },
+                label = { 
+                    val labelRes = if (entityType == EntityType.Mold) 
+                        com.company.cavitrack.R.string.label_cavity_count 
+                    else 
+                        com.company.cavitrack.R.string.label_quantity
+                    Text(androidx.compose.ui.res.stringResource(labelRes)) 
+                },
                 isError = hasError,
                 supportingText = { if (hasError) Text("Must be a valid positive number") },
                 modifier = Modifier.fillMaxWidth(),
@@ -163,7 +179,7 @@ fun ManualUpdateScreen(
         OutlinedTextField(
             value = note,
             onValueChange = { note = it },
-            label = { Text("Reason/Note") },
+            label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_note)) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3
         )
@@ -172,19 +188,19 @@ fun ManualUpdateScreen(
 
         Button(
             onClick = {
-                val parsedQty = if (entityType == com.company.cavitrack.domain.model.EntityType.Customer) 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
+                val parsedQty = if (entityType == EntityType.Customer) 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
                 if (parsedQty != null) {
                     if (entityId != null) {
-                        if (entityType == com.company.cavitrack.domain.model.EntityType.Component) {
+                        if (entityType == EntityType.Component) {
                             viewModel.updateComponentQuantity(entityId, parsedQty, note)
                         } else {
                             hasUnsupportedError = true // Only Component updates are supported right now
                         }
                     } else {
                         when (entityType) {
-                            com.company.cavitrack.domain.model.EntityType.Component -> viewModel.createComponent(name, sku, category, parsedQty, note)
-                            com.company.cavitrack.domain.model.EntityType.Customer -> viewModel.createCustomer(name, phone, email, address, note)
-                            com.company.cavitrack.domain.model.EntityType.Mold -> viewModel.createMold(moldCode, parsedQty, location, note)
+                            EntityType.Component -> viewModel.createComponent(name, sku, category, parsedQty, note)
+                            EntityType.Customer -> viewModel.createCustomer(name, phone, email, address, note)
+                            EntityType.Mold -> viewModel.createMold(moldCode, parsedQty, location, note)
                             else -> hasUnsupportedError = true
                         }
                     }
@@ -195,7 +211,7 @@ fun ManualUpdateScreen(
             enabled = !isSaving,
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
-            Text(if (isSaving) "Saving..." else "Save Update")
+            Text(if (isSaving) androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.msg_saving) else androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.action_save_update))
         }
     }
 }

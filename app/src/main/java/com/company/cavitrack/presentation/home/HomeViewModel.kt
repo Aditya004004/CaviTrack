@@ -10,12 +10,13 @@ import com.company.cavitrack.presentation.components.UiState
 import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import javax.inject.Inject
+
+import com.company.cavitrack.util.SessionManager
+import com.company.cavitrack.domain.usecase.inventory.GetDashboardMetricsUseCase
 
 data class HomeData(
     val totalComponents: Int = 0,
@@ -27,66 +28,34 @@ data class HomeData(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: InventoryRepository,
-    sessionManager: com.company.cavitrack.util.SessionManager
+    private val getDashboardMetrics: GetDashboardMetricsUseCase,
+    sessionManager: SessionManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
-    val uiState: StateFlow<UiState<HomeData>> = _uiState.asStateFlow()
-    
-    private var loadJob: Job? = null
+    private val retryTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    init {
-        viewModelScope.launch {
-            sessionManager.currentUser
-                .distinctUntilChanged { old, new -> old?.uid == new?.uid }
-                .collect { user ->
-                    if (user != null) {
-                        loadData()
-                    } else {
-                        loadJob?.cancel()
-                        _uiState.value = UiState.Loading
-                    }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
+    val uiState: StateFlow<UiState<HomeData>> = combine(
+        sessionManager.currentUser.distinctUntilChanged { old, new -> old?.uid == new?.uid },
+        retryTrigger.onStart { emit(Unit) }
+    ) { user, _ -> user }
+        .flatMapLatest { user ->
+            if (user != null) {
+                getDashboardMetrics().catch { e ->
+                    emit(UiState.Error(e.message ?: "Unknown error"))
                 }
-        }
-    }
-
-    fun loadData() {
-        loadJob?.cancel()
-        _uiState.value = UiState.Loading
-        loadJob = viewModelScope.launch {
-            combine(
-                repository.getComponents(),
-                repository.getCustomers(),
-                repository.getMolds(),
-                repository.getRecentHistory(5)
-            ) { compRes, custRes, moldRes, histRes ->
-                if (compRes is DataResult.Error) return@combine UiState.Error(compRes.message)
-                if (custRes is DataResult.Error) return@combine UiState.Error(custRes.message)
-                if (moldRes is DataResult.Error) return@combine UiState.Error(moldRes.message)
-                if (histRes is DataResult.Error) return@combine UiState.Error(histRes.message)
-
-                val components = (compRes as DataResult.Success).data
-                val customers = (custRes as DataResult.Success).data
-                val molds = (moldRes as DataResult.Success).data
-                val history = (histRes as DataResult.Success).data
-
-                val lowStockCount = components.count { it.qty < it.minStockThreshold }
-                val activeMolds = molds.count { it.status == com.company.cavitrack.domain.model.MoldStatus.Active }
-
-                UiState.Success(
-                    HomeData(
-                        totalComponents = components.size,
-                        lowStockCount = lowStockCount,
-                        totalCustomers = customers.size,
-                        activeMolds = activeMolds,
-                        recentActivity = history
-                    )
-                )
-            }.collect { state ->
-                _uiState.value = state
+            } else {
+                flowOf(UiState.Loading)
             }
         }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = UiState.Loading
+        )
+
+    fun loadData() {
+        retryTrigger.tryEmit(Unit)
     }
 }
 

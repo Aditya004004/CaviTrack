@@ -10,20 +10,17 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
 
 android {
     namespace = "com.company.cavitrack"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.company.cavitrack"
+        applicationId = "com.cavitrack.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -70,7 +67,8 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation(libs.firebase.storage)
+    implementation(libs.firebase.appcheck)
+    debugImplementation(libs.firebase.appcheck.debug)
 
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -84,15 +82,12 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
     
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
-    
     implementation(libs.coil.compose)
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
+    implementation(libs.mlkit.barcode)
     
     implementation(libs.kotlinx.serialization.json)
     
@@ -114,6 +109,10 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
 }
 
 

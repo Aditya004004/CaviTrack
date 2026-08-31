@@ -7,16 +7,15 @@ import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.Customer
 import com.company.cavitrack.domain.model.Mold
-import com.company.cavitrack.domain.repository.InventoryRepository
+import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
 import com.company.cavitrack.presentation.components.UiState
 import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import javax.inject.Inject
 
 data class InventoryData(
@@ -27,60 +26,37 @@ data class InventoryData(
 
 @HiltViewModel
 class InventoryViewModel @Inject constructor(
-    private val repository: InventoryRepository,
+    private val useCases: InventoryUseCases,
     sessionManager: com.company.cavitrack.util.SessionManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState<InventoryData>>(UiState.Loading)
-    val uiState: StateFlow<UiState<InventoryData>> = _uiState.asStateFlow()
-    
-    private var loadJob: Job? = null
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            sessionManager.currentUser
-                .distinctUntilChanged { old, new -> old?.uid == new?.uid }
-                .collect { user ->
-                    if (user != null) {
-                        loadData()
-                    } else {
-                        loadJob?.cancel()
-                        _uiState.value = UiState.Loading
-                    }
-                }
-        }
+    private val _lowStockOnly = MutableStateFlow(false)
+    val lowStockOnly: StateFlow<Boolean> = _lowStockOnly.asStateFlow()
+
+    private val _selectedMoldStatus = MutableStateFlow<com.company.cavitrack.domain.model.MoldStatus?>(null)
+    val selectedMoldStatus: StateFlow<com.company.cavitrack.domain.model.MoldStatus?> = _selectedMoldStatus.asStateFlow()
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
+    fun updateLowStockFilter(lowStock: Boolean) {
+        _lowStockOnly.value = lowStock
+    }
+
+    fun updateMoldStatusFilter(status: com.company.cavitrack.domain.model.MoldStatus?) {
+        _selectedMoldStatus.value = status
+    }
+
+    val componentsFlow: Flow<PagingData<Component>> = useCases.getComponents().cachedIn(viewModelScope)
+    val customersFlow: Flow<PagingData<Customer>> = useCases.getCustomers().cachedIn(viewModelScope)
+    val moldsFlow: Flow<PagingData<Mold>> = useCases.getMolds().cachedIn(viewModelScope)
+
     fun loadData() {
-        loadJob?.cancel()
-        
-        _uiState.value = UiState.Loading
-        loadJob = viewModelScope.launch {
-            try {
-                combine(
-                    repository.getComponents(),
-                    repository.getCustomers(),
-                    repository.getMolds()
-                ) { compRes, custRes, moldRes ->
-                    if (compRes is DataResult.Error) return@combine UiState.Error(compRes.message)
-                    if (custRes is DataResult.Error) return@combine UiState.Error(custRes.message)
-                    if (moldRes is DataResult.Error) return@combine UiState.Error(moldRes.message)
-                    
-                    UiState.Success(
-                        InventoryData(
-                            components = (compRes as DataResult.Success).data,
-                            customers = (custRes as DataResult.Success).data,
-                            molds = (moldRes as DataResult.Success).data
-                        )
-                    )
-                }.collect { combinedState ->
-                    _uiState.value = combinedState
-                }
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                _uiState.value = UiState.Error(e.message ?: "Unknown error")
-            }
-        }
+        // Nothing to do for PagingData initialization
     }
 }
 

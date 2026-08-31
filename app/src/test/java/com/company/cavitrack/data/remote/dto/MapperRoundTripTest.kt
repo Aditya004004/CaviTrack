@@ -1,6 +1,5 @@
 package com.company.cavitrack.data.remote.dto
 
-import com.company.cavitrack.data.local.entity.*
 import com.company.cavitrack.domain.model.*
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -16,12 +15,9 @@ class MapperRoundTripTest {
         )
 
         val dto = original.toDto()
-        val entityFromDto = dto.toEntity()
-        val domainFromEntity = entityFromDto.toDomain()
-        val entityFromOriginal = original.toEntity()
+        val domainFromDto = dto.toDomain()
 
-        assertEquals(original, domainFromEntity)
-        assertEquals(entityFromDto, entityFromOriginal)
+        assertEquals(original, domainFromDto)
     }
 
     @Test
@@ -33,12 +29,9 @@ class MapperRoundTripTest {
         )
 
         val dto = original.toDto()
-        val entityFromDto = dto.toEntity()
-        val domainFromEntity = entityFromDto.toDomain()
-        val entityFromOriginal = original.toEntity()
+        val domainFromDto = dto.toDomain()
 
-        assertEquals(original, domainFromEntity)
-        assertEquals(entityFromDto, entityFromOriginal)
+        assertEquals(original, domainFromDto)
     }
 
     @Test
@@ -50,29 +43,23 @@ class MapperRoundTripTest {
         )
 
         val dto = original.toDto()
-        val entityFromDto = dto.toEntity()
-        val domainFromEntity = entityFromDto.toDomain()
-        val entityFromOriginal = original.toEntity()
+        val domainFromDto = dto.toDomain()
 
-        assertEquals(original, domainFromEntity)
-        assertEquals(entityFromDto, entityFromOriginal)
+        assertEquals(original, domainFromDto)
     }
 
     @Test
     fun `HistoryLog round trip mapping`() {
         val original = HistoryLog(
-            id = "h1", ownerId = "u1", entityType = "Component", entityId = "c1",
-            entityName = "Comp", action = "Update", changeSource = "Manual",
+            id = "h1", ownerId = "u1", entityType = EntityType.Component, entityId = "c1",
+            entityName = "Comp", action = "Update", changeSource = ChangeSource.Manual,
             beforeValue = "0", afterValue = "1", photoUrl = "url", performedBy = "user",
             timestamp = 1L
         )
 
         val dto = original.toDto()
-        val entityFromDto = dto.toEntity()
-        val domainFromEntity = entityFromDto.toDomain()
-        val entityFromOriginal = original.toEntity()
+        val domainFromDto = dto.toDomain()
 
-        assertEquals(original, domainFromEntity)
-        assertEquals(entityFromDto, entityFromOriginal)
+        assertEquals(original, domainFromDto)
     }
 }

@@ -6,6 +6,10 @@ package com.company.cavitrack.presentation.navigation
 
 
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.graphics.Color
+import com.company.cavitrack.presentation.addupdate.AddUpdateActionScreen
+import com.company.cavitrack.domain.model.EntityType
 import androidx.compose.ui.res.stringResource
 import com.company.cavitrack.R
 import androidx.compose.runtime.remember
@@ -49,25 +53,8 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val currentDestination = navBackStackEntry?.destination
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     var showUpdateSheet by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val workInfos by remember(context) { 
-        androidx.work.WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow("ManualDataSync") 
-    }.collectAsStateWithLifecycle(initialValue = emptyList())
     val snackbarHostState = remember { SnackbarHostState() }
-    var previousSyncState by remember { mutableStateOf<androidx.work.WorkInfo.State?>(null) }
-    
-    androidx.compose.runtime.LaunchedEffect(workInfos) {
-        val currentState = workInfos.firstOrNull()?.state
-        if (previousSyncState == androidx.work.WorkInfo.State.RUNNING) {
-            if (currentState == androidx.work.WorkInfo.State.SUCCEEDED) {
-                snackbarHostState.showSnackbar("Sync completed successfully.")
-            } else if (currentState == androidx.work.WorkInfo.State.FAILED) {
-                snackbarHostState.showSnackbar("Sync failed.")
-            }
-        }
-        previousSyncState = currentState
-    }
-
+    val context = LocalContext.current
     if (authState is AuthState.Deleting) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -83,52 +70,52 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             onAuthSuccess = { authViewModel.checkAuthStatus() }
         )
     } else {
+        val topLevelItems = remember {
+            listOf(
+                BottomNavItem("Home", Route.Home::class, Route.Home, Icons.Filled.Home),
+                BottomNavItem("Inventory", Route.Inventory::class, Route.Inventory, Icons.AutoMirrored.Filled.List),
+                BottomNavItem("History", Route.History::class, Route.History, Icons.Filled.History),
+                BottomNavItem("Settings", Route.Settings::class, Route.Settings, Icons.Filled.Settings)
+            )
+        }
+        val currentItem = topLevelItems.find { item -> currentDestination?.hasRoute(item.routeClass) == true }
+        val isTopLevel = currentItem != null
+
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
-                    actions = {
-                        val context = LocalContext.current
-                        IconButton(onClick = {
-                            authViewModel.syncData()
-                            Toast.makeText(context, "Sync started...", Toast.LENGTH_SHORT).show()
-                        }) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Sync Data")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                if (isTopLevel) {
+                    TopAppBar(
+                        title = { Text(currentItem?.label ?: stringResource(R.string.app_name)) },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     )
-                )
+                }
             },
             bottomBar = {
-                NavigationBar {
-                    val items = listOf(
-                        BottomNavItem(stringResource(R.string.nav_home), Route.Home::class, Route.Home, Icons.Filled.Home),
-                        BottomNavItem(stringResource(R.string.nav_inventory), Route.Inventory::class, Route.Inventory, Icons.AutoMirrored.Filled.List),
-                        BottomNavItem(stringResource(R.string.nav_history), Route.History::class, Route.History, Icons.Filled.History),
-                        BottomNavItem(stringResource(R.string.nav_settings), Route.Settings::class, Route.Settings, Icons.Filled.Settings)
-                    )
-                    items.forEach { item ->
-                        val selected = currentDestination?.hierarchy?.any { 
-                            it.hasRoute(item.routeClass) 
-                        } == true
-                        NavigationBarItem(
-                            icon = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label) },
-                            selected = selected,
-                            onClick = {
-                                navController.navigate(item.routeObj) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                if (isTopLevel) {
+                    NavigationBar {
+                        topLevelItems.forEach { item ->
+                            val selected = currentDestination?.hierarchy?.any { 
+                                it.hasRoute(item.routeClass) 
+                            } == true
+                            NavigationBarItem(
+                                icon = { Icon(item.icon, contentDescription = item.label) },
+                                label = { Text(item.label) },
+                                selected = selected,
+                                onClick = {
+                                    navController.navigate(item.routeObj) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             },
@@ -143,9 +130,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         shape = CircleShape,
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier
-                            .padding(end = 16.dp, bottom = 16.dp)
-                            .size(56.dp)
+                        modifier = Modifier.size(56.dp)
                     ) {
                         Icon(Icons.Filled.Add, "Add Update")
                     }
@@ -159,20 +144,21 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             )
             
             if (showUpdateSheet) {
+                BackHandler { showUpdateSheet = false }
                 ModalBottomSheet(
                     onDismissRequest = { showUpdateSheet = false },
                     shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-                    scrimColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
+                    scrimColor = Color.Black.copy(alpha = 0.5f)
                 ) {
-                    com.company.cavitrack.presentation.addupdate.AddUpdateActionScreen(
+                    AddUpdateActionScreen(
                         entityType = null,
                         onNavigateToManual = { type ->
                             showUpdateSheet = false
-                            navController.navigate(Route.ManualUpdate(type ?: com.company.cavitrack.domain.model.EntityType.Component, null))
+                            navController.navigate(Route.ManualUpdate(type ?: EntityType.Component, null))
                         },
                         onNavigateToPhoto = { type ->
                             showUpdateSheet = false
-                            navController.navigate(Route.PhotoUpdate(type ?: com.company.cavitrack.domain.model.EntityType.Component, null))
+                            navController.navigate(Route.PhotoUpdate(type ?: EntityType.Component, null))
                         }
                     )
                 }

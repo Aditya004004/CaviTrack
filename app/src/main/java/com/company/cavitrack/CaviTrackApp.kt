@@ -4,15 +4,17 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.company.cavitrack.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
 
 @HiltAndroidApp
 class CaviTrackApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
     
-    @Inject
-    lateinit var syncScheduler: com.company.cavitrack.util.SyncScheduler
+    @Inject @ApplicationScope lateinit var applicationScope: CoroutineScope
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -21,7 +23,53 @@ class CaviTrackApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        syncScheduler.schedulePeriodicSync()
-        syncScheduler.scheduleOneTimeSync(androidx.work.ExistingWorkPolicy.KEEP)
+        
+        com.google.firebase.FirebaseApp.initializeApp(this)
+        if (BuildConfig.DEBUG) {
+            com.google.firebase.appcheck.FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+                com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
+            )
+        } else {
+            com.google.firebase.appcheck.FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+                com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance()
+            )
+        }
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val syncChannel = android.app.NotificationChannel(
+                "cavitrack_sync_channel",
+                "Sync Notifications",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications for background synchronization"
+            }
+            
+            val alertsChannel = android.app.NotificationChannel(
+                "cavi_track_alerts",
+                "CaviTrack Alerts",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT
+            )
+            
+            val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+            notificationManager.createNotificationChannel(syncChannel)
+            notificationManager.createNotificationChannel(alertsChannel)
+        }
+        
+        // Clean up offline photos
+        applicationScope.launch {
+            try {
+                val cacheDir = java.io.File(cacheDir, "offline_photos")
+                if (cacheDir.exists() && cacheDir.isDirectory) {
+                    val oneDayAgo = System.currentTimeMillis() - 24 * 60 * 60 * 1000
+                    cacheDir.listFiles()?.forEach { file ->
+                        if (file.lastModified() < oneDayAgo) {
+                            file.delete()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore cleanup errors
+            }
+        }
     }
 }

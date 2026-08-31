@@ -12,28 +12,32 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.auth.FirebaseAuth
+import com.company.cavitrack.domain.repository.AuthRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.company.cavitrack.domain.repository.InventoryRepository
+import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import com.company.cavitrack.util.DataResult
 
+import com.company.cavitrack.domain.model.EntityType
+import com.company.cavitrack.domain.model.HistoryLog
+import com.company.cavitrack.util.ImageUtil
+import java.util.UUID
+
 @HiltViewModel
 class PhotoUpdateViewModel @Inject constructor(
-    private val repository: InventoryRepository,
-    private val firebaseAuth: FirebaseAuth,
-    private val firebaseStorage: FirebaseStorage
+    private val useCases: InventoryUseCases,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _isSaved = MutableStateFlow(false)
-    val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
+    private val _isSaved = kotlinx.coroutines.channels.Channel<Unit>()
+    val isSaved = _isSaved.receiveAsFlow()
 
     private val _isUploading = MutableStateFlow(false)
     val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
@@ -41,117 +45,64 @@ class PhotoUpdateViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    private suspend fun writeHistory(entityType: com.company.cavitrack.domain.model.EntityType, entityId: String, entityName: String, action: String, photoUrl: String?) {
-        val user = firebaseAuth.currentUser
-        val performer = user?.displayName?.takeIf { it.isNotBlank() } ?: user?.email ?: "Unknown"
-        val log = com.company.cavitrack.domain.model.HistoryLog(
-            id = java.util.UUID.randomUUID().toString(),
-            entityType = entityType.name,
+    private suspend fun writeHistory(entityType: EntityType, entityId: String, entityName: String, action: String, photoUrl: String?) {
+        val performer = authRepository.getCurrentUserName()?.takeIf { it.isNotBlank() } ?: authRepository.getCurrentUserEmail() ?: "Unknown"
+        val log = HistoryLog(
+            id = UUID.randomUUID().toString(),
+            entityType = entityType,
             entityId = entityId,
             entityName = entityName,
             action = action,
-            changeSource = "Photo",
+            changeSource = com.company.cavitrack.domain.model.ChangeSource.Photo,
             photoUrl = photoUrl,
-            performedBy = performer
+            performedBy = performer,
+            timestamp = System.currentTimeMillis()
         )
-        val saveResult = repository.saveHistoryLog(log)
+        val saveResult = useCases.saveHistoryLog(log)
         if (saveResult is DataResult.Error) {
-            android.util.Log.e("History", "Failed to save history log: ${saveResult.message}")
+            if (com.company.cavitrack.BuildConfig.DEBUG) android.util.Log.e("History", "Failed to save history log: ${saveResult.message}")
         }
     }
 
-    fun uploadPhotoAndUpdateEntity(entityType: com.company.cavitrack.domain.model.EntityType, entityId: String, photoFile: File) {
+    fun uploadPhotoAndUpdateEntity(entityType: EntityType, entityId: String, photoFile: File) {
         viewModelScope.launch {
             _isUploading.value = true
             _error.value = null
             var success = false
             try {
-                val user = firebaseAuth.currentUser
-                val uid = user?.uid ?: "unknown"
-                val storageRef = firebaseStorage.reference
-                val fileRef = storageRef.child("photos/$uid/${photoFile.name}")
-                
-                // Downscale image before upload
-                withContext(Dispatchers.Default) {
-                    val options = android.graphics.BitmapFactory.Options().apply {
-                        inJustDecodeBounds = true
-                    }
-                    android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath, options)
-                    
-                    val maxDim = 1280
-                    var inSampleSize = 1
-                    if (options.outHeight > maxDim || options.outWidth > maxDim) {
-                        val halfHeight = options.outHeight / 2
-                        val halfWidth = options.outWidth / 2
-                        while ((halfHeight / inSampleSize) >= maxDim || (halfWidth / inSampleSize) >= maxDim) {
-                            inSampleSize *= 2
-                        }
-                    }
-                    
-                    val decodeOptions = android.graphics.BitmapFactory.Options().apply {
-                        this.inSampleSize = inSampleSize
-                    }
-                    try {
-                        val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath, decodeOptions)
-                        if (bitmap != null) {
-                            try {
-                                java.io.FileOutputStream(photoFile).use { out ->
-                                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
-                                }
-                            } finally {
-                                bitmap.recycle()
-                            }
-                        }
-                    } catch (t: Throwable) {
-                        // Handle OOM or decode errors gracefully
-                        android.util.Log.e("PhotoUpdateViewModel", "Error processing photo", t)
-                    }
+                if (entityType != EntityType.Component) {
+                    _error.value = "Attaching photos to existing $entityType is not supported yet."
+                    return@launch
+                }
+
+                withContext(Dispatchers.IO) {
+                    ImageUtil.downscaleImage(photoFile)
                 }
                 
-                val uri = Uri.fromFile(photoFile)
-                
-                fileRef.putFile(uri).await()
-                val downloadUrl = fileRef.downloadUrl.await().toString()
+                // ML Kit placeholder: Instead of uploading to Firebase Storage, 
+                // you will process `photoFile` with ML Kit here.
+                val downloadUrl: String? = null 
 
-                if (entityType == com.company.cavitrack.domain.model.EntityType.Component) {
-                    // It's a suspend method now!
-                    val result = repository.getComponent(entityId)
-                    if (result is DataResult.Success) {
-                        val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
-                        val saveResult = repository.saveComponent(updated)
-                        if (saveResult is DataResult.Success) {
-                            writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
-                            success = true
-                            _isSaved.value = true
-                        } else if (saveResult is DataResult.Error) {
-                            _error.value = saveResult.message
-                        }
-                    } else if (result is DataResult.Error) {
-                        _error.value = result.message
+                val result = useCases.getComponent(entityId)
+                if (result is DataResult.Success) {
+                    val updated = result.data.copy(updatedAt = System.currentTimeMillis())
+                    val saveResult = useCases.saveComponent(updated)
+                    if (saveResult is DataResult.Success) {
+                        writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
+                        success = true
+                        _isSaved.send(Unit)
+                    } else if (saveResult is DataResult.Error) {
+                        _error.value = saveResult.message
                     }
-                } else {
-                    _error.value = "Attaching photos to existing $entityType is not supported yet."
+                } else if (result is DataResult.Error) {
+                    _error.value = result.message
                 }
             } catch (e: Exception) {
                 val isCancellation = e is kotlinx.coroutines.CancellationException
                 
-                if (entityType == com.company.cavitrack.domain.model.EntityType.Component) {
-                    // Even if cancelled mid-upload, queue it for background sync
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
-                        repository.queuePhotoUpload(entityId, photoFile.absolutePath)
-                        
-                        val result = repository.getComponent(entityId)
-                        if (result is DataResult.Success) {
-                            val photoUri = "file://${photoFile.absolutePath}"
-                            val updated = result.data.copy(photoUrl = photoUri, updatedAt = System.currentTimeMillis())
-                            repository.saveComponent(updated)
-                            writeHistory(entityType, updated.id, updated.name, "Photo Added (Offline Pending)", photoUri)
-                        }
-                    }
-                    success = true
-                    _isSaved.value = true
+                if (entityType == EntityType.Component) {
                     if (!isCancellation) {
-                        _error.value = "Photo queued for upload when online."
+                        _error.value = "Failed to upload photo. Please check your internet connection."
                     }
                 } else {
                     if (!isCancellation) {
@@ -162,7 +113,7 @@ class PhotoUpdateViewModel @Inject constructor(
                 if (isCancellation) throw e
             } finally {
                 _isUploading.value = false
-                if (!success && photoFile.exists()) {
+                if (photoFile.exists()) {
                     photoFile.delete()
                 }
             }

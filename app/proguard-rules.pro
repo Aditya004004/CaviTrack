@@ -14,11 +14,11 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-renamesourcefileattribute SourceFile
 
 # Hilt & Coroutines basic rules
 -keep class dagger.hilt.** { *; }
@@ -30,7 +30,7 @@
 }
 
 # Keep classes and members used by kotlinx.serialization
--keepattributes *Annotation*, InnerClasses
+-keepattributes Signature, *Annotation*, InnerClasses, EnclosingMethod
 -dontnote kotlinx.serialization.AnnotationsKt # don't warn on missing annotations
 -keep,allowobfuscation,allowoptimization class * {
     @kotlinx.serialization.Serializable <fields>;
