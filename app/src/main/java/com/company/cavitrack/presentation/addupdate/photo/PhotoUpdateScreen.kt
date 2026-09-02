@@ -88,16 +88,30 @@ fun PhotoUpdateScreen(
     val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
     val isUploadingState = rememberUpdatedState(isUploading)
 
+    val barcodeAnalyzer = remember {
+        com.company.cavitrack.util.BarcodeAnalyzer { barcodeValue ->
+            // TODO: Handle the scanned barcode value here
+            // For example: viewModel.processBarcode(barcodeValue)
+            android.util.Log.d("BarcodeScanner", "Scanned: $barcodeValue")
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         onDispose {
+            barcodeAnalyzer.close()
             // Unbinding is handled automatically by bindToLifecycle
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        if (error != null) {
-            Text("Error: $error", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
-        }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+    androidx.compose.material3.Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (error != null) {
+                Text("Error: ${error?.asString()}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+            }
 
         if (hasCameraPermission) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -120,11 +134,7 @@ fun PhotoUpdateScreen(
                                     .also {
                                         it.setAnalyzer(
                                             executor,
-                                            com.company.cavitrack.util.BarcodeAnalyzer { barcodeValue ->
-                                                // TODO: Handle the scanned barcode value here
-                                                // For example: viewModel.processBarcode(barcodeValue)
-                                                android.util.Log.d("BarcodeScanner", "Scanned: $barcodeValue")
-                                            }
+                                            barcodeAnalyzer
                                         )
                                     }
 
@@ -137,7 +147,7 @@ fun PhotoUpdateScreen(
                                 )
                             } catch (e: Exception) {
                                 e.printStackTrace()
-                                Toast.makeText(context, "Failed to bind camera: ${e.message}", Toast.LENGTH_SHORT).show()
+                                coroutineScope.launch { snackbarHostState.showSnackbar("Failed to bind camera: ${e.message}") }
                             }
                         }, executor)
                         previewView
@@ -170,7 +180,7 @@ fun PhotoUpdateScreen(
                                     if (entityId != null && currentUri != null) {
                                         viewModel.uploadPhotoAndUpdateEntity(entityType, entityId, File(currentUri))
                                     } else {
-                                        Toast.makeText(context, "Cannot attach photo to an unsaved new item. Create it first.", Toast.LENGTH_LONG).show()
+                                        coroutineScope.launch { snackbarHostState.showSnackbar("Cannot attach photo to an unsaved new item. Create it first.") }
                                     }
                                 }, enabled = true) {
                                     Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.action_upload_save))
@@ -235,7 +245,7 @@ fun PhotoUpdateScreen(
                             } catch (e: Exception) {
                                 e.printStackTrace()
                                 withContext(Dispatchers.Main) {
-                                    Toast.makeText(context, "Failed to load image: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    coroutineScope.launch { snackbarHostState.showSnackbar("Failed to load image: ${e.message}") }
                                 }
                             }
                         }
@@ -258,7 +268,7 @@ fun PhotoUpdateScreen(
                                 }
                                 override fun onError(exc: ImageCaptureException) {
                                     exc.printStackTrace()
-                                    Toast.makeText(context, "Failed to capture image: ${exc.message}", Toast.LENGTH_SHORT).show()
+                                    coroutineScope.launch { snackbarHostState.showSnackbar("Failed to capture image: ${exc.message}") }
                                 }
                             }
                         )
@@ -269,6 +279,7 @@ fun PhotoUpdateScreen(
             }
         }
     }
+}
 }
 
 

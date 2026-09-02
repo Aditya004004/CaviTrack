@@ -37,11 +37,23 @@ class FirestoreInventoryRepository @Inject constructor(
     // Flow-based real-time listeners
     // ──────────────────────────────────────────────
 
-    override fun getComponents(): Flow<PagingData<Component>> {
-        val query = firestore.collection("components")
+    override fun getComponents(searchQuery: String, lowStockOnly: Boolean): Flow<PagingData<Component>> {
+        var query = firestore.collection("components")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+            
+        if (lowStockOnly) {
+            query = query.whereEqualTo("isLowStock", true)
+        }
+        
+        if (searchQuery.isNotBlank()) {
+            // Note: Multiple inequalities / orderBy must follow Firestore rules.
+            // When querying by name (orderBy), we cannot easily combine with other fields unless indexed.
+            // Simple approach for prefix search:
+            query = query.orderBy("name").startAt(searchQuery).endAt(searchQuery + "\uf8ff")
+        } else {
+            query = query.orderBy("createdAt", Query.Direction.DESCENDING)
+        }
 
         return androidx.paging.Pager(
             config = androidx.paging.PagingConfig(pageSize = 20)
@@ -52,11 +64,16 @@ class FirestoreInventoryRepository @Inject constructor(
         }.flow
     }
 
-    override fun getCustomers(): Flow<PagingData<Customer>> {
-        val query = firestore.collection("customers")
+    override fun getCustomers(searchQuery: String): Flow<PagingData<Customer>> {
+        var query = firestore.collection("customers")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+            
+        if (searchQuery.isNotBlank()) {
+            query = query.orderBy("name").startAt(searchQuery).endAt(searchQuery + "\uf8ff")
+        } else {
+            query = query.orderBy("createdAt", Query.Direction.DESCENDING)
+        }
 
         return androidx.paging.Pager(
             config = androidx.paging.PagingConfig(pageSize = 20)
@@ -67,11 +84,20 @@ class FirestoreInventoryRepository @Inject constructor(
         }.flow
     }
 
-    override fun getMolds(): Flow<PagingData<Mold>> {
-        val query = firestore.collection("molds")
+    override fun getMolds(searchQuery: String, status: String?): Flow<PagingData<Mold>> {
+        var query = firestore.collection("molds")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+            
+        if (status != null) {
+            query = query.whereEqualTo("status", status)
+        }
+        
+        if (searchQuery.isNotBlank()) {
+            query = query.orderBy("moldCode").startAt(searchQuery).endAt(searchQuery + "\uf8ff")
+        } else {
+            query = query.orderBy("createdAt", Query.Direction.DESCENDING)
+        }
 
         return androidx.paging.Pager(
             config = androidx.paging.PagingConfig(pageSize = 20)
@@ -82,28 +108,26 @@ class FirestoreInventoryRepository @Inject constructor(
         }.flow
     }
 
-    override fun getHistory(): Flow<DataResult<List<HistoryLog>>> = callbackFlow {
-        if (currentUserId.isBlank()) {
-            trySend(DataResult.Error("Not authenticated"))
-            close()
-            return@callbackFlow
-        }
-        val listener = firestore.collection("history")
+    override fun getHistory(action: String?): Flow<PagingData<HistoryLog>> {
+        var query = firestore.collection("history")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
-            .limit(50) // Cap to prevent unbounded reads
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(DataResult.Error(error.message ?: "Firestore error"))
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val logs = snapshot.toObjects(HistoryLogDto::class.java).map { it.toDomain() }
-                    trySend(DataResult.Success(logs))
-                }
+            
+        if (action != null) {
+            // Note: This requires a composite index in Firestore!
+            // (ownerId ASC, isDeleted ASC, action ASC, timestamp DESC)
+            query = query.whereEqualTo("action", action)
+        }
+        
+        query = query.orderBy("timestamp", Query.Direction.DESCENDING)
+
+        return androidx.paging.Pager(
+            config = androidx.paging.PagingConfig(pageSize = 20)
+        ) {
+            com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc ->
+                doc.toObject(HistoryLogDto::class.java)?.toDomain()
             }
-        awaitClose { listener.remove() }
+        }.flow
     }
     override fun getRecentHistory(limit: Int): Flow<DataResult<List<HistoryLog>>> = callbackFlow {
         if (currentUserId.isBlank()) {
@@ -138,6 +162,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 .count().get(com.google.firebase.firestore.AggregateSource.SERVER).await()
             DataResult.Success(snapshot.count)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             DataResult.Error(e.message ?: "Error fetching count")
         }
     }
@@ -152,6 +177,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 .count().get(com.google.firebase.firestore.AggregateSource.SERVER).await()
             DataResult.Success(snapshot.count)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             DataResult.Error(e.message ?: "Error fetching count")
         }
     }
@@ -165,6 +191,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 .count().get(com.google.firebase.firestore.AggregateSource.SERVER).await()
             DataResult.Success(snapshot.count)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             DataResult.Error(e.message ?: "Error fetching count")
         }
     }
@@ -179,6 +206,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 .count().get(com.google.firebase.firestore.AggregateSource.SERVER).await()
             DataResult.Success(snapshot.count)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             DataResult.Error(e.message ?: "Error fetching count")
         }
     }
@@ -285,6 +313,34 @@ class FirestoreInventoryRepository @Inject constructor(
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             DataResult.Error(e.message ?: "Failed to save")
+        }
+    }
+
+    override suspend fun updateComponentQuantityTransaction(id: String, newQty: Int): DataResult<Component> {
+        val uid = currentUserId
+        if (uid.isBlank()) return DataResult.Error("Must be authenticated to update")
+        val docRef = firestore.collection("components").document(id)
+        
+        return try {
+            val updatedDto = firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(docRef)
+                val dto = snapshot.toObject(ComponentDto::class.java)
+                    ?: throw com.google.firebase.firestore.FirebaseFirestoreException("Component not found", com.google.firebase.firestore.FirebaseFirestoreException.Code.NOT_FOUND)
+                    
+                if (dto.isDeleted || dto.ownerId != uid) {
+                    throw com.google.firebase.firestore.FirebaseFirestoreException("Permission denied", com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED)
+                }
+                
+                val isLowStock = newQty <= dto.minStockThreshold
+                val newDto = dto.copy(qty = newQty, isLowStock = isLowStock, updatedAt = System.currentTimeMillis())
+                transaction.set(docRef, newDto)
+                newDto
+            }.await()
+            
+            DataResult.Success(updatedDto.toDomain())
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            DataResult.Error(e.message ?: "Transaction failed")
         }
     }
 

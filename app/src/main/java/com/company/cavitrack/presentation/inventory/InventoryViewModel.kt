@@ -51,9 +51,37 @@ class InventoryViewModel @Inject constructor(
         _selectedMoldStatus.value = status
     }
 
-    val componentsFlow: Flow<PagingData<Component>> = useCases.getComponents().cachedIn(viewModelScope)
-    val customersFlow: Flow<PagingData<Customer>> = useCases.getCustomers().cachedIn(viewModelScope)
-    val moldsFlow: Flow<PagingData<Mold>> = useCases.getMolds().cachedIn(viewModelScope)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val componentsFlow: Flow<PagingData<Component>> = combine(
+        sessionManager.currentUser.map { it?.uid }.distinctUntilChanged(),
+        _searchQuery,
+        _lowStockOnly
+    ) { uid, query, lowStock ->
+        Triple(uid, query, lowStock)
+    }.flatMapLatest { (uid, query, lowStock) ->
+        if (uid != null) useCases.getComponents(query, lowStock) else flowOf(PagingData.empty())
+    }.cachedIn(viewModelScope)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val customersFlow: Flow<PagingData<Customer>> = combine(
+        sessionManager.currentUser.map { it?.uid }.distinctUntilChanged(),
+        _searchQuery
+    ) { uid, query ->
+        Pair(uid, query)
+    }.flatMapLatest { (uid, query) ->
+        if (uid != null) useCases.getCustomers(query) else flowOf(PagingData.empty())
+    }.cachedIn(viewModelScope)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val moldsFlow: Flow<PagingData<Mold>> = combine(
+        sessionManager.currentUser.map { it?.uid }.distinctUntilChanged(),
+        _searchQuery,
+        _selectedMoldStatus
+    ) { uid, query, status ->
+        Triple(uid, query, status)
+    }.flatMapLatest { (uid, query, status) ->
+        if (uid != null) useCases.getMolds(query, status?.name) else flowOf(PagingData.empty())
+    }.cachedIn(viewModelScope)
 
     fun loadData() {
         // Nothing to do for PagingData initialization

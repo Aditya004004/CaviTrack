@@ -13,12 +13,12 @@ plugins {
 
 android {
     namespace = "com.company.cavitrack"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.cavitrack.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 2
         versionName = "1.1"
 
@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
     implementation(libs.firebase.appcheck)
     debugImplementation(libs.firebase.appcheck.debug)
 

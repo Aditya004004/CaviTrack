@@ -66,4 +66,15 @@
     <string name="error_password_weak">Password must be at least 8 characters with a letter and a number</string>
     <string name="msg_deleting_account">Deleting your account…</string>
     <string name="msg_reauth_required">Please sign out and sign back in, then try again.</string>
+    <!-- Settings -->
+    <string name="title_error">Error</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_discard_proceed">Discard &amp; Proceed</string>
+    <string name="title_confirm_logout">Confirm Logout</string>
+    <string name="msg_confirm_logout">Are you sure you want to log out?</string>
+    <string name="btn_logout">Logout</string>
+    <string name="title_delete_account">Delete Account</string>
+    <string name="msg_delete_account">Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.</string>
+    <string name="btn_delete">Delete</string>
 </resources>

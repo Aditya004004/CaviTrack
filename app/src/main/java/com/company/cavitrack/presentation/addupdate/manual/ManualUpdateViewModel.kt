@@ -33,8 +33,8 @@ class ManualUpdateViewModel @Inject constructor(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    private val _error = MutableStateFlow<com.company.cavitrack.util.UiText?>(null)
+    val error: StateFlow<com.company.cavitrack.util.UiText?> = _error.asStateFlow()
     
     private suspend fun writeHistory(entityType: EntityType, entityId: String, entityName: String, action: String, before: String? = null, after: String? = null, note: String = "") {
         val performer = authRepository.getCurrentUserName()?.takeIf { it.isNotBlank() } ?: authRepository.getCurrentUserEmail() ?: "Unknown"
@@ -53,7 +53,7 @@ class ManualUpdateViewModel @Inject constructor(
         )
         val saveResult = useCases.saveHistoryLog(log)
         if (saveResult is DataResult.Error) {
-            if (com.company.cavitrack.BuildConfig.DEBUG) android.util.Log.e("History", "Failed to save history log: ${saveResult.message}")
+            // Silently ignore history log failures to not block the user flow
         }
     }
 
@@ -69,7 +69,7 @@ class ManualUpdateViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                _error.value = e.message ?: "Failed to load component"
+                _error.value = com.company.cavitrack.util.UiText.DynamicString(e.message ?: "Failed to load component")
             }
         }
     }
@@ -78,23 +78,17 @@ class ManualUpdateViewModel @Inject constructor(
         viewModelScope.launch {
             _isSaving.value = true
             try {
-                when (val result = useCases.getComponent(entityId)) {
+                when (val saveResult = useCases.updateComponentQuantityTransaction(entityId, newQuantity)) {
                     is DataResult.Success -> {
-                        val component = result.data
-                        val updated = component.copy(qty = newQuantity, updatedAt = System.currentTimeMillis())
-                        when (val saveResult = useCases.saveComponent(updated)) {
-                            is DataResult.Success -> {
-                                writeHistory(EntityType.Component, component.id, component.name, "Stock Adjusted", component.qty.toString(), newQuantity.toString(), note)
-                                _isSaved.send(Unit)
-                            }
-                            is DataResult.Error -> _error.value = saveResult.message
-                        }
+                        val component = saveResult.data
+                        writeHistory(EntityType.Component, component.id, component.name, "Stock Adjusted", _currentQty.value?.toString(), newQuantity.toString(), note)
+                        _isSaved.send(Unit)
                     }
-                    is DataResult.Error -> _error.value = result.message
+                    is DataResult.Error -> _error.value = com.company.cavitrack.util.UiText.DynamicString(saveResult.message)
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                _error.value = e.message ?: "Failed to update component"
+                _error.value = com.company.cavitrack.util.UiText.DynamicString(e.message ?: "Failed to update component")
             } finally {
                 _isSaving.value = false
             }
@@ -108,7 +102,7 @@ class ManualUpdateViewModel @Inject constructor(
                 action()
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                _error.value = e.message ?: "Operation failed"
+                _error.value = com.company.cavitrack.util.UiText.DynamicString(e.message ?: "Operation failed")
             } finally {
                 _isSaving.value = false
             }
@@ -117,8 +111,8 @@ class ManualUpdateViewModel @Inject constructor(
 
     fun createComponent(name: String, sku: String, category: String, initialQuantity: Int, note: String) {
         executeWithLoading {
-            if (name.isBlank()) { _error.value = "Name is required."; return@executeWithLoading }
-            if (sku.isBlank()) { _error.value = "SKU is required."; return@executeWithLoading }
+            if (name.isBlank()) { _error.value = com.company.cavitrack.util.UiText.StringResource(com.company.cavitrack.R.string.error_name_empty); return@executeWithLoading }
+            if (sku.isBlank()) { _error.value = com.company.cavitrack.util.UiText.DynamicString("SKU is required."); return@executeWithLoading }
             val component = Component(
                 id = UUID.randomUUID().toString(), name = name, sku = sku,
                 category = category.ifBlank { "General" }, qty = initialQuantity,
@@ -131,14 +125,14 @@ class ManualUpdateViewModel @Inject constructor(
                 writeHistory(EntityType.Component, component.id, component.name, "Created", null, initialQuantity.toString(), note)
                 _isSaved.send(Unit)
             } else if (result is DataResult.Error) {
-                _error.value = result.message
+                _error.value = com.company.cavitrack.util.UiText.DynamicString(result.message)
             }
         }
     }
 
     fun createCustomer(name: String, phone: String, email: String, address: String, note: String) {
         executeWithLoading {
-            if (name.isBlank()) { _error.value = "Name is required."; return@executeWithLoading }
+            if (name.isBlank()) { _error.value = com.company.cavitrack.util.UiText.StringResource(com.company.cavitrack.R.string.error_name_empty); return@executeWithLoading }
             val customer = Customer(
                 id = UUID.randomUUID().toString(), name = name, phone = phone, email = email, address = address,
                 createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()
@@ -148,17 +142,18 @@ class ManualUpdateViewModel @Inject constructor(
                 writeHistory(EntityType.Customer, customer.id, customer.name, "Created", null, null, note)
                 _isSaved.send(Unit)
             } else if (result is DataResult.Error) {
-                _error.value = result.message
+                _error.value = com.company.cavitrack.util.UiText.DynamicString(result.message)
             }
         }
     }
 
     fun createMold(moldCode: String, cavityCount: Int, location: String, note: String) {
         executeWithLoading {
-            if (moldCode.isBlank()) { _error.value = "Mold Code is required."; return@executeWithLoading }
+            if (moldCode.isBlank()) { _error.value = com.company.cavitrack.util.UiText.DynamicString("Mold Code is required."); return@executeWithLoading }
+            if (cavityCount <= 0) { _error.value = com.company.cavitrack.util.UiText.DynamicString("Cavity count must be greater than 0."); return@executeWithLoading }
             val mold = Mold(
                 id = UUID.randomUUID().toString(), moldCode = moldCode,
-                cavityCount = cavityCount.takeIf { it > 0 } ?: 1,
+                cavityCount = cavityCount,
                 status = MoldStatus.Active,
                 location = location.ifBlank { "Storage" },
                 createdAt = System.currentTimeMillis(),
@@ -169,7 +164,7 @@ class ManualUpdateViewModel @Inject constructor(
                 writeHistory(EntityType.Mold, mold.id, mold.moldCode, "Created", null, null, note)
                 _isSaved.send(Unit)
             } else if (result is DataResult.Error) {
-                _error.value = result.message
+                _error.value = com.company.cavitrack.util.UiText.DynamicString(result.message)
             }
         }
     } // closes fun

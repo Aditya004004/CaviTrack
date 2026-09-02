@@ -102,6 +102,12 @@ fun InventoryScreen(
                                 CircularProgressIndicator()
                             }
                         }
+                    } else if (components.loadState.refresh is androidx.paging.LoadState.NotLoading && components.itemCount == 0) {
+                        item {
+                            Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                EmptyState(message = "No components found.")
+                            }
+                        }
                     }
                     items(components.itemCount) { idx ->
                         val component = components[idx]
@@ -124,6 +130,12 @@ fun InventoryScreen(
                                 CircularProgressIndicator()
                             }
                         }
+                    } else if (customers.loadState.refresh is androidx.paging.LoadState.NotLoading && customers.itemCount == 0) {
+                        item {
+                            Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                EmptyState(message = "No customers found.")
+                            }
+                        }
                     }
                     items(customers.itemCount) { idx ->
                         val customer = customers[idx]
@@ -144,6 +156,12 @@ fun InventoryScreen(
                         item {
                             Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator()
+                            }
+                        }
+                    } else if (molds.loadState.refresh is androidx.paging.LoadState.NotLoading && molds.itemCount == 0) {
+                        item {
+                            Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                EmptyState(message = "No molds found.")
                             }
                         }
                     }
@@ -309,7 +327,7 @@ fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
                     MoldStatus.Active -> StatusType.SUCCESS
                     MoldStatus.InMaintenance -> StatusType.WARNING
                     MoldStatus.Retired -> StatusType.NEUTRAL
-                    else -> StatusType.NEUTRAL
+                    MoldStatus.Unknown -> StatusType.NEUTRAL
                 }
             )
         }

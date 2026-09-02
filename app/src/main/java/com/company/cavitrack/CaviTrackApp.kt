@@ -60,9 +60,9 @@ class CaviTrackApp : Application(), Configuration.Provider {
             try {
                 val cacheDir = java.io.File(cacheDir, "offline_photos")
                 if (cacheDir.exists() && cacheDir.isDirectory) {
-                    val oneDayAgo = System.currentTimeMillis() - 24 * 60 * 60 * 1000
+                    val sevenDaysAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
                     cacheDir.listFiles()?.forEach { file ->
-                        if (file.lastModified() < oneDayAgo) {
+                        if (file.lastModified() < sevenDaysAgo) {
                             file.delete()
                         }
                     }

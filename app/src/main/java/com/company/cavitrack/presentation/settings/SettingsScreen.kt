@@ -9,11 +9,9 @@ package com.company.cavitrack.presentation.settings
 
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.platform.LocalContext
-import android.net.Uri
 import androidx.hilt.navigation.compose.hiltViewModel
 import android.widget.Toast
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -24,9 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.presentation.auth.AuthViewModel
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.foundation.clickable
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
@@ -68,6 +66,8 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
+        val context = LocalContext.current
+        
         Card(
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -99,9 +99,6 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         }
 
         Spacer(modifier = Modifier.height(10.dp))
-        
-        val context = LocalContext.current
-        
         // Notification Permission Launcher
         val requestPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
             androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -158,51 +155,92 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     }
     
     if (showLogoutDialog) {
-        AlertDialog(
+        ModalBottomSheet(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Confirm Logout") },
-            text = { Text("Are you sure you want to log out?") },
-            confirmButton = {
-                TextButton(
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Log Out",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Are you sure you want to log out of your account?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
                     onClick = {
                         showLogoutDialog = false
                         authViewModel.logout()
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Logout")
+                    Text("Yes, Log Out")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancel")
+                Spacer(modifier = Modifier.height(12.dp))
+                TextButton(
+                    onClick = { showLogoutDialog = false },
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                ) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
-        )
+        }
     }
 
     if (showDeleteAccountDialog) {
-        AlertDialog(
+        ModalBottomSheet(
             onDismissRequest = { showDeleteAccountDialog = false },
-            title = { Text("Delete Account") },
-            text = { Text("Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Delete Account",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
                     onClick = {
                         showDeleteAccountDialog = false
                         authViewModel.deleteAccount()
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text("Permanently Delete")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteAccountDialog = false }) {
-                    Text("Cancel")
+                Spacer(modifier = Modifier.height(12.dp))
+                TextButton(
+                    onClick = { showDeleteAccountDialog = false },
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                ) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
-        )
+        }
     }
 }
 

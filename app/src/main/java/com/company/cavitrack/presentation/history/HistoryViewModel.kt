@@ -15,40 +15,37 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val useCases: InventoryUseCases,
-    sessionManager: com.company.cavitrack.util.SessionManager
+    private val sessionManager: com.company.cavitrack.util.SessionManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UiState<List<HistoryLog>>>(UiState.Loading)
-    val uiState: StateFlow<UiState<List<HistoryLog>>> = _uiState.asStateFlow()
-    
-    private var loadJob: Job? = null
+    private val _selectedAction = MutableStateFlow<String?>(null)
+    val selectedAction = _selectedAction.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            sessionManager.currentUser.collect { user ->
-                if (user != null) {
-                    loadData()
-                } else {
-                    loadJob?.cancel()
-                    _uiState.value = UiState.Loading
-                }
-            }
-        }
+    fun setActionFilter(action: String?) {
+        _selectedAction.value = action
     }
 
-    fun loadData() {
-        loadJob?.cancel()
-        _uiState.value = UiState.Loading
-        loadJob = viewModelScope.launch {
-            useCases.getHistory().collect { result ->
-                when (result) {
-                    is DataResult.Success -> _uiState.value = UiState.Success(result.data)
-                    is DataResult.Error -> _uiState.value = UiState.Error(result.message)
-                }
-            }
+    val pagedHistoryLogs: Flow<PagingData<HistoryLog>> = combine(
+        sessionManager.currentUser,
+        _selectedAction
+    ) { user, action ->
+        Pair(user, action)
+    }.flatMapLatest { (user, action) ->
+        if (user != null) {
+            useCases.getHistory(action).cachedIn(viewModelScope)
+        } else {
+            emptyFlow()
         }
     }
 }

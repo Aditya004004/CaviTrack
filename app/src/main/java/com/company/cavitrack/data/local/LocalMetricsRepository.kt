@@ -43,4 +43,10 @@ class LocalMetricsRepository @Inject constructor(
             prefs[ACTIVE_MOLDS] = molds
         }
     }
+
+    suspend fun clear() {
+        context.dataStore.edit { prefs ->
+            prefs.clear()
+        }
+    }
 }

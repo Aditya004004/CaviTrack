@@ -31,7 +31,8 @@ class RegisterUseCase @Inject constructor(
 }
 
 class LogoutUseCase @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val localMetricsRepository: com.company.cavitrack.data.local.LocalMetricsRepository
 ) {
     suspend operator fun invoke() {
         try {
@@ -40,13 +41,15 @@ class LogoutUseCase @Inject constructor(
             if (e is CancellationException) throw e
             // Ignore failure if not connected
         }
+        localMetricsRepository.clear()
         authRepository.signOut()
     }
 }
 
 class DeleteAccountUseCase @Inject constructor(
     private val authRepository: AuthRepository,
-    private val inventoryRepository: InventoryRepository
+    private val inventoryRepository: InventoryRepository,
+    private val localMetricsRepository: com.company.cavitrack.data.local.LocalMetricsRepository
 ) {
     suspend operator fun invoke(): DataResult<Unit> {
         val uid = authRepository.getCurrentUserUid()
@@ -57,6 +60,7 @@ class DeleteAccountUseCase @Inject constructor(
         try {
             inventoryRepository.clearUserData() // UID is resolved internally
             authRepository.clearUserPhotos()
+            localMetricsRepository.clear()
         } catch (e: Exception) {
             if (com.company.cavitrack.BuildConfig.DEBUG) {
                 android.util.Log.e("DeleteAccountUseCase", "Failed to clear user data.", e)
@@ -81,10 +85,28 @@ class GetCurrentUserUidUseCase @Inject constructor(
     }
 }
 
+class IsEmailVerifiedUseCase @Inject constructor(
+    private val authRepository: AuthRepository
+) {
+    operator fun invoke(): Boolean {
+        return authRepository.isEmailVerified()
+    }
+}
+
+class ReloadUserUseCase @Inject constructor(
+    private val authRepository: AuthRepository
+) {
+    suspend operator fun invoke(): DataResult<Unit> {
+        return authRepository.reloadUser()
+    }
+}
+
 data class AuthUseCases @Inject constructor(
     val login: LoginUseCase,
     val register: RegisterUseCase,
     val logout: LogoutUseCase,
     val deleteAccount: DeleteAccountUseCase,
-    val getCurrentUserUid: GetCurrentUserUidUseCase
+    val getCurrentUserUid: GetCurrentUserUidUseCase,
+    val isEmailVerified: IsEmailVerifiedUseCase,
+    val reloadUser: ReloadUserUseCase
 )

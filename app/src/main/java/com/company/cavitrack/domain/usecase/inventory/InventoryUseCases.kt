@@ -24,38 +24,39 @@ data class InventoryUseCases @Inject constructor(
     val deleteComponent: DeleteComponentUseCase,
     val deleteCustomer: DeleteCustomerUseCase,
     val deleteMold: DeleteMoldUseCase,
-    val saveHistoryLog: SaveHistoryLogUseCase
+    val saveHistoryLog: SaveHistoryLogUseCase,
+    val updateComponentQuantityTransaction: UpdateComponentQuantityTransactionUseCase
 )
 
 class GetComponentsUseCase @Inject constructor(
     private val repository: InventoryRepository
 ) {
-    operator fun invoke(): Flow<PagingData<Component>> {
-        return repository.getComponents()
+    operator fun invoke(searchQuery: String = "", lowStockOnly: Boolean = false): Flow<PagingData<Component>> {
+        return repository.getComponents(searchQuery, lowStockOnly)
     }
 }
 
 class GetCustomersUseCase @Inject constructor(
     private val repository: InventoryRepository
 ) {
-    operator fun invoke(): Flow<PagingData<Customer>> {
-        return repository.getCustomers()
+    operator fun invoke(searchQuery: String = ""): Flow<PagingData<Customer>> {
+        return repository.getCustomers(searchQuery)
     }
 }
 
 class GetMoldsUseCase @Inject constructor(
     private val repository: InventoryRepository
 ) {
-    operator fun invoke(): Flow<PagingData<Mold>> {
-        return repository.getMolds()
+    operator fun invoke(searchQuery: String = "", status: String? = null): Flow<PagingData<Mold>> {
+        return repository.getMolds(searchQuery, status)
     }
 }
 
 class GetHistoryUseCase @Inject constructor(
     private val repository: InventoryRepository
 ) {
-    operator fun invoke(): Flow<DataResult<List<HistoryLog>>> {
-        return repository.getHistory()
+    operator fun invoke(action: String? = null): Flow<PagingData<HistoryLog>> {
+        return repository.getHistory(action)
     }
 }
 
@@ -136,5 +137,13 @@ class SaveHistoryLogUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(log: HistoryLog): DataResult<Unit> {
         return repository.saveHistoryLog(log)
+    }
+}
+
+class UpdateComponentQuantityTransactionUseCase @Inject constructor(
+    private val repository: InventoryRepository
+) {
+    suspend operator fun invoke(id: String, newQty: Int): DataResult<Component> {
+        return repository.updateComponentQuantityTransaction(id, newQty)
     }
 }

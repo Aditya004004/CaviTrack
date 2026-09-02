@@ -8,7 +8,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 import com.company.cavitrack.domain.usecase.auth.AuthUseCases
@@ -18,7 +17,6 @@ import com.company.cavitrack.util.DataResult
 enum class PendingDestructiveAction { LOGOUT, DELETE_ACCOUNT }
 
 sealed class AuthState {
-
     data object Unauthenticated : AuthState()
     data object Loading : AuthState()
     data object Deleting : AuthState()
@@ -132,12 +130,12 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun reloadUser() {
+        viewModelScope.launch {
+            authUseCases.reloadUser()
+        }
+    }
+
     fun isPasswordStrong(password: String): Boolean = password.length >= 8 && password.any { it.isLetter() } && password.any { it.isDigit() }
 }
-
-
-
-
-
-
 

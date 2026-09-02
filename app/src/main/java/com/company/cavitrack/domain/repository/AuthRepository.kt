@@ -13,4 +13,6 @@ interface AuthRepository {
     fun getCurrentUserUid(): String?
     fun getCurrentUserEmail(): String?
     fun getCurrentUserName(): String?
+    fun isEmailVerified(): Boolean
+    suspend fun reloadUser(): DataResult<Unit>
 }

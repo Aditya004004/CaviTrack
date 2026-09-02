@@ -1,5 +1,7 @@
 package com.company.cavitrack.domain.model
 
+import androidx.compose.runtime.Immutable
+
 enum class MoldStatus {
     Active,
     InMaintenance,
@@ -7,6 +9,7 @@ enum class MoldStatus {
     Unknown
 }
 
+@Immutable
 data class Mold(
     val id: String,
     val moldCode: String,

@@ -103,6 +103,7 @@ class GetDashboardMetricsUseCase @Inject constructor(
             }
             null
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             null // Fails gracefully offline
         }
     }

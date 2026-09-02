@@ -40,7 +40,9 @@ object ImageUtil {
             tempFile.renameTo(file)
             file
         } catch (e: Exception) {
-            e.printStackTrace()
+            if (com.company.cavitrack.BuildConfig.DEBUG) {
+                android.util.Log.e("ImageUtil", "Failed to downscale image", e)
+            }
             null
         } finally {
             bitmap.recycle()

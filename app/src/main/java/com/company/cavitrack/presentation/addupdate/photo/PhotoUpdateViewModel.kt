@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import com.company.cavitrack.domain.repository.AuthRepository
+import com.google.firebase.storage.FirebaseStorage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
@@ -42,8 +43,8 @@ class PhotoUpdateViewModel @Inject constructor(
     private val _isUploading = MutableStateFlow(false)
     val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    private val _error = MutableStateFlow<com.company.cavitrack.util.UiText?>(null)
+    val error: StateFlow<com.company.cavitrack.util.UiText?> = _error.asStateFlow()
 
     private suspend fun writeHistory(entityType: EntityType, entityId: String, entityName: String, action: String, photoUrl: String?) {
         val performer = authRepository.getCurrentUserName()?.takeIf { it.isNotBlank() } ?: authRepository.getCurrentUserEmail() ?: "Unknown"
@@ -60,7 +61,7 @@ class PhotoUpdateViewModel @Inject constructor(
         )
         val saveResult = useCases.saveHistoryLog(log)
         if (saveResult is DataResult.Error) {
-            if (com.company.cavitrack.BuildConfig.DEBUG) android.util.Log.e("History", "Failed to save history log: ${saveResult.message}")
+            // Silently ignore history log failures
         }
     }
 
@@ -71,7 +72,7 @@ class PhotoUpdateViewModel @Inject constructor(
             var success = false
             try {
                 if (entityType != EntityType.Component) {
-                    _error.value = "Attaching photos to existing $entityType is not supported yet."
+                    _error.value = com.company.cavitrack.util.UiText.DynamicString("Attaching photos to existing $entityType is not supported yet.")
                     return@launch
                 }
 
@@ -79,34 +80,35 @@ class PhotoUpdateViewModel @Inject constructor(
                     ImageUtil.downscaleImage(photoFile)
                 }
                 
-                // ML Kit placeholder: Instead of uploading to Firebase Storage, 
-                // you will process `photoFile` with ML Kit here.
-                val downloadUrl: String? = null 
+                val storageRef = FirebaseStorage.getInstance().reference
+                val fileRef = storageRef.child("photos/${UUID.randomUUID()}.jpg")
+                fileRef.putFile(Uri.fromFile(photoFile)).await()
+                val downloadUrl = fileRef.downloadUrl.await().toString()
 
                 val result = useCases.getComponent(entityId)
                 if (result is DataResult.Success) {
-                    val updated = result.data.copy(updatedAt = System.currentTimeMillis())
+                    val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
                     val saveResult = useCases.saveComponent(updated)
                     if (saveResult is DataResult.Success) {
                         writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
                         success = true
                         _isSaved.send(Unit)
                     } else if (saveResult is DataResult.Error) {
-                        _error.value = saveResult.message
+                        _error.value = com.company.cavitrack.util.UiText.DynamicString(saveResult.message)
                     }
                 } else if (result is DataResult.Error) {
-                    _error.value = result.message
+                    _error.value = com.company.cavitrack.util.UiText.DynamicString(result.message)
                 }
             } catch (e: Exception) {
                 val isCancellation = e is kotlinx.coroutines.CancellationException
                 
                 if (entityType == EntityType.Component) {
                     if (!isCancellation) {
-                        _error.value = "Failed to upload photo. Please check your internet connection."
+                        _error.value = com.company.cavitrack.util.UiText.DynamicString("Failed to upload photo. Please check your internet connection.")
                     }
                 } else {
                     if (!isCancellation) {
-                        _error.value = e.message
+                        _error.value = com.company.cavitrack.util.UiText.DynamicString(e.message ?: "Error")
                     }
                 }
                 

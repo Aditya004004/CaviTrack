@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAuthenticated() {
-      return request.auth != null && request.auth.token.email_verified == true && request.appCheck.token != null;
+      return request.auth != null && request.appCheck.token != null;
     }
 
     function isOwner(data) {
@@ -72,7 +72,8 @@ service cloud.firestore {
     match /history/{documentId} {
       allow read: if isOwner(resource.data);
       allow create: if isOwnerCreating(request.resource.data) && isValidHistoryLog(request.resource.data);
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isOwner(resource.data);
     }
 
     match /users/{userId}/fcmTokens/{tokenId} {

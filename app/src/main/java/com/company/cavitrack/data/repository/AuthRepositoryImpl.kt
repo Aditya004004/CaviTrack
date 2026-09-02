@@ -129,4 +129,23 @@ class AuthRepositoryImpl @Inject constructor(
     override fun getCurrentUserName(): String? {
         return firebaseAuth.currentUser?.displayName
     }
+
+    override fun isEmailVerified(): Boolean {
+        return firebaseAuth.currentUser?.isEmailVerified == true
+    }
+
+    override suspend fun reloadUser(): DataResult<Unit> {
+        return try {
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                user.reload().await()
+                DataResult.Success(Unit)
+            } else {
+                DataResult.Error("No authenticated user")
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to reload user")
+        }
+    }
 }

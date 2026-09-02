@@ -70,7 +70,7 @@ fun ManualUpdateScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         if (error != null) {
-            Text(error ?: "", color = MaterialTheme.colorScheme.error)
+            Text(error?.asString() ?: "", color = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(16.dp))
         } else if (hasUnsupportedError) {
             Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.unsupported_update), color = MaterialTheme.colorScheme.error)

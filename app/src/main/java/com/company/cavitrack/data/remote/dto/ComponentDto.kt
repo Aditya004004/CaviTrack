@@ -19,6 +19,7 @@ data class ComponentDto @JvmOverloads constructor(
     val updatedAt: Long = 0L,
     @get:PropertyName("isDeleted")
     val isDeleted: Boolean = false,
+    @get:PropertyName("isLowStock")
     val isLowStock: Boolean = false
 )
 
