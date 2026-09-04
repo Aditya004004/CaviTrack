@@ -30,7 +30,7 @@ fun AddUpdateActionScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        var selectedType by remember { mutableStateOf(entityType ?: com.company.cavitrack.domain.model.EntityType.Component) }
+        var selectedType by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(entityType ?: com.company.cavitrack.domain.model.EntityType.Component) }
         
         Text(
             text = "Update Entry",

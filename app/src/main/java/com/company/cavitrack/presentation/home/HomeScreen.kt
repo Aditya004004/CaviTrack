@@ -32,6 +32,7 @@ import java.util.Date
 import java.util.Locale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Refresh
 
 @Composable
 fun HomeScreen(
@@ -51,11 +52,19 @@ fun HomeScreen(
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 item {
-                    Text(
-                        text = stringResource(R.string.title_dashboard),
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.title_dashboard),
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        IconButton(onClick = { viewModel.loadData() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh Dashboard")
+                        }
+                    }
                     
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

@@ -13,18 +13,18 @@ class FirestorePagingSource<T : Any>(
     override suspend fun load(params: LoadParams<DocumentSnapshot>): LoadResult<DocumentSnapshot, T> {
         return try {
             var currentPage = baseQuery.limit(params.loadSize.toLong())
-            if (params.key != null) {
-                currentPage = currentPage.startAfter(params.key!!)
+            params.key?.let {
+                currentPage = currentPage.startAfter(it)
             }
             val snapshot = currentPage.get().await()
-            val lastDocumentSnapshot = if (snapshot.size() > 0) snapshot.documents.last() else null
+            val nextKey = if (snapshot.size() < params.loadSize) null else snapshot.documents.lastOrNull()
             
             val data = snapshot.documents.mapNotNull { mapper(it) }
             
             LoadResult.Page(
                 data = data,
                 prevKey = null,
-                nextKey = lastDocumentSnapshot
+                nextKey = nextKey
             )
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e

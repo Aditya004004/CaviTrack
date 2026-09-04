@@ -256,22 +256,27 @@ fun PhotoUpdateScreen(
                 }
                 Button(
                     onClick = {
-                        val offlinePhotosDir = File(context.cacheDir, "offline_photos").apply { mkdirs() }
-                        val file = File(offlinePhotosDir, "${System.currentTimeMillis()}.jpg")
-                        val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
-                        imageCapture.takePicture(
-                            outputOptions,
-                            executor,
-                            object : ImageCapture.OnImageSavedCallback {
-                                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                                    photoUri = file.absolutePath
-                                }
-                                override fun onError(exc: ImageCaptureException) {
-                                    exc.printStackTrace()
-                                    coroutineScope.launch { snackbarHostState.showSnackbar("Failed to capture image: ${exc.message}") }
-                                }
+                        coroutineScope.launch(Dispatchers.IO) {
+                            val offlinePhotosDir = File(context.cacheDir, "offline_photos").apply { mkdirs() }
+                            val file = File(offlinePhotosDir, "${System.currentTimeMillis()}.jpg")
+                            val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
+                            
+                            withContext(Dispatchers.Main) {
+                                imageCapture.takePicture(
+                                    outputOptions,
+                                    executor,
+                                    object : ImageCapture.OnImageSavedCallback {
+                                        override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                            photoUri = file.absolutePath
+                                        }
+                                        override fun onError(exc: ImageCaptureException) {
+                                            exc.printStackTrace()
+                                            coroutineScope.launch { snackbarHostState.showSnackbar("Failed to capture image: ${exc.message}") }
+                                        }
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
                 ) {
                     Text("Capture")

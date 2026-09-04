@@ -43,11 +43,11 @@ class HistoryViewModel @Inject constructor(
         Pair(user, action)
     }.flatMapLatest { (user, action) ->
         if (user != null) {
-            useCases.getHistory(action).cachedIn(viewModelScope)
+            useCases.getHistory(action)
         } else {
             emptyFlow()
         }
-    }
+    }.cachedIn(viewModelScope)
 }
 
 

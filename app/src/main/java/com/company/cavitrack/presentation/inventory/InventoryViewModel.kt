@@ -51,10 +51,16 @@ class InventoryViewModel @Inject constructor(
         _selectedMoldStatus.value = status
     }
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    val debouncedSearchQuery: Flow<String> = _searchQuery
+        .debounce { query -> if (query.isEmpty()) 0L else 300L }
+        .map { it.trim() }
+        .distinctUntilChanged()
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val componentsFlow: Flow<PagingData<Component>> = combine(
         sessionManager.currentUser.map { it?.uid }.distinctUntilChanged(),
-        _searchQuery,
+        debouncedSearchQuery,
         _lowStockOnly
     ) { uid, query, lowStock ->
         Triple(uid, query, lowStock)
@@ -65,7 +71,7 @@ class InventoryViewModel @Inject constructor(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val customersFlow: Flow<PagingData<Customer>> = combine(
         sessionManager.currentUser.map { it?.uid }.distinctUntilChanged(),
-        _searchQuery
+        debouncedSearchQuery
     ) { uid, query ->
         Pair(uid, query)
     }.flatMapLatest { (uid, query) ->
@@ -75,7 +81,7 @@ class InventoryViewModel @Inject constructor(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val moldsFlow: Flow<PagingData<Mold>> = combine(
         sessionManager.currentUser.map { it?.uid }.distinctUntilChanged(),
-        _searchQuery,
+        debouncedSearchQuery,
         _selectedMoldStatus
     ) { uid, query, status ->
         Triple(uid, query, status)

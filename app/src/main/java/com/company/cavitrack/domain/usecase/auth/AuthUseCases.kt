@@ -58,13 +58,18 @@ class DeleteAccountUseCase @Inject constructor(
         }
 
         try {
-            inventoryRepository.clearUserData() // UID is resolved internally
+            val clearResult = inventoryRepository.clearUserData() // UID is resolved internally
+            if (clearResult is DataResult.Error) {
+                return DataResult.Error("Failed to clear user data: ${clearResult.message}. Account deletion aborted to prevent data orphaning.")
+            }
             authRepository.clearUserPhotos()
             localMetricsRepository.clear()
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             if (com.company.cavitrack.BuildConfig.DEBUG) {
                 android.util.Log.e("DeleteAccountUseCase", "Failed to clear user data.", e)
             }
+            return DataResult.Error("Failed to clear user data. Account deletion aborted.")
         }
         
         // Delete the Auth user after data is cleared

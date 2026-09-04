@@ -24,6 +24,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.presentation.auth.AuthViewModel
 import androidx.compose.foundation.clickable
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Policy
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
@@ -63,14 +72,28 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         )
     }
 
+    val context = LocalContext.current
+    val requestPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Toast.makeText(context, "Notifications enabled", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Notifications permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val context = LocalContext.current
-        
+        // User Profile Card
         Card(
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -81,77 +104,187 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(52.dp)
                 ) {
                     Icon(
                         Icons.Filled.Person,
                         contentDescription = "Profile",
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(14.dp),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(userName, style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                    Text(userEmail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        userName,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                    )
+                    Text(
+                        userEmail,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-        // Notification Permission Launcher
-        val requestPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
-                Toast.makeText(context, "Notifications enabled", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "Notifications permission denied", Toast.LENGTH_SHORT).show()
-            }
-        }
-        
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            ListItem(
-                headlineContent = { Text("Enable Notifications") },
-                supportingContent = { Text("Receive alerts for low inventory and sync status.") },
-                modifier = Modifier.clickable {
-                    val permission = android.Manifest.permission.POST_NOTIFICATIONS
-                    if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                        requestPermissionLauncher.launch(permission)
-                    } else {
-                        Toast.makeText(context, "Notifications are already enabled.", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            )
-        }
+        Spacer(modifier = Modifier.height(20.dp))
 
-        val privacyPolicyUrl = androidx.compose.ui.res.stringResource(id = com.company.cavitrack.R.string.privacy_policy_url)
-        ListItem(
-            headlineContent = { Text("Privacy Policy") },
-            modifier = Modifier.clickable {
-                try {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(privacyPolicyUrl))
-                    context.startActivity(intent)
-                } catch (e: android.content.ActivityNotFoundException) {
-                    Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
-        
-        ListItem(
-            headlineContent = { Text("Delete Account", color = MaterialTheme.colorScheme.error) },
-            modifier = Modifier.clickable { showDeleteAccountDialog = true }
+        // Preferences Section
+        Text(
+            text = "PREFERENCES",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, bottom = 8.dp)
         )
 
-        Spacer(modifier = Modifier.weight(1f))
-        Button(
-            onClick = { showLogoutDialog = true },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Logout")
+            Column {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    ListItem(
+                        leadingContent = {
+                            Icon(
+                                Icons.Outlined.Notifications,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        headlineContent = { Text("Notifications") },
+                        supportingContent = { Text("Receive alerts for low inventory and sync status") },
+                        trailingContent = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+                            if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                requestPermissionLauncher.launch(permission)
+                            } else {
+                                Toast.makeText(context, "Notifications are already enabled.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                }
+
+                val privacyPolicyUrl = androidx.compose.ui.res.stringResource(id = com.company.cavitrack.R.string.privacy_policy_url)
+                ListItem(
+                    leadingContent = {
+                        Icon(
+                            Icons.Outlined.Policy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    headlineContent = { Text("Privacy Policy") },
+                    supportingContent = { Text("View terms and data privacy policy") },
+                    trailingContent = {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.OpenInNew,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        try {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(privacyPolicyUrl))
+                            context.startActivity(intent)
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Account Section
+        Text(
+            text = "ACCOUNT",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, bottom = 8.dp)
+        )
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column {
+                ListItem(
+                    leadingContent = {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.Logout,
+                            contentDescription = "Log Out",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    headlineContent = { Text("Log Out") },
+                    supportingContent = { Text("Sign out of your account on this device") },
+                    trailingContent = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    },
+                    modifier = Modifier.clickable { showLogoutDialog = true }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                ListItem(
+                    leadingContent = {
+                        Icon(
+                            Icons.Outlined.DeleteForever,
+                            contentDescription = "Delete Account",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    headlineContent = { Text("Delete Account", color = MaterialTheme.colorScheme.error) },
+                    supportingContent = { Text("Permanently delete account and all data") },
+                    trailingContent = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                        )
+                    },
+                    modifier = Modifier.clickable { showDeleteAccountDialog = true }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(36.dp))
+
+        Text(
+            text = "CaviTrack v1.1",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
     }
     
     if (showLogoutDialog) {

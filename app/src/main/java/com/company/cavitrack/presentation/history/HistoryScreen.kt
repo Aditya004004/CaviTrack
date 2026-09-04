@@ -28,6 +28,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,7 +88,7 @@ fun HistoryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(count = historyLogs.itemCount) { index ->
+                    items(count = historyLogs.itemCount, key = historyLogs.itemKey { it.id }) { index ->
                         val log = historyLogs[index]
                         if (log != null) {
                             ListCard(onClick = { onNavigateToDetail(log.entityType.name, log.entityId) }) {

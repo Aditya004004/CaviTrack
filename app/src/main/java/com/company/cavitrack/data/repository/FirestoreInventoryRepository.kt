@@ -4,6 +4,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.auth.FirebaseAuth
 import androidx.paging.PagingData
+import androidx.paging.filter
+import kotlinx.coroutines.flow.map
 import com.company.cavitrack.data.remote.dto.ComponentDto
 import com.company.cavitrack.data.remote.dto.CustomerDto
 import com.company.cavitrack.data.remote.dto.HistoryLogDto
@@ -46,42 +48,65 @@ class FirestoreInventoryRepository @Inject constructor(
             query = query.whereEqualTo("isLowStock", true)
         }
         
-        if (searchQuery.isNotBlank()) {
-            // Note: Multiple inequalities / orderBy must follow Firestore rules.
-            // When querying by name (orderBy), we cannot easily combine with other fields unless indexed.
-            // Simple approach for prefix search:
-            query = query.orderBy("name").startAt(searchQuery).endAt(searchQuery + "\uf8ff")
-        } else {
-            query = query.orderBy("createdAt", Query.Direction.DESCENDING)
-        }
+        query = query.orderBy("createdAt", Query.Direction.DESCENDING)
+
+        val cleanQuery = searchQuery.trim()
 
         return androidx.paging.Pager(
-            config = androidx.paging.PagingConfig(pageSize = 20)
+            config = androidx.paging.PagingConfig(
+                pageSize = 30,
+                prefetchDistance = 15,
+                initialLoadSize = 60,
+                enablePlaceholders = false
+            )
         ) {
             com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
                 doc.toObject(ComponentDto::class.java)?.toDomain() 
             }
-        }.flow
+        }.flow.map { pagingData ->
+            if (cleanQuery.isNotBlank()) {
+                pagingData.filter { component ->
+                    component.name.contains(cleanQuery, ignoreCase = true) ||
+                    component.sku.contains(cleanQuery, ignoreCase = true) ||
+                    component.category.contains(cleanQuery, ignoreCase = true)
+                }
+            } else {
+                pagingData
+            }
+        }
     }
 
     override fun getCustomers(searchQuery: String): Flow<PagingData<Customer>> {
-        var query = firestore.collection("customers")
+        val query = firestore.collection("customers")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
-            
-        if (searchQuery.isNotBlank()) {
-            query = query.orderBy("name").startAt(searchQuery).endAt(searchQuery + "\uf8ff")
-        } else {
-            query = query.orderBy("createdAt", Query.Direction.DESCENDING)
-        }
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+
+        val cleanQuery = searchQuery.trim()
 
         return androidx.paging.Pager(
-            config = androidx.paging.PagingConfig(pageSize = 20)
+            config = androidx.paging.PagingConfig(
+                pageSize = 30,
+                prefetchDistance = 15,
+                initialLoadSize = 60,
+                enablePlaceholders = false
+            )
         ) {
             com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
                 doc.toObject(CustomerDto::class.java)?.toDomain() 
             }
-        }.flow
+        }.flow.map { pagingData ->
+            if (cleanQuery.isNotBlank()) {
+                pagingData.filter { customer ->
+                    customer.name.contains(cleanQuery, ignoreCase = true) ||
+                    customer.email.contains(cleanQuery, ignoreCase = true) ||
+                    customer.phone.contains(cleanQuery, ignoreCase = true) ||
+                    customer.address.contains(cleanQuery, ignoreCase = true)
+                }
+            } else {
+                pagingData
+            }
+        }
     }
 
     override fun getMolds(searchQuery: String, status: String?): Flow<PagingData<Mold>> {
@@ -93,19 +118,32 @@ class FirestoreInventoryRepository @Inject constructor(
             query = query.whereEqualTo("status", status)
         }
         
-        if (searchQuery.isNotBlank()) {
-            query = query.orderBy("moldCode").startAt(searchQuery).endAt(searchQuery + "\uf8ff")
-        } else {
-            query = query.orderBy("createdAt", Query.Direction.DESCENDING)
-        }
+        query = query.orderBy("createdAt", Query.Direction.DESCENDING)
+
+        val cleanQuery = searchQuery.trim()
 
         return androidx.paging.Pager(
-            config = androidx.paging.PagingConfig(pageSize = 20)
+            config = androidx.paging.PagingConfig(
+                pageSize = 30,
+                prefetchDistance = 15,
+                initialLoadSize = 60,
+                enablePlaceholders = false
+            )
         ) {
             com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
                 doc.toObject(MoldDto::class.java)?.toDomain() 
             }
-        }.flow
+        }.flow.map { pagingData ->
+            if (cleanQuery.isNotBlank()) {
+                pagingData.filter { mold ->
+                    mold.moldCode.contains(cleanQuery, ignoreCase = true) ||
+                    mold.location.contains(cleanQuery, ignoreCase = true) ||
+                    mold.status.name.contains(cleanQuery, ignoreCase = true)
+                }
+            } else {
+                pagingData
+            }
+        }
     }
 
     override fun getHistory(action: String?): Flow<PagingData<HistoryLog>> {

@@ -47,7 +47,8 @@ fun CaviTrackNavGraph(
             InventoryScreen(
                 onComponentClick = { id -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true } },
                 onCustomerClick = { id -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true } },
-                onMoldClick = { id -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true } }
+                onMoldClick = { id -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true } },
+                onAddNewItem = { entityType -> navController.navigate(Route.ManualUpdate(entityType, null)) { launchSingleTop = true } }
             ) 
         }
         composable<Route.History> { 
