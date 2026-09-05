@@ -1,9 +1,8 @@
 package com.company.cavitrack.domain.usecase.inventory
 
 import com.company.cavitrack.data.local.LocalMetricsRepository
+import com.company.cavitrack.domain.model.DashboardMetrics
 import com.company.cavitrack.domain.repository.InventoryRepository
-import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.presentation.home.HomeData
 import com.company.cavitrack.util.DataResult
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -18,59 +17,52 @@ class GetDashboardMetricsUseCase @Inject constructor(
     private val repository: InventoryRepository,
     private val localMetricsRepository: LocalMetricsRepository
 ) {
-    operator fun invoke(): Flow<UiState<HomeData>> = flow {
-        emit(UiState.Loading)
-        
+    operator fun invoke(): Flow<DataResult<DashboardMetrics>> = flow {
         // 1. Emit cached local metrics immediately
         val cachedComponents = localMetricsRepository.totalComponents.first()
         val cachedLowStock = localMetricsRepository.lowStockCount.first()
         val cachedCustomers = localMetricsRepository.totalCustomers.first()
         val cachedMolds = localMetricsRepository.activeMolds.first()
-        
-        // We might not have cached history logs, so we fetch those from the flow below
-        // but we can emit the cached counts first.
-        val initialData = HomeData(
+
+        val initialData = DashboardMetrics(
             totalComponents = cachedComponents.toInt(),
             lowStockCount = cachedLowStock.toInt(),
             totalCustomers = cachedCustomers.toInt(),
             activeMolds = cachedMolds.toInt(),
-            recentActivity = emptyList() // Will be updated when stream comes in
+            recentActivity = emptyList()
         )
-        emit(UiState.Success(initialData))
+        emit(DataResult.Success(initialData))
 
         // 2. Combine history flow and fetch fresh server counts
         val combinedFlow = repository.getRecentHistory(5).combine(flow {
             emit(fetchFreshCounts())
         }) { historyResult, countsResult ->
             if (historyResult is DataResult.Error) {
-                UiState.Error(historyResult.message)
+                DataResult.Error(historyResult.message)
             } else {
                 val history = (historyResult as DataResult.Success).data
-                
                 if (countsResult != null) {
-                    // Fresh counts retrieved, combine with history
-                    UiState.Success(
-                        HomeData(
-                            totalComponents = countsResult.totalComponents.toInt(),
-                            lowStockCount = countsResult.lowStockCount.toInt(),
-                            totalCustomers = countsResult.totalCustomers.toInt(),
-                            activeMolds = countsResult.activeMolds.toInt(),
+                    DataResult.Success(
+                        DashboardMetrics(
+                            totalComponents = countsResult.totalComponents,
+                            lowStockCount = countsResult.lowStockCount,
+                            totalCustomers = countsResult.totalCustomers,
+                            activeMolds = countsResult.activeMolds,
                             recentActivity = history
                         )
                     )
                 } else {
-                    // Network failed for counts, use cached counts + history
-                    UiState.Success(
+                    DataResult.Success(
                         initialData.copy(recentActivity = history)
                     )
                 }
             }
         }
-        
+
         emitAll(combinedFlow)
     }
 
-    private suspend fun fetchFreshCounts(): HomeData? = coroutineScope {
+    private suspend fun fetchFreshCounts(): DashboardMetrics? = coroutineScope {
         try {
             val compDeferred = async { repository.getComponentsCount() }
             val lowStockDeferred = async { repository.getLowStockComponentsCount() }
@@ -82,23 +74,22 @@ class GetDashboardMetricsUseCase @Inject constructor(
             val custRes = custDeferred.await()
             val moldRes = moldDeferred.await()
 
-            if (compRes is DataResult.Success && lowStockRes is DataResult.Success && 
-                custRes is DataResult.Success && moldRes is DataResult.Success) {
-                
-                // Save to local cache
+            if (compRes is DataResult.Success && lowStockRes is DataResult.Success &&
+                custRes is DataResult.Success && moldRes is DataResult.Success
+            ) {
                 localMetricsRepository.saveMetrics(
                     components = compRes.data,
                     lowStock = lowStockRes.data,
                     customers = custRes.data,
                     molds = moldRes.data
                 )
-                
-                return@coroutineScope HomeData(
+
+                return@coroutineScope DashboardMetrics(
                     totalComponents = compRes.data.toInt(),
                     lowStockCount = lowStockRes.data.toInt(),
                     totalCustomers = custRes.data.toInt(),
                     activeMolds = moldRes.data.toInt(),
-                    recentActivity = emptyList() // Merged later
+                    recentActivity = emptyList()
                 )
             }
             null

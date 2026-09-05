@@ -16,7 +16,8 @@ class AuthRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firebaseAuth: FirebaseAuth,
     private val firebaseFirestore: FirebaseFirestore,
-    private val firebaseMessaging: FirebaseMessaging
+    private val firebaseMessaging: FirebaseMessaging,
+    private val storageRepository: com.company.cavitrack.domain.repository.StorageRepository
 ) : AuthRepository {
 
     override suspend fun registerPushToken() {
@@ -71,7 +72,15 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearUserPhotos() {
-        // No-op since we no longer use Firebase Storage
+        val uid = firebaseAuth.currentUser?.uid ?: return
+        try {
+            storageRepository.deleteUserPhotos(uid)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            if (com.company.cavitrack.BuildConfig.DEBUG) {
+                Log.e("AuthRepository", "Failed to clear user photos", e)
+            }
+        }
     }
 
     override suspend fun deleteAccount(): DataResult<Unit> {

@@ -1,22 +1,17 @@
 package com.company.cavitrack.presentation.home
 
-
-import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.HistoryLog
-import com.company.cavitrack.domain.repository.InventoryRepository
+import com.company.cavitrack.domain.usecase.inventory.GetDashboardMetricsUseCase
 import com.company.cavitrack.presentation.components.UiState
 import com.company.cavitrack.util.DataResult
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.async
-import javax.inject.Inject
-
 import com.company.cavitrack.util.SessionManager
-import com.company.cavitrack.domain.usecase.inventory.GetDashboardMetricsUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
+import javax.inject.Inject
 
 data class HomeData(
     val totalComponents: Int = 0,
@@ -34,14 +29,27 @@ class HomeViewModel @Inject constructor(
 
     private val retryTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val uiState: StateFlow<UiState<HomeData>> = combine(
         sessionManager.currentUser.distinctUntilChanged { old, new -> old?.uid == new?.uid },
         retryTrigger.onStart { emit(Unit) }
     ) { user, _ -> user }
         .flatMapLatest { user ->
             if (user != null) {
-                getDashboardMetrics().catch { e ->
+                getDashboardMetrics().map { result ->
+                    when (result) {
+                        is DataResult.Success -> UiState.Success(
+                            HomeData(
+                                totalComponents = result.data.totalComponents,
+                                lowStockCount = result.data.lowStockCount,
+                                totalCustomers = result.data.totalCustomers,
+                                activeMolds = result.data.activeMolds,
+                                recentActivity = result.data.recentActivity
+                            )
+                        )
+                        is DataResult.Error -> UiState.Error(result.message)
+                    }
+                }.catch { e ->
                     emit(UiState.Error(e.message ?: "Unknown error"))
                 }
             } else {
@@ -58,7 +66,3 @@ class HomeViewModel @Inject constructor(
         retryTrigger.tryEmit(Unit)
     }
 }
-
-
-
-

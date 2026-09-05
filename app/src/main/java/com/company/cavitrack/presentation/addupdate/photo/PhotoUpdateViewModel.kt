@@ -1,53 +1,49 @@
 package com.company.cavitrack.presentation.addupdate.photo
 
-
-
-
-
-
-
-
-import android.net.Uri
-import java.io.File
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.withContext
-import com.company.cavitrack.domain.repository.AuthRepository
-import com.google.firebase.storage.FirebaseStorage
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.company.cavitrack.domain.model.EntityType
+import com.company.cavitrack.domain.model.HistoryLog
+import com.company.cavitrack.domain.repository.AuthRepository
+import com.company.cavitrack.domain.repository.StorageRepository
 import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
+import com.company.cavitrack.util.DataResult
+import com.company.cavitrack.util.ImageUtil
+import com.company.cavitrack.util.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
-import com.company.cavitrack.util.DataResult
-
-import com.company.cavitrack.domain.model.EntityType
-import com.company.cavitrack.domain.model.HistoryLog
-import com.company.cavitrack.util.ImageUtil
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.UUID
+import javax.inject.Inject
 
 @HiltViewModel
 class PhotoUpdateViewModel @Inject constructor(
     private val useCases: InventoryUseCases,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val storageRepository: StorageRepository
 ) : ViewModel() {
 
-    private val _isSaved = kotlinx.coroutines.channels.Channel<Unit>()
+    private val _isSaved = Channel<Unit>(capacity = Channel.BUFFERED)
     val isSaved = _isSaved.receiveAsFlow()
 
     private val _isUploading = MutableStateFlow(false)
     val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
 
-    private val _error = MutableStateFlow<com.company.cavitrack.util.UiText?>(null)
-    val error: StateFlow<com.company.cavitrack.util.UiText?> = _error.asStateFlow()
+    private val _error = MutableStateFlow<UiText?>(null)
+    val error: StateFlow<UiText?> = _error.asStateFlow()
 
     private suspend fun writeHistory(entityType: EntityType, entityId: String, entityName: String, action: String, photoUrl: String?) {
-        val performer = authRepository.getCurrentUserName()?.takeIf { it.isNotBlank() } ?: authRepository.getCurrentUserEmail() ?: "Unknown"
+        val performer = authRepository.getCurrentUserName()?.takeIf { it.isNotBlank() }
+            ?: authRepository.getCurrentUserEmail() ?: "Unknown"
         val log = HistoryLog(
             id = UUID.randomUUID().toString(),
             entityType = entityType,
@@ -61,7 +57,9 @@ class PhotoUpdateViewModel @Inject constructor(
         )
         val saveResult = useCases.saveHistoryLog(log)
         if (saveResult is DataResult.Error) {
-            // Silently ignore history log failures
+            if (com.company.cavitrack.BuildConfig.DEBUG) {
+                Log.w("PhotoUpdateViewModel", "Failed to save history log: ${saveResult.message}")
+            }
         }
     }
 
@@ -69,21 +67,30 @@ class PhotoUpdateViewModel @Inject constructor(
         viewModelScope.launch {
             _isUploading.value = true
             _error.value = null
-            var success = false
             try {
                 if (entityType != EntityType.Component) {
-                    _error.value = com.company.cavitrack.util.UiText.DynamicString("Attaching photos to existing $entityType is not supported yet.")
+                    _error.value = UiText.DynamicString("Attaching photos to existing $entityType is not supported yet.")
+                    return@launch
+                }
+
+                val userId = authRepository.getCurrentUserUid()
+                if (userId.isNullOrBlank()) {
+                    _error.value = UiText.DynamicString("User not authenticated.")
                     return@launch
                 }
 
                 withContext(Dispatchers.IO) {
                     ImageUtil.downscaleImage(photoFile)
                 }
-                
-                val storageRef = FirebaseStorage.getInstance().reference
-                val fileRef = storageRef.child("photos/${UUID.randomUUID()}.jpg")
-                fileRef.putFile(Uri.fromFile(photoFile)).await()
-                val downloadUrl = fileRef.downloadUrl.await().toString()
+
+                val uploadPath = "photos/$userId/${UUID.randomUUID()}.jpg"
+                val uploadResult = storageRepository.uploadPhoto(photoFile, uploadPath)
+                if (uploadResult is DataResult.Error) {
+                    _error.value = UiText.DynamicString(uploadResult.message)
+                    return@launch
+                }
+
+                val downloadUrl = (uploadResult as DataResult.Success).data
 
                 val result = useCases.getComponent(entityId)
                 if (result is DataResult.Success) {
@@ -91,28 +98,16 @@ class PhotoUpdateViewModel @Inject constructor(
                     val saveResult = useCases.saveComponent(updated)
                     if (saveResult is DataResult.Success) {
                         writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
-                        success = true
                         _isSaved.send(Unit)
                     } else if (saveResult is DataResult.Error) {
-                        _error.value = com.company.cavitrack.util.UiText.DynamicString(saveResult.message)
+                        _error.value = UiText.DynamicString(saveResult.message)
                     }
                 } else if (result is DataResult.Error) {
-                    _error.value = com.company.cavitrack.util.UiText.DynamicString(result.message)
+                    _error.value = UiText.DynamicString(result.message)
                 }
             } catch (e: Exception) {
-                val isCancellation = e is kotlinx.coroutines.CancellationException
-                
-                if (entityType == EntityType.Component) {
-                    if (!isCancellation) {
-                        _error.value = com.company.cavitrack.util.UiText.DynamicString("Failed to upload photo. Please check your internet connection.")
-                    }
-                } else {
-                    if (!isCancellation) {
-                        _error.value = com.company.cavitrack.util.UiText.DynamicString(e.message ?: "Error")
-                    }
-                }
-                
-                if (isCancellation) throw e
+                if (e is CancellationException) throw e
+                _error.value = UiText.DynamicString(e.message ?: "Failed to upload photo. Please check your internet connection.")
             } finally {
                 _isUploading.value = false
                 if (photoFile.exists()) {
@@ -122,10 +117,3 @@ class PhotoUpdateViewModel @Inject constructor(
         }
     }
 }
-
-
-
-
-
-
-

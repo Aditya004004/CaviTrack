@@ -24,7 +24,6 @@ class CaviTrackApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         
-        com.google.firebase.FirebaseApp.initializeApp(this)
         if (BuildConfig.DEBUG) {
             com.google.firebase.appcheck.FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
                 com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
@@ -68,7 +67,9 @@ class CaviTrackApp : Application(), Configuration.Provider {
                     }
                 }
             } catch (e: Exception) {
-                // Ignore cleanup errors
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.w("CaviTrackApp", "Offline photo cleanup failed", e)
+                }
             }
         }
     }

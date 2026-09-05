@@ -2,6 +2,7 @@ package com.company.cavitrack.util
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -16,6 +17,14 @@ object ImageUtil {
         }
         BitmapFactory.decodeFile(file.absolutePath, options)
 
+        // If the image already fits within the max dimension, avoid unnecessary recompression
+        if (options.outHeight > 0 && options.outWidth > 0 &&
+            options.outHeight <= maxDim && options.outWidth <= maxDim &&
+            file.name.endsWith(".jpg", ignoreCase = true)
+        ) {
+            return@withContext file
+        }
+
         var inSampleSize = 1
         if (options.outHeight > maxDim || options.outWidth > maxDim) {
             val halfHeight = options.outHeight / 2
@@ -29,19 +38,35 @@ object ImageUtil {
             this.inSampleSize = inSampleSize
         }
 
-        val bitmap = BitmapFactory.decodeFile(file.absolutePath, decodeOptions) ?: return@withContext null
-        
-        val tempFile = File(file.parentFile, "downscaled_${file.name}")
+        val bitmap = try {
+            BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
+        } catch (oom: OutOfMemoryError) {
+            if (com.company.cavitrack.BuildConfig.DEBUG) {
+                Log.e("ImageUtil", "Out of memory decoding image", oom)
+            }
+            null
+        } ?: return@withContext null
+
+        val parentDir = file.parentFile ?: return@withContext null
+        val tempFile = File(parentDir, "downscaled_${System.currentTimeMillis()}_${file.name}")
         try {
             FileOutputStream(tempFile).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
             }
-            if (file.exists()) file.delete()
-            tempFile.renameTo(file)
+            if (tempFile.exists() && tempFile.length() > 0) {
+                // Safe replacement: try atomic rename, fallback to overwrite copy
+                if (!tempFile.renameTo(file)) {
+                    tempFile.copyTo(file, overwrite = true)
+                    tempFile.delete()
+                }
+            }
             file
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             if (com.company.cavitrack.BuildConfig.DEBUG) {
-                android.util.Log.e("ImageUtil", "Failed to downscale image", e)
+                Log.e("ImageUtil", "Failed to downscale image", t)
+            }
+            if (tempFile.exists()) {
+                tempFile.delete()
             }
             null
         } finally {

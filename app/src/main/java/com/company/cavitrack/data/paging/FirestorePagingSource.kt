@@ -32,5 +32,10 @@ class FirestorePagingSource<T : Any>(
         }
     }
     
-    override fun getRefreshKey(state: PagingState<DocumentSnapshot, T>): DocumentSnapshot? = null
+    override fun getRefreshKey(state: PagingState<DocumentSnapshot, T>): DocumentSnapshot? {
+        return state.anchorPosition?.let { anchorPosition ->
+            state.closestPageToPosition(anchorPosition)?.prevKey
+                ?: state.closestPageToPosition(anchorPosition)?.nextKey
+        }
+    }
 }

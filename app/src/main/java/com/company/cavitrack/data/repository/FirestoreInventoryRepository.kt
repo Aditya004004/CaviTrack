@@ -305,7 +305,7 @@ class FirestoreInventoryRepository @Inject constructor(
     override suspend fun saveComponent(component: Component): DataResult<Unit> {
         return try {
             val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Must be authenticated to save")
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = component.copy(ownerId = uid).toDto()
             firestore.collection("components").document(dto.id).set(dto).await()
             DataResult.Success(Unit)
@@ -318,7 +318,7 @@ class FirestoreInventoryRepository @Inject constructor(
     override suspend fun saveCustomer(customer: Customer): DataResult<Unit> {
         return try {
             val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Must be authenticated to save")
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = customer.copy(ownerId = uid).toDto()
             firestore.collection("customers").document(dto.id).set(dto).await()
             DataResult.Success(Unit)
@@ -331,7 +331,7 @@ class FirestoreInventoryRepository @Inject constructor(
     override suspend fun saveMold(mold: Mold): DataResult<Unit> {
         return try {
             val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Must be authenticated to save")
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = mold.copy(ownerId = uid).toDto()
             firestore.collection("molds").document(dto.id).set(dto).await()
             DataResult.Success(Unit)
@@ -344,7 +344,7 @@ class FirestoreInventoryRepository @Inject constructor(
     override suspend fun saveHistoryLog(log: HistoryLog): DataResult<Unit> {
         return try {
             val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Must be authenticated to save")
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = log.copy(ownerId = uid).toDto()
             firestore.collection("history").document(dto.id).set(dto).await()
             DataResult.Success(Unit)
@@ -356,7 +356,7 @@ class FirestoreInventoryRepository @Inject constructor(
 
     override suspend fun updateComponentQuantityTransaction(id: String, newQty: Int): DataResult<Component> {
         val uid = currentUserId
-        if (uid.isBlank()) return DataResult.Error("Must be authenticated to update")
+        if (uid.isBlank()) return DataResult.Error("Not authenticated")
         val docRef = firestore.collection("components").document(id)
         
         return try {
@@ -385,7 +385,7 @@ class FirestoreInventoryRepository @Inject constructor(
     override suspend fun deleteComponent(id: String): DataResult<Unit> {
         return try {
             val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Must be authenticated to delete")
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
             firestore.collection("components").document(id).update(updateData).await()
             DataResult.Success(Unit)
@@ -398,7 +398,7 @@ class FirestoreInventoryRepository @Inject constructor(
     override suspend fun deleteCustomer(id: String): DataResult<Unit> {
         return try {
             val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Must be authenticated to delete")
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
             firestore.collection("customers").document(id).update(updateData).await()
             DataResult.Success(Unit)
@@ -411,7 +411,7 @@ class FirestoreInventoryRepository @Inject constructor(
     override suspend fun deleteMold(id: String): DataResult<Unit> {
         return try {
             val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Must be authenticated to delete")
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
             firestore.collection("molds").document(id).update(updateData).await()
             DataResult.Success(Unit)

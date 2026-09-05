@@ -23,4 +23,10 @@ abstract class RepositoryModule {
     abstract fun bindAuthRepository(
         authRepositoryImpl: com.company.cavitrack.data.repository.AuthRepositoryImpl
     ): com.company.cavitrack.domain.repository.AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindStorageRepository(
+        firebaseStorageRepository: com.company.cavitrack.data.repository.FirebaseStorageRepository
+    ): com.company.cavitrack.domain.repository.StorageRepository
 }

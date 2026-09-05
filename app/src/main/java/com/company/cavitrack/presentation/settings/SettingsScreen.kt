@@ -201,10 +201,17 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                     },
                     modifier = Modifier.clickable {
                         try {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(privacyPolicyUrl))
-                            context.startActivity(intent)
+                            val uri = android.net.Uri.parse(privacyPolicyUrl)
+                            if (uri.scheme.equals("https", ignoreCase = true) || uri.scheme.equals("http", ignoreCase = true)) {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                                context.startActivity(intent)
+                            } else {
+                                Toast.makeText(context, "Invalid privacy policy URL.", Toast.LENGTH_SHORT).show()
+                            }
                         } catch (e: android.content.ActivityNotFoundException) {
                             Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Unable to open link.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )

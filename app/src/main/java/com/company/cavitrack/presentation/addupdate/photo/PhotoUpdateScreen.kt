@@ -35,6 +35,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
 import com.company.cavitrack.domain.model.EntityType
+import androidx.lifecycle.flowWithLifecycle
 
 @Composable
 fun PhotoUpdateScreen(
@@ -46,18 +47,46 @@ fun PhotoUpdateScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val imageCapture = remember { ImageCapture.Builder().build() }
-    val executor = ContextCompat.getMainExecutor(context)
-    var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
+    val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
+    val cameraExecutor = remember { java.util.concurrent.Executors.newSingleThreadExecutor() }
     
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
 
-    val error by viewModel.error.collectAsStateWithLifecycle()
+    val imageCapture = remember {
+        val resolutionSelector = androidx.camera.core.resolutionselector.ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                androidx.camera.core.resolutionselector.ResolutionStrategy(
+                    android.util.Size(1280, 720),
+                    androidx.camera.core.resolutionselector.ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                )
+            )
+            .build()
+        ImageCapture.Builder()
+            .setResolutionSelector(resolutionSelector)
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+    }
     
-    LaunchedEffect(Unit) {
-        viewModel.isSaved.collect {
-            onUpdateComplete()
+    var photoUri by rememberSaveable { mutableStateOf<String?>(null) }
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+    LaunchedEffect(viewModel.isSaved, lifecycleOwner) {
+        viewModel.isSaved
+            .flowWithLifecycle(lifecycleOwner.lifecycle, androidx.lifecycle.Lifecycle.State.STARTED)
+            .collect {
+                onUpdateComplete()
+            }
+    }
+
+    LaunchedEffect(error) {
+        error?.let { err ->
+            snackbarHostState.showSnackbar(err.asString(context))
         }
     }
 
@@ -88,10 +117,9 @@ fun PhotoUpdateScreen(
     val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
     val isUploadingState = rememberUpdatedState(isUploading)
 
-    val barcodeAnalyzer = remember {
+    val barcodeAnalyzer = remember(lifecycleOwner) {
         com.company.cavitrack.util.BarcodeAnalyzer { barcodeValue ->
             // TODO: Handle the scanned barcode value here
-            // For example: viewModel.processBarcode(barcodeValue)
             android.util.Log.d("BarcodeScanner", "Scanned: $barcodeValue")
         }
     }
@@ -99,20 +127,13 @@ fun PhotoUpdateScreen(
     DisposableEffect(lifecycleOwner) {
         onDispose {
             barcodeAnalyzer.close()
-            // Unbinding is handled automatically by bindToLifecycle
         }
     }
-
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     androidx.compose.material3.Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (error != null) {
-                Text("Error: ${error?.asString()}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
-            }
-
         if (hasCameraPermission) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 // Camera Preview
@@ -127,29 +148,31 @@ fun PhotoUpdateScreen(
                             }
                             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                             try {
-                                cameraProvider.unbindAll()
-                                
-                                val imageAnalyzer = androidx.camera.core.ImageAnalysis.Builder()
-                                    .build()
-                                    .also {
-                                        it.setAnalyzer(
-                                            executor,
-                                            barcodeAnalyzer
-                                        )
-                                    }
+                                if (lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.INITIALIZED)) {
+                                    cameraProvider.unbindAll()
+                                    
+                                    val imageAnalyzer = androidx.camera.core.ImageAnalysis.Builder()
+                                        .build()
+                                        .also {
+                                            it.setAnalyzer(
+                                                cameraExecutor,
+                                                barcodeAnalyzer
+                                            )
+                                        }
 
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    cameraSelector,
-                                    preview,
-                                    imageCapture,
-                                    imageAnalyzer
-                                )
+                                    cameraProvider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        cameraSelector,
+                                        preview,
+                                        imageCapture,
+                                        imageAnalyzer
+                                    )
+                                }
                             } catch (e: Exception) {
                                 e.printStackTrace()
                                 coroutineScope.launch { snackbarHostState.showSnackbar("Failed to bind camera: ${e.message}") }
                             }
-                        }, executor)
+                        }, mainExecutor)
                         previewView
                     }
                 )
@@ -264,7 +287,7 @@ fun PhotoUpdateScreen(
                             withContext(Dispatchers.Main) {
                                 imageCapture.takePicture(
                                     outputOptions,
-                                    executor,
+                                    mainExecutor,
                                     object : ImageCapture.OnImageSavedCallback {
                                         override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                                             photoUri = file.absolutePath

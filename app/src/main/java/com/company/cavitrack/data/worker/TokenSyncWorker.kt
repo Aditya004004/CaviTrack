@@ -30,7 +30,11 @@ class TokenSyncWorker @AssistedInject constructor(
                     .await()
                 Result.success()
             } else {
-                Result.failure()
+                if (runAttemptCount > 3) {
+                    Result.failure()
+                } else {
+                    Result.retry()
+                }
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e

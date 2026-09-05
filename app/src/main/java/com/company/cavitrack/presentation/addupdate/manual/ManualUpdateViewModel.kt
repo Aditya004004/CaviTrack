@@ -27,7 +27,7 @@ class ManualUpdateViewModel @Inject constructor(
     private val authRepository: com.company.cavitrack.domain.repository.AuthRepository
 ) : ViewModel() {
 
-    private val _isSaved = kotlinx.coroutines.channels.Channel<Unit>()
+    private val _isSaved = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.BUFFERED)
     val isSaved = _isSaved.receiveAsFlow()
 
     private val _isSaving = MutableStateFlow(false)
@@ -53,7 +53,9 @@ class ManualUpdateViewModel @Inject constructor(
         )
         val saveResult = useCases.saveHistoryLog(log)
         if (saveResult is DataResult.Error) {
-            // Silently ignore history log failures to not block the user flow
+            if (com.company.cavitrack.BuildConfig.DEBUG) {
+                android.util.Log.w("ManualUpdateViewModel", "Failed to save history log: ${saveResult.message}")
+            }
         }
     }
 
