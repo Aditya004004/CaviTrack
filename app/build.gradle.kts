@@ -35,6 +35,8 @@ android {
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
+            } else {
+                logger.warn("WARNING: app/keystore.properties not found. Release build will produce an unsigned APK/bundle.")
             }
         }
     }

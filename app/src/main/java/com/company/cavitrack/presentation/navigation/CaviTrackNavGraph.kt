@@ -85,26 +85,20 @@ fun CaviTrackNavGraph(
             )
         }
         
-        composable<Route.ComponentDetail> { backStackEntry -> 
-            val route: Route.ComponentDetail = backStackEntry.toRoute()
+        composable<Route.ComponentDetail> { 
             com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(
-                entityId = route.id,
                 onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } },
                 onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable<Route.CustomerDetail> { backStackEntry -> 
-            val route: Route.CustomerDetail = backStackEntry.toRoute()
+        composable<Route.CustomerDetail> { 
             com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(
-                entityId = route.id,
                 onBack = { navController.popBackStack() }
             )
         }
-        composable<Route.MoldDetail> { backStackEntry -> 
-            val route: Route.MoldDetail = backStackEntry.toRoute()
+        composable<Route.MoldDetail> { 
             com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(
-                entityId = route.id,
                 onBack = { navController.popBackStack() }
             )
         }

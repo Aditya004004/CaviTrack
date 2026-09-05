@@ -38,7 +38,13 @@
     <string name="action_save_update">Save Update</string>
     <string name="action_upload_save">Upload and Save</string>
     <string name="action_retake">Retake</string>
-    <string name="msg_unsupported_update">Update not supported for this entity yet.</string>
+    <string name="title_update_entry">Update Entry</string>
+    <string name="label_manual_update">Manual Update</string>
+    <string name="desc_manual_update">Enter details using keyboard</string>
+    <string name="label_photo_update">Photo Update</string>
+    <string name="desc_photo_update">Attach image from camera/gallery</string>
+    <string name="desc_photo_coming_soon">Coming soon for %1$s</string>
+    <string name="error_invalid_positive_number">Must be a valid positive number</string>
     <!-- Auth Strings -->
     <string name="title_login">Login to CaviTrack</string>
     <string name="title_register">Create an Account</string>

@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
@@ -36,13 +37,14 @@ class HistoryViewModel @Inject constructor(
         _selectedAction.value = action
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val pagedHistoryLogs: Flow<PagingData<HistoryLog>> = combine(
-        sessionManager.currentUser,
+        sessionManager.currentUser.map { it?.uid }.distinctUntilChanged(),
         _selectedAction
-    ) { user, action ->
-        Pair(user, action)
-    }.flatMapLatest { (user, action) ->
-        if (user != null) {
+    ) { uid, action ->
+        Pair(uid, action)
+    }.flatMapLatest { (uid, action) ->
+        if (uid != null) {
             useCases.getHistory(action)
         } else {
             emptyFlow()

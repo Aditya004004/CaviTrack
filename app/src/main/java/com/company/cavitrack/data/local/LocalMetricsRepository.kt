@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import androidx.datastore.preferences.core.emptyPreferences
+import kotlinx.coroutines.flow.catch
+import java.io.IOException
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "dashboard_metrics")
 
 @Singleton
@@ -25,10 +29,19 @@ class LocalMetricsRepository @Inject constructor(
         val ACTIVE_MOLDS = longPreferencesKey("active_molds")
     }
 
-    val totalComponents: Flow<Long> = context.dataStore.data.map { it[TOTAL_COMPONENTS] ?: 0L }
-    val lowStockCount: Flow<Long> = context.dataStore.data.map { it[LOW_STOCK_COUNT] ?: 0L }
-    val totalCustomers: Flow<Long> = context.dataStore.data.map { it[TOTAL_CUSTOMERS] ?: 0L }
-    val activeMolds: Flow<Long> = context.dataStore.data.map { it[ACTIVE_MOLDS] ?: 0L }
+    private val safeData: Flow<Preferences> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+
+    val totalComponents: Flow<Long> = safeData.map { it[TOTAL_COMPONENTS] ?: 0L }
+    val lowStockCount: Flow<Long> = safeData.map { it[LOW_STOCK_COUNT] ?: 0L }
+    val totalCustomers: Flow<Long> = safeData.map { it[TOTAL_CUSTOMERS] ?: 0L }
+    val activeMolds: Flow<Long> = safeData.map { it[ACTIVE_MOLDS] ?: 0L }
 
     suspend fun saveMetrics(
         components: Long,

@@ -20,19 +20,32 @@ class BarcodeAnalyzer(
     
     // Prevent multiple scans from running concurrently
     private val isProcessing = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val isClosed = java.util.concurrent.atomic.AtomicBoolean(false)
 
     override fun close() {
-        scanner.close()
+        if (isClosed.compareAndSet(false, true)) {
+            scanner.close()
+        }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
+        if (isClosed.get()) {
+            imageProxy.close()
+            return
+        }
         val mediaImage = imageProxy.image
         if (mediaImage != null && isProcessing.compareAndSet(false, true)) {
+            if (isClosed.get()) {
+                isProcessing.set(false)
+                imageProxy.close()
+                return
+            }
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
             
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
+                    if (isClosed.get()) return@addOnSuccessListener
                     for (barcode in barcodes) {
                         barcode.rawValue?.let { value ->
                             onBarcodeScanned(value)

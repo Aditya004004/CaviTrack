@@ -14,8 +14,6 @@ import androidx.compose.ui.unit.dp
 
 import androidx.compose.runtime.saveable.rememberSaveable
 
-private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
-
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
@@ -55,9 +53,11 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+        val emptyNameError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_name_empty)
         val emptyEmailError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_email_empty)
         val invalidEmailError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_email_invalid)
         val emptyPasswordError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_password_empty)
+        val weakPasswordError = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_password_weak)
 
         OutlinedTextField(
             value = name,
@@ -95,16 +95,45 @@ fun RegisterScreen(
         Button(
             onClick = { 
                 var hasError = false
-                if (name.isBlank()) { nameError = "Name cannot be empty"; hasError = true }
-                
-                if (email.isBlank()) { emailError = emptyEmailError; hasError = true }
-                else if (!email.matches(EMAIL_REGEX)) { emailError = invalidEmailError; hasError = true }
-                
-                if (password.isBlank()) { passwordError = emptyPasswordError; hasError = true }
-                else if (password.length < 8 || !password.any { it.isLetter() } || !password.any { it.isDigit() }) {
-                    passwordError = "Password must be at least 8 characters with a letter and a number"
-                    hasError = true
+                when (authViewModel.validateName(name)) {
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Error -> {
+                        nameError = emptyNameError
+                        hasError = true
+                    }
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Success -> {
+                        nameError = null
+                    }
                 }
+                
+                when (val emailResult = authViewModel.validateEmail(email)) {
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Error -> {
+                        emailError = when (emailResult.reason) {
+                            com.company.cavitrack.domain.usecase.auth.ValidationReason.EMPTY_EMAIL -> emptyEmailError
+                            com.company.cavitrack.domain.usecase.auth.ValidationReason.INVALID_EMAIL -> invalidEmailError
+                            else -> invalidEmailError
+                        }
+                        hasError = true
+                    }
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Success -> {
+                        emailError = null
+                    }
+                }
+                
+                when (val passwordResult = authViewModel.validatePassword(password, isRegistration = true)) {
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Error -> {
+                        passwordError = when (passwordResult.reason) {
+                            com.company.cavitrack.domain.usecase.auth.ValidationReason.EMPTY_PASSWORD -> emptyPasswordError
+                            com.company.cavitrack.domain.usecase.auth.ValidationReason.PASSWORD_TOO_SHORT,
+                            com.company.cavitrack.domain.usecase.auth.ValidationReason.PASSWORD_REQUIRES_LETTER_AND_DIGIT -> weakPasswordError
+                            else -> weakPasswordError
+                        }
+                        hasError = true
+                    }
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Success -> {
+                        passwordError = null
+                    }
+                }
+
                 if (!hasError) authViewModel.register(name, email, password) 
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),

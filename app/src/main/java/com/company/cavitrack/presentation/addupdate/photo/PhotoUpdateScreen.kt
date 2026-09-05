@@ -117,19 +117,6 @@ fun PhotoUpdateScreen(
     val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
     val isUploadingState = rememberUpdatedState(isUploading)
 
-    val barcodeAnalyzer = remember(lifecycleOwner) {
-        com.company.cavitrack.util.BarcodeAnalyzer { barcodeValue ->
-            // TODO: Handle the scanned barcode value here
-            android.util.Log.d("BarcodeScanner", "Scanned: $barcodeValue")
-        }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        onDispose {
-            barcodeAnalyzer.close()
-        }
-    }
-
     androidx.compose.material3.Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
@@ -150,22 +137,11 @@ fun PhotoUpdateScreen(
                             try {
                                 if (lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.INITIALIZED)) {
                                     cameraProvider.unbindAll()
-                                    
-                                    val imageAnalyzer = androidx.camera.core.ImageAnalysis.Builder()
-                                        .build()
-                                        .also {
-                                            it.setAnalyzer(
-                                                cameraExecutor,
-                                                barcodeAnalyzer
-                                            )
-                                        }
-
                                     cameraProvider.bindToLifecycle(
                                         lifecycleOwner,
                                         cameraSelector,
                                         preview,
-                                        imageCapture,
-                                        imageAnalyzer
+                                        imageCapture
                                     )
                                 }
                             } catch (e: Exception) {

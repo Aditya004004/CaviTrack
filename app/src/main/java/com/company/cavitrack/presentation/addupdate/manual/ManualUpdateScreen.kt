@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import com.company.cavitrack.domain.model.EntityType
 
 @Composable
@@ -38,6 +39,8 @@ fun ManualUpdateScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val currentQty by viewModel.currentQty.collectAsStateWithLifecycle()
     
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val scrollState = androidx.compose.foundation.rememberScrollState()
     
     LaunchedEffect(entityId, entityType) {
@@ -52,10 +55,12 @@ fun ManualUpdateScreen(
         }
     }
     
-    LaunchedEffect(Unit) {
-        viewModel.isSaved.collect {
-            onUpdateComplete()
-        }
+    LaunchedEffect(viewModel.isSaved, lifecycleOwner) {
+        viewModel.isSaved
+            .flowWithLifecycle(lifecycleOwner.lifecycle, androidx.lifecycle.Lifecycle.State.STARTED)
+            .collect {
+                onUpdateComplete()
+            }
     }
 
     Column(
@@ -63,6 +68,7 @@ fun ManualUpdateScreen(
             .fillMaxSize()
             .padding(16.dp)
             .imePadding()
+            .navigationBarsPadding()
             .verticalScroll(scrollState)
     ) {
         val title = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.manual_update_title)
@@ -84,21 +90,27 @@ fun ManualUpdateScreen(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_name)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = sku,
                         onValueChange = { sku = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_sku)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = category,
                         onValueChange = { category = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_category)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -107,7 +119,9 @@ fun ManualUpdateScreen(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_name)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
@@ -115,7 +129,8 @@ fun ManualUpdateScreen(
                         onValueChange = { phone = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_phone)) },
                         modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone)
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
@@ -123,14 +138,17 @@ fun ManualUpdateScreen(
                         onValueChange = { email = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_email)) },
                         modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = address,
                         onValueChange = { address = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_address)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -139,14 +157,18 @@ fun ManualUpdateScreen(
                         value = moldCode,
                         onValueChange = { moldCode = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_mold_code)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = location,
                         onValueChange = { location = it },
                         label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_location)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -169,9 +191,10 @@ fun ManualUpdateScreen(
                     Text(androidx.compose.ui.res.stringResource(labelRes)) 
                 },
                 isError = hasError,
-                supportingText = { if (hasError) Text("Must be a valid positive number") },
+                supportingText = { if (hasError) Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_invalid_positive_number)) },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -181,7 +204,9 @@ fun ManualUpdateScreen(
             onValueChange = { note = it },
             label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_note)) },
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3
+            minLines = 3,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() })
         )
 
         Spacer(modifier = Modifier.weight(1f))

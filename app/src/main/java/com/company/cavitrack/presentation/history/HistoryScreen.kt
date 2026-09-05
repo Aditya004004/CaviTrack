@@ -86,7 +86,7 @@ fun HistoryScreen(
                 val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    contentPadding = PaddingValues(bottom = 88.dp)
                 ) {
                     items(count = historyLogs.itemCount, key = historyLogs.itemKey { it.id }) { index ->
                         val log = historyLogs[index]
@@ -124,6 +124,15 @@ fun HistoryScreen(
                         item {
                             Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
                                 CircularProgressIndicator()
+                            }
+                        }
+                    }
+                    if (historyLogs.loadState.append is LoadState.Error) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                                Button(onClick = { historyLogs.retry() }) {
+                                    Text("Retry")
+                                }
                             }
                         }
                     }

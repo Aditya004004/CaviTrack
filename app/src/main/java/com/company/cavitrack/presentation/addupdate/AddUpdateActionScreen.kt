@@ -36,7 +36,7 @@ fun AddUpdateActionScreen(
         var selectedType by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(entityType ?: com.company.cavitrack.domain.model.EntityType.Component) }
         
         Text(
-            text = "Update Entry",
+            text = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_update_entry),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center
         )
@@ -73,8 +73,8 @@ fun AddUpdateActionScreen(
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
         ) {
             Column(horizontalAlignment = Alignment.Start, modifier = Modifier.weight(1f)) {
-                Text("Manual Update", style = MaterialTheme.typography.titleMedium)
-                Text("Enter details using keyboard", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_manual_update), style = MaterialTheme.typography.titleMedium)
+                Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.desc_manual_update), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -87,9 +87,13 @@ fun AddUpdateActionScreen(
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
         ) {
             Column(horizontalAlignment = Alignment.Start, modifier = Modifier.weight(1f)) {
-                Text("Photo Update", style = MaterialTheme.typography.titleMedium)
+                Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_photo_update), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    if (isPhotoUpdateSupported) "Attach image from camera/gallery" else "Coming soon for ${selectedType.name}", 
+                    if (isPhotoUpdateSupported) {
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.desc_photo_update)
+                    } else {
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.desc_photo_coming_soon, selectedType.name)
+                    }, 
                     style = MaterialTheme.typography.bodySmall, 
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                 )

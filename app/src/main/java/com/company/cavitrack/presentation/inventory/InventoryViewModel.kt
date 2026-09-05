@@ -88,10 +88,6 @@ class InventoryViewModel @Inject constructor(
     }.flatMapLatest { (uid, query, status) ->
         if (uid != null) useCases.getMolds(query, status?.name) else flowOf(PagingData.empty())
     }.cachedIn(viewModelScope)
-
-    fun loadData() {
-        // Nothing to do for PagingData initialization
-    }
 }
 
 

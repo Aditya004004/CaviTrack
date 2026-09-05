@@ -1,12 +1,11 @@
 package com.company.cavitrack.util
 
-
-
-import kotlinx.coroutines.flow.MutableStateFlow
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,20 +13,14 @@ import javax.inject.Singleton
 class SessionManager @Inject constructor(
     private val firebaseAuth: FirebaseAuth
 ) {
-    private val _currentUser = MutableStateFlow<FirebaseUser?>(firebaseAuth.currentUser)
-    val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
-
-    private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
-        _currentUser.value = auth.currentUser
-    }
-
-    init {
-        firebaseAuth.addAuthStateListener(authStateListener)
-    }
-
-    // Usually we don't remove this listener since it's an application-scoped singleton.
-    // If needed, we could provide a teardown method.
+    val currentUser: Flow<FirebaseUser?> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            trySend(auth.currentUser)
+        }
+        trySend(firebaseAuth.currentUser)
+        firebaseAuth.addAuthStateListener(listener)
+        awaitClose {
+            firebaseAuth.removeAuthStateListener(listener)
+        }
+    }.distinctUntilChanged()
 }
-
-
-

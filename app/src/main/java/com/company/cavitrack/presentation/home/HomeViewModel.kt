@@ -13,6 +13,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
+@androidx.compose.runtime.Immutable
 data class HomeData(
     val totalComponents: Int = 0,
     val lowStockCount: Int = 0,

@@ -19,7 +19,11 @@ class TokenSyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val token = inputData.getString("fcm_token") ?: return Result.failure()
+        val token = inputData.getString("fcm_token")
+        if (token.isNullOrBlank()) {
+            android.util.Log.w("TokenSyncWorker", "No fcm_token supplied in inputData; aborting sync.")
+            return Result.failure()
+        }
         
         return try {
             val user = firebaseAuth.currentUser

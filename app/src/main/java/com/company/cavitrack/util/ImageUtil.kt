@@ -47,11 +47,44 @@ object ImageUtil {
             null
         } ?: return@withContext null
 
+        val orientation = try {
+            val exif = android.media.ExifInterface(file.absolutePath)
+            exif.getAttributeInt(
+                android.media.ExifInterface.TAG_ORIENTATION,
+                android.media.ExifInterface.ORIENTATION_NORMAL
+            )
+        } catch (e: Exception) {
+            android.media.ExifInterface.ORIENTATION_NORMAL
+        }
+
+        val rotationDegrees = when (orientation) {
+            android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+
+        var processedBitmap = bitmap
+        if (rotationDegrees != 0f) {
+            val matrix = android.graphics.Matrix().apply { postRotate(rotationDegrees) }
+            try {
+                val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                if (rotated != bitmap) {
+                    bitmap.recycle()
+                    processedBitmap = rotated
+                }
+            } catch (oom: OutOfMemoryError) {
+                if (com.company.cavitrack.BuildConfig.DEBUG) {
+                    Log.w("ImageUtil", "OOM rotating bitmap, falling back to unrotated", oom)
+                }
+            }
+        }
+
         val parentDir = file.parentFile ?: return@withContext null
         val tempFile = File(parentDir, "downscaled_${System.currentTimeMillis()}_${file.name}")
         try {
             FileOutputStream(tempFile).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                processedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
             }
             if (tempFile.exists() && tempFile.length() > 0) {
                 // Safe replacement: try atomic rename, fallback to overwrite copy
@@ -70,7 +103,7 @@ object ImageUtil {
             }
             null
         } finally {
-            bitmap.recycle()
+            processedBitmap.recycle()
         }
     }
 }

@@ -1,12 +1,14 @@
 package com.company.cavitrack.presentation.auth
 
 import kotlinx.coroutines.flow.MutableStateFlow
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseUser
+
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,7 +41,12 @@ class AuthViewModel @Inject constructor(
     private val _pendingDestructiveAction = MutableStateFlow<PendingDestructiveAction?>(null)
     val pendingDestructiveAction: StateFlow<PendingDestructiveAction?> = _pendingDestructiveAction.asStateFlow()
 
-    val currentUser = sessionManager.currentUser
+    val currentUser: StateFlow<FirebaseUser?> = sessionManager.currentUser
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 
     fun clearAuthError() {
         _authError.value = null
@@ -136,6 +143,16 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun isPasswordStrong(password: String): Boolean = password.length >= 8 && password.any { it.isLetter() } && password.any { it.isDigit() }
+    fun validateEmail(email: String): com.company.cavitrack.domain.usecase.auth.ValidationResult =
+        authUseCases.validateEmail(email)
+
+    fun validatePassword(password: String, isRegistration: Boolean = false): com.company.cavitrack.domain.usecase.auth.ValidationResult =
+        authUseCases.validatePassword(password, isRegistration)
+
+    fun validateName(name: String): com.company.cavitrack.domain.usecase.auth.ValidationResult =
+        authUseCases.validateName(name)
+
+    fun isPasswordStrong(password: String): Boolean =
+        authUseCases.validatePassword(password, isRegistration = true) is com.company.cavitrack.domain.usecase.auth.ValidationResult.Success
 }
 

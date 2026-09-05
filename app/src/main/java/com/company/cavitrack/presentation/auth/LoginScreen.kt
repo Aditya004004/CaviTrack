@@ -14,8 +14,6 @@ import androidx.compose.ui.unit.dp
 
 import androidx.compose.runtime.saveable.rememberSaveable
 
-private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
-
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -83,10 +81,30 @@ fun LoginScreen(
         Button(
             onClick = { 
                 var hasError = false
-                if (email.isBlank()) { emailError = emptyEmailError; hasError = true }
-                else if (!email.matches(EMAIL_REGEX)) { emailError = invalidEmailError; hasError = true }
-                
-                if (password.isBlank()) { passwordError = emptyPasswordError; hasError = true }
+                when (val emailResult = authViewModel.validateEmail(email)) {
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Error -> {
+                        emailError = when (emailResult.reason) {
+                            com.company.cavitrack.domain.usecase.auth.ValidationReason.EMPTY_EMAIL -> emptyEmailError
+                            com.company.cavitrack.domain.usecase.auth.ValidationReason.INVALID_EMAIL -> invalidEmailError
+                            else -> invalidEmailError
+                        }
+                        hasError = true
+                    }
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Success -> {
+                        emailError = null
+                    }
+                }
+
+                when (authViewModel.validatePassword(password)) {
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Error -> {
+                        passwordError = emptyPasswordError
+                        hasError = true
+                    }
+                    is com.company.cavitrack.domain.usecase.auth.ValidationResult.Success -> {
+                        passwordError = null
+                    }
+                }
+
                 if (!hasError) authViewModel.login(email, password) 
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
