@@ -15,14 +15,16 @@ import javax.inject.Inject
 
 class GetDashboardMetricsUseCase @Inject constructor(
     private val repository: InventoryRepository,
-    private val localMetricsRepository: LocalMetricsRepository
+    private val localMetricsRepository: LocalMetricsRepository,
+    private val authRepository: com.company.cavitrack.domain.repository.AuthRepository? = null
 ) {
-    operator fun invoke(): Flow<DataResult<DashboardMetrics>> = flow {
+    operator fun invoke(uid: String? = null): Flow<DataResult<DashboardMetrics>> = flow {
+        val effectiveUid = uid ?: authRepository?.getCurrentUserUid() ?: ""
         // 1. Emit cached local metrics immediately
-        val cachedComponents = localMetricsRepository.totalComponents.first()
-        val cachedLowStock = localMetricsRepository.lowStockCount.first()
-        val cachedCustomers = localMetricsRepository.totalCustomers.first()
-        val cachedMolds = localMetricsRepository.activeMolds.first()
+        val cachedComponents = (if (effectiveUid.isBlank()) localMetricsRepository.totalComponents else localMetricsRepository.getTotalComponents(effectiveUid)).first()
+        val cachedLowStock = (if (effectiveUid.isBlank()) localMetricsRepository.lowStockCount else localMetricsRepository.getLowStockCount(effectiveUid)).first()
+        val cachedCustomers = (if (effectiveUid.isBlank()) localMetricsRepository.totalCustomers else localMetricsRepository.getTotalCustomers(effectiveUid)).first()
+        val cachedMolds = (if (effectiveUid.isBlank()) localMetricsRepository.activeMolds else localMetricsRepository.getActiveMolds(effectiveUid)).first()
 
         val initialData = DashboardMetrics(
             totalComponents = cachedComponents.toInt(),
@@ -35,7 +37,7 @@ class GetDashboardMetricsUseCase @Inject constructor(
 
         // 2. Combine history flow and fetch fresh server counts
         val combinedFlow = repository.getRecentHistory(5).combine(flow {
-            emit(fetchFreshCounts())
+            emit(fetchFreshCounts(effectiveUid))
         }) { historyResult, countsResult ->
             if (historyResult is DataResult.Error) {
                 DataResult.Error(historyResult.message)
@@ -62,7 +64,7 @@ class GetDashboardMetricsUseCase @Inject constructor(
         emitAll(combinedFlow)
     }
 
-    private suspend fun fetchFreshCounts(): DashboardMetrics? = coroutineScope {
+    private suspend fun fetchFreshCounts(uid: String): DashboardMetrics? = coroutineScope {
         try {
             val compDeferred = async { repository.getComponentsCount() }
             val lowStockDeferred = async { repository.getLowStockComponentsCount() }
@@ -77,12 +79,22 @@ class GetDashboardMetricsUseCase @Inject constructor(
             if (compRes is DataResult.Success && lowStockRes is DataResult.Success &&
                 custRes is DataResult.Success && moldRes is DataResult.Success
             ) {
-                localMetricsRepository.saveMetrics(
-                    components = compRes.data,
-                    lowStock = lowStockRes.data,
-                    customers = custRes.data,
-                    molds = moldRes.data
-                )
+                if (uid.isBlank()) {
+                    localMetricsRepository.saveMetrics(
+                        components = compRes.data,
+                        lowStock = lowStockRes.data,
+                        customers = custRes.data,
+                        molds = moldRes.data
+                    )
+                } else {
+                    localMetricsRepository.saveMetrics(
+                        uid = uid,
+                        components = compRes.data,
+                        lowStock = lowStockRes.data,
+                        customers = custRes.data,
+                        molds = moldRes.data
+                    )
+                }
 
                 return@coroutineScope DashboardMetrics(
                     totalComponents = compRes.data.toInt(),

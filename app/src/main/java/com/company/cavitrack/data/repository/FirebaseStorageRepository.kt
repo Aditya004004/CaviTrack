@@ -4,7 +4,11 @@ import android.net.Uri
 import com.company.cavitrack.domain.repository.StorageRepository
 import com.company.cavitrack.util.DataResult
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import java.io.File
 import javax.inject.Inject
@@ -18,7 +22,10 @@ class FirebaseStorageRepository @Inject constructor(
     override suspend fun uploadPhoto(file: File, path: String): DataResult<String> {
         return try {
             val fileRef = storage.reference.child(path)
-            fileRef.putFile(Uri.fromFile(file)).await()
+            val metadata = StorageMetadata.Builder()
+                .setContentType("image/jpeg")
+                .build()
+            fileRef.putFile(Uri.fromFile(file), metadata).await()
             val downloadUrl = fileRef.downloadUrl.await().toString()
             DataResult.Success(downloadUrl)
         } catch (e: Exception) {
@@ -46,8 +53,10 @@ class FirebaseStorageRepository @Inject constructor(
         return try {
             val userFolderRef = storage.reference.child("photos/$userId")
             val listResult = userFolderRef.listAll().await()
-            listResult.items.forEach { item ->
-                item.delete().await()
+            coroutineScope {
+                listResult.items.chunked(10).forEach { chunk ->
+                    chunk.map { item -> async { item.delete().await() } }.awaitAll()
+                }
             }
             DataResult.Success(Unit)
         } catch (e: Exception) {

@@ -1,7 +1,9 @@
 package com.company.cavitrack.presentation.inventory.details
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -78,7 +81,11 @@ fun ComponentDetailScreen(
                                 .crossfade(true)
                                 .build(),
                             contentDescription = "Component Photo",
-                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -86,7 +93,7 @@ fun ComponentDetailScreen(
                     Text("${stringResource(R.string.label_sku)}: ${component.sku}", style = MaterialTheme.typography.bodyLarge)
                     Text("${stringResource(R.string.label_category)}: ${component.category}", style = MaterialTheme.typography.bodyLarge)
                     Text("${stringResource(R.string.label_quantity)}: ${component.qty} ${component.unit}", style = MaterialTheme.typography.bodyLarge)
-                    Text("Min Stock: ${component.minStockThreshold}", style = MaterialTheme.typography.bodyLarge)
+                    Text("${stringResource(R.string.label_min_stock)}: ${component.minStockThreshold}", style = MaterialTheme.typography.bodyLarge)
 
                     Spacer(modifier = Modifier.height(32.dp))
                     Row(
@@ -116,6 +123,7 @@ fun ComponentDetailScreen(
 @Composable
 fun CustomerDetailScreen(
     viewModel: CustomerDetailViewModel = hiltViewModel(),
+    onNavigateToUpdate: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -167,7 +175,11 @@ fun CustomerDetailScreen(
                                 .crossfade(true)
                                 .build(),
                             contentDescription = "Customer Photo",
-                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -175,14 +187,15 @@ fun CustomerDetailScreen(
                     Text("${stringResource(R.string.label_phone)}: ${customer.phone}", style = MaterialTheme.typography.bodyLarge)
                     Text("${stringResource(R.string.label_email)}: ${customer.email}", style = MaterialTheme.typography.bodyLarge)
                     Text("${stringResource(R.string.label_address)}: ${customer.address}", style = MaterialTheme.typography.bodyLarge)
-                    Text("Notes: ${customer.notes}", style = MaterialTheme.typography.bodyLarge)
+                    Text("${stringResource(R.string.label_notes_prefix)}: ${customer.notes}", style = MaterialTheme.typography.bodyLarge)
 
                     Spacer(modifier = Modifier.height(32.dp))
-                    Text(
-                        text = stringResource(R.string.msg_v1_limitation),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Button(
+                        onClick = { onNavigateToUpdate(customer.id) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                    ) {
+                        Text(stringResource(R.string.label_edit_customer))
+                    }
                 }
             }
         }
@@ -193,6 +206,7 @@ fun CustomerDetailScreen(
 @Composable
 fun MoldDetailScreen(
     viewModel: MoldDetailViewModel = hiltViewModel(),
+    onNavigateToUpdate: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -244,21 +258,26 @@ fun MoldDetailScreen(
                                 .crossfade(true)
                                 .build(),
                             contentDescription = "Mold Photo",
-                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                     Text("${stringResource(R.string.label_mold_code)}: ${mold.moldCode}", style = MaterialTheme.typography.titleMedium)
                     Text("${stringResource(R.string.label_cavity_count)}: ${mold.cavityCount}", style = MaterialTheme.typography.bodyLarge)
-                    Text("Status: ${mold.status.name}", style = MaterialTheme.typography.bodyLarge)
+                    Text("${stringResource(R.string.label_status_prefix)}: ${mold.status.name}", style = MaterialTheme.typography.bodyLarge)
                     Text("${stringResource(R.string.label_location)}: ${mold.location}", style = MaterialTheme.typography.bodyLarge)
 
                     Spacer(modifier = Modifier.height(32.dp))
-                    Text(
-                        text = stringResource(R.string.msg_v1_limitation),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Button(
+                        onClick = { onNavigateToUpdate(mold.id) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                    ) {
+                        Text(stringResource(R.string.label_edit_mold))
+                    }
                 }
             }
         }

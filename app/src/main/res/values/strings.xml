@@ -9,9 +9,6 @@
     <string name="title_components">Components</string>
     <string name="title_customers">Customers</string>
     <string name="title_molds">Molds</string>
-    
-    <string name="error_default">An unexpected error occurred.</string>
-    <string name="error_network">Network error, please check your connection.</string>
 
     <string name="label_total_components">Total Components</string>
     <string name="label_low_stock">Low Stock</string>
@@ -21,7 +18,6 @@
     <string name="msg_no_recent_activity">No recent activity recorded</string>
     
     <string name="manual_update_title">Manual Update</string>
-    <string name="unsupported_update">Update not supported for this entity yet.</string>
     <string name="label_name">Name</string>
     <string name="label_sku">SKU / Code</string>
     <string name="label_category">Category / Location</string>
@@ -33,8 +29,17 @@
     <string name="label_quantity">Quantity</string>
     <string name="label_cavity_count">Cavity Count</string>
     <string name="label_note">Note (Optional)</string>
-    <string name="btn_save">Save</string>
-    <string name="msg_saving">Saving...</string>
+    <string name="msg_saving">Saving&#8230;</string>
+    <string name="btn_retry">Retry</string>
+    <string name="placeholder_search_inventory">Search inventory&#8230;</string>
+    <string name="title_filter_options">Filter Options</string>
+    <string name="btn_reset">Reset</string>
+    <string name="title_filter_action">Filter by Action</string>
+    <string name="btn_apply_filters">Apply Filters</string>
+    <string name="filter_all">All</string>
+    <string name="filter_created">Created</string>
+    <string name="filter_stock_adjusted">Stock Adjusted</string>
+    <string name="filter_photo_added">Photo Added</string>
     <string name="action_save_update">Save Update</string>
     <string name="action_upload_save">Upload and Save</string>
     <string name="action_retake">Retake</string>
@@ -43,7 +48,7 @@
     <string name="desc_manual_update">Enter details using keyboard</string>
     <string name="label_photo_update">Photo Update</string>
     <string name="desc_photo_update">Attach image from camera/gallery</string>
-    <string name="desc_photo_coming_soon">Coming soon for %1$s</string>
+    <string name="msg_cannot_attach_photo_unsaved">Cannot attach photo to an unsaved new item. Create it first.</string>
     <string name="error_invalid_positive_number">Must be a valid positive number</string>
     <!-- Auth Strings -->
     <string name="title_login">Login to CaviTrack</string>
@@ -63,24 +68,49 @@
     <string name="title_mold_details">Mold Details</string>
     <string name="label_update_photo">Update Photo</string>
     <string name="label_adjust_stock">Adjust Stock</string>
-    <string name="msg_component_not_found">Component not found</string>
-    <string name="msg_customer_not_found">Customer not found</string>
-    <string name="msg_mold_not_found">Mold not found</string>
-    <string name="msg_v1_limitation">Note: Edit and delete functionalities are a known v1 limitation and will be added in a future update.</string>
     <!-- Auth -->
     <string name="error_name_empty">Name cannot be empty</string>
     <string name="error_password_weak">Password must be at least 8 characters with a letter and a number</string>
     <string name="msg_deleting_account">Deleting your account…</string>
-    <string name="msg_reauth_required">Please sign out and sign back in, then try again.</string>
     <!-- Settings -->
     <string name="title_error">Error</string>
     <string name="btn_ok">OK</string>
     <string name="btn_cancel">Cancel</string>
-    <string name="btn_discard_proceed">Discard &amp; Proceed</string>
-    <string name="title_confirm_logout">Confirm Logout</string>
-    <string name="msg_confirm_logout">Are you sure you want to log out?</string>
-    <string name="btn_logout">Logout</string>
-    <string name="title_delete_account">Delete Account</string>
+    <string name="section_preferences">PREFERENCES</string>
+    <string name="section_account">ACCOUNT</string>
+    <string name="label_notifications">Notifications</string>
+    <string name="desc_notifications">Receive alerts for low inventory and sync status</string>
+    <string name="label_privacy_policy">Privacy Policy</string>
+    <string name="desc_privacy_policy">View terms and data privacy policy</string>
+    <string name="label_logout">Log Out</string>
+    <string name="desc_logout">Sign out of your account on this device</string>
+    <string name="label_delete_account">Delete Account</string>
+    <string name="desc_delete_account">Permanently delete account and all data</string>
+    <string name="msg_confirm_logout_question">Are you sure you want to log out of your account?</string>
     <string name="msg_delete_account">Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.</string>
-    <string name="btn_delete">Delete</string>
+    <string name="btn_yes_logout">Yes, Log Out</string>
+    <string name="btn_permanently_delete">Permanently Delete</string>
+    <string name="msg_no_camera">No camera available on this device.</string>
+    <string name="btn_choose_gallery">Choose from Gallery</string>
+    <string name="btn_go_back">Go Back</string>
+    <string name="label_edit_customer">Edit Customer</string>
+    <string name="label_edit_mold">Edit Mold</string>
+    <string name="web_account_deletion_url">https://aditya004004.github.io/CaviTrack/delete-account</string>
+    <string name="label_request_web_deletion">Request Account Deletion (Web)</string>
+    <string name="desc_request_web_deletion">Submit an online request to delete your account and data</string>
+    <string name="notification_permission_title">Enable Notifications</string>
+    <string name="notification_permission_desc">Stay updated with critical low stock alerts and inventory changes.</string>
+    <string name="btn_enable">Enable</string>
+    <string name="btn_dismiss">Dismiss</string>
+    <string name="label_min_stock">Min Stock</string>
+    <string name="label_notes_prefix">Notes</string>
+    <string name="label_status_prefix">Status</string>
+    <string name="desc_photo_existing_only">Photos can only be attached to existing items in details view</string>
+    <string name="label_filter_history">Filter History</string>
+    <string name="msg_no_stock_movements">No stock movements found</string>
+    <string name="msg_adjust_filters">Try adjusting your filters.</string>
+    <string name="msg_camera_permission_required">Camera permission is required.</string>
+    <string name="btn_grant_permission">Grant Permission</string>
+    <string name="btn_gallery">Gallery</string>
+    <string name="btn_capture">Capture</string>
 </resources>

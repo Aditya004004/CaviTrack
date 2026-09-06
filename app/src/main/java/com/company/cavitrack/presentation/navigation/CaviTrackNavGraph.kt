@@ -9,7 +9,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.company.cavitrack.presentation.addupdate.AddUpdateActionScreen
 import com.company.cavitrack.presentation.addupdate.manual.ManualUpdateScreen
 import com.company.cavitrack.presentation.addupdate.photo.PhotoUpdateScreen
 import com.company.cavitrack.presentation.history.HistoryScreen
@@ -23,7 +22,6 @@ import com.company.cavitrack.presentation.auth.AuthViewModel
 @Composable
 fun CaviTrackNavGraph(
     navController: NavHostController,
-    authViewModel: AuthViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -63,7 +61,7 @@ fun CaviTrackNavGraph(
                 }
             ) 
         }
-        composable<Route.Settings> { SettingsScreen(authViewModel = authViewModel) }
+        composable<Route.Settings> { SettingsScreen() }
         
 
         
@@ -94,11 +92,13 @@ fun CaviTrackNavGraph(
         }
         composable<Route.CustomerDetail> { 
             com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Customer, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }
         composable<Route.MoldDetail> { 
             com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Mold, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -106,27 +106,23 @@ fun CaviTrackNavGraph(
 }
 
 @Composable
-fun CaviTrackAuthGraph(authViewModel: AuthViewModel, onAuthSuccess: () -> Unit) {
+fun CaviTrackAuthGraph(onAuthSuccess: () -> Unit) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Route.Login) {
         composable<Route.Login> {
             LoginScreen(
-                authViewModel = authViewModel,
                 onLoginSuccess = onAuthSuccess,
                 onNavigateToRegister = { 
-                    navController.navigate(Route.Register) {
-                        popUpTo(Route.Login) { inclusive = true }
-                    }
+                    navController.navigate(Route.Register)
                 }
             )
         }
         composable<Route.Register> {
             RegisterScreen(
-                authViewModel = authViewModel,
                 onRegisterSuccess = onAuthSuccess,
                 onNavigateToLogin = { 
-                    navController.navigate(Route.Login) {
-                        popUpTo(Route.Register) { inclusive = true }
+                    if (!navController.popBackStack()) {
+                        navController.navigate(Route.Login)
                     }
                 }
             )

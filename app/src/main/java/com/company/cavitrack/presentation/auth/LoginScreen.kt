@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.core.net.toUri
 
 @Composable
 fun LoginScreen(
@@ -119,6 +120,17 @@ fun LoginScreen(
         
         TextButton(onClick = onNavigateToRegister) {
             Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.link_to_register))
+        }
+
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val privacyPolicyUrl = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.privacy_policy_url)
+        TextButton(onClick = {
+            try {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, privacyPolicyUrl.toUri())
+                context.startActivity(intent)
+            } catch (_: Exception) {}
+        }) {
+            Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_privacy_policy), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

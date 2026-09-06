@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.presentation.auth.AuthViewModel
 import androidx.compose.foundation.clickable
+import androidx.core.net.toUri
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -32,6 +33,8 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Policy
+import androidx.compose.ui.res.stringResource
+import com.company.cavitrack.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,31 +45,15 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     var showLogoutDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showDeleteAccountDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val authError by authViewModel.authError.collectAsStateWithLifecycle()
-    val pendingAction by authViewModel.pendingDestructiveAction.collectAsStateWithLifecycle()
 
     if (authError != null) {
         AlertDialog(
             onDismissRequest = { authViewModel.clearAuthError() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.title_error)) },
             text = { Text(authError ?: "") },
             confirmButton = {
                 TextButton(onClick = { authViewModel.clearAuthError() }) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                if (pendingAction != null) {
-                    TextButton(onClick = {
-                        val actionToPerform = pendingAction
-                        authViewModel.clearAuthError()
-                        if (actionToPerform == com.company.cavitrack.presentation.auth.PendingDestructiveAction.DELETE_ACCOUNT) {
-                            authViewModel.deleteAccount(force = true)
-                        } else if (actionToPerform == com.company.cavitrack.presentation.auth.PendingDestructiveAction.LOGOUT) {
-                            authViewModel.logout(force = true)
-                        }
-                    }) {
-                        Text("Discard & Proceed", color = MaterialTheme.colorScheme.error)
-                    }
+                    Text(stringResource(R.string.btn_ok))
                 }
             }
         )
@@ -133,7 +120,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
 
         // Preferences Section
         Text(
-            text = "PREFERENCES",
+            text = stringResource(R.string.section_preferences),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -158,8 +145,8 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
-                        headlineContent = { Text("Notifications") },
-                        supportingContent = { Text("Receive alerts for low inventory and sync status") },
+                        headlineContent = { Text(stringResource(R.string.label_notifications)) },
+                        supportingContent = { Text(stringResource(R.string.desc_notifications)) },
                         trailingContent = {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowForwardIos,
@@ -189,8 +176,8 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
-                    headlineContent = { Text("Privacy Policy") },
-                    supportingContent = { Text("View terms and data privacy policy") },
+                    headlineContent = { Text(stringResource(R.string.label_privacy_policy)) },
+                    supportingContent = { Text(stringResource(R.string.desc_privacy_policy)) },
                     trailingContent = {
                         Icon(
                             Icons.AutoMirrored.Outlined.OpenInNew,
@@ -201,7 +188,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                     },
                     modifier = Modifier.clickable {
                         try {
-                            val uri = android.net.Uri.parse(privacyPolicyUrl)
+                            val uri = privacyPolicyUrl.toUri()
                             if (uri.scheme.equals("https", ignoreCase = true) || uri.scheme.equals("http", ignoreCase = true)) {
                                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                                 context.startActivity(intent)
@@ -222,7 +209,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
 
         // Account Section
         Text(
-            text = "ACCOUNT",
+            text = stringResource(R.string.section_account),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -242,12 +229,12 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                     leadingContent = {
                         Icon(
                             Icons.AutoMirrored.Outlined.Logout,
-                            contentDescription = "Log Out",
+                            contentDescription = stringResource(R.string.label_logout),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
-                    headlineContent = { Text("Log Out") },
-                    supportingContent = { Text("Sign out of your account on this device") },
+                    headlineContent = { Text(stringResource(R.string.label_logout)) },
+                    supportingContent = { Text(stringResource(R.string.desc_logout)) },
                     trailingContent = {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowForwardIos,
@@ -261,16 +248,50 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
+                val webDeletionUrl = stringResource(R.string.web_account_deletion_url)
+                ListItem(
+                    leadingContent = {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.OpenInNew,
+                            contentDescription = stringResource(R.string.label_request_web_deletion),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    headlineContent = { Text(stringResource(R.string.label_request_web_deletion)) },
+                    supportingContent = { Text(stringResource(R.string.desc_request_web_deletion)) },
+                    trailingContent = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        try {
+                            val uri = webDeletionUrl.toUri()
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                            context.startActivity(intent)
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Unable to open link.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
                 ListItem(
                     leadingContent = {
                         Icon(
                             Icons.Outlined.DeleteForever,
-                            contentDescription = "Delete Account",
+                            contentDescription = stringResource(R.string.label_delete_account),
                             tint = MaterialTheme.colorScheme.error
                         )
                     },
-                    headlineContent = { Text("Delete Account", color = MaterialTheme.colorScheme.error) },
-                    supportingContent = { Text("Permanently delete account and all data") },
+                    headlineContent = { Text(stringResource(R.string.label_delete_account), color = MaterialTheme.colorScheme.error) },
+                    supportingContent = { Text(stringResource(R.string.desc_delete_account)) },
                     trailingContent = {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowForwardIos,
@@ -304,13 +325,13 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Log Out",
+                    text = stringResource(R.string.label_logout),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Are you sure you want to log out of your account?",
+                    text = stringResource(R.string.msg_confirm_logout_question),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -324,14 +345,14 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Yes, Log Out")
+                    Text(stringResource(R.string.btn_yes_logout))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 TextButton(
                     onClick = { showLogoutDialog = false },
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(R.string.btn_cancel), color = MaterialTheme.colorScheme.onSurface)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -348,14 +369,14 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Delete Account",
+                    text = stringResource(R.string.label_delete_account),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.",
+                    text = stringResource(R.string.msg_delete_account),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -369,14 +390,14 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Permanently Delete")
+                    Text(stringResource(R.string.btn_permanently_delete))
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 TextButton(
                     onClick = { showDeleteAccountDialog = false },
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(R.string.btn_cancel), color = MaterialTheme.colorScheme.onSurface)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }

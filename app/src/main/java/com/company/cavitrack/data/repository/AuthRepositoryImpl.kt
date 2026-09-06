@@ -13,7 +13,7 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val firebaseAuth: FirebaseAuth,
     private val firebaseFirestore: FirebaseFirestore,
     private val firebaseMessaging: FirebaseMessaging,
@@ -22,7 +22,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun registerPushToken() {
         try {
-            val token = firebaseMessaging.getToken().await()
+            val token = firebaseMessaging.token.await()
             val uid = firebaseAuth.currentUser?.uid
             if (uid != null && token.isNotEmpty()) {
                 val workManager = androidx.work.WorkManager.getInstance(context)
@@ -55,7 +55,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun clearPushToken() {
         try {
-            val token = firebaseMessaging.getToken().await()
+            val token = firebaseMessaging.token.await()
             val uid = firebaseAuth.currentUser?.uid
             if (uid != null && token.isNotEmpty()) {
                 firebaseFirestore.collection("users").document(uid)
@@ -141,6 +141,10 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun isEmailVerified(): Boolean {
         return firebaseAuth.currentUser?.isEmailVerified == true
+    }
+
+    override fun getLastSignInTimestamp(): Long? {
+        return firebaseAuth.currentUser?.metadata?.lastSignInTimestamp
     }
 
     override suspend fun reloadUser(): DataResult<Unit> {

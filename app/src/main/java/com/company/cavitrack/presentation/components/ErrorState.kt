@@ -10,11 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.ui.res.stringResource
+import com.company.cavitrack.R
+
 @Composable
 fun ErrorState(
     message: String,
-    onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRetry: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -37,7 +40,7 @@ fun ErrorState(
                 if (onRetry != null) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = onRetry) {
-                        Text("Retry")
+                        Text(stringResource(R.string.btn_retry))
                     }
                 }
             }

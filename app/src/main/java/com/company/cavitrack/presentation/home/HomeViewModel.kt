@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @androidx.compose.runtime.Immutable
@@ -25,10 +26,24 @@ data class HomeData(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getDashboardMetrics: GetDashboardMetricsUseCase,
+    private val localMetricsRepository: com.company.cavitrack.data.local.LocalMetricsRepository,
     sessionManager: SessionManager
 ) : ViewModel() {
 
     private val retryTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    val isNotificationDismissed: StateFlow<Boolean> = localMetricsRepository.isNotificationPromptDismissed
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    fun dismissNotificationPrompt() {
+        viewModelScope.launch {
+            localMetricsRepository.setNotificationPromptDismissed(true)
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val uiState: StateFlow<UiState<HomeData>> = combine(
@@ -37,7 +52,7 @@ class HomeViewModel @Inject constructor(
     ) { user, _ -> user }
         .flatMapLatest { user ->
             if (user != null) {
-                getDashboardMetrics().map { result ->
+                getDashboardMetrics(user.uid).map { result ->
                     when (result) {
                         is DataResult.Success -> UiState.Success(
                             HomeData(

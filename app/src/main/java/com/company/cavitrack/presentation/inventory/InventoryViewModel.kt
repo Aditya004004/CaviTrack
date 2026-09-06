@@ -1,28 +1,17 @@
 package com.company.cavitrack.presentation.inventory
 
 
-import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.Customer
 import com.company.cavitrack.domain.model.Mold
 import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
-import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import javax.inject.Inject
-
-data class InventoryData(
-    val components: List<Component> = emptyList(),
-    val customers: List<Customer> = emptyList(),
-    val molds: List<Mold> = emptyList()
-)
 
 @HiltViewModel
 class InventoryViewModel @Inject constructor(

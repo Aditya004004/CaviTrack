@@ -48,16 +48,20 @@ fun InventoryScreen(
     onMoldClick: (String) -> Unit = {},
     onAddNewItem: ((EntityType) -> Unit)? = null
 ) {
-    val components = viewModel.componentsFlow.collectAsLazyPagingItems()
-    val customers = viewModel.customersFlow.collectAsLazyPagingItems()
-    val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
-    
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
-    val tabs = listOf("Components", "Customers", "Molds")
+    val tabs = listOf(
+        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_components),
+        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_customers),
+        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_molds)
+    )
 
     val componentsListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val customersListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val moldsListState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    val components = viewModel.componentsFlow.collectAsLazyPagingItems()
+    val customers = viewModel.customersFlow.collectAsLazyPagingItems()
+    val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
 
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
@@ -71,7 +75,7 @@ fun InventoryScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { viewModel.updateSearchQuery(it) },
-            placeholder = { Text("Search inventory...") },
+            placeholder = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.placeholder_search_inventory)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
@@ -161,7 +165,6 @@ fun InventoryScreen(
     }
     
     if (showFilterSheet) {
-        androidx.activity.compose.BackHandler { showFilterSheet = false }
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
@@ -172,13 +175,13 @@ fun InventoryScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Filter Options", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_filter_options), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     if (hasActiveFilter) {
                         TextButton(onClick = {
                             if (selectedTabIndex == 0) viewModel.updateLowStockFilter(false)
                             if (selectedTabIndex == 2) viewModel.updateMoldStatusFilter(null)
                         }) {
-                            Text("Reset")
+                            Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.btn_reset))
                         }
                     }
                 }
@@ -243,7 +246,7 @@ private fun ComponentListContent(
     val isFiltered = searchQuery.isNotBlank() || lowStockOnly
     when {
         components.loadState.refresh is androidx.paging.LoadState.Loading -> {
-            LoadingState(modifier = Modifier.padding(bottom = 88.dp))
+            SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
         }
         components.loadState.refresh is androidx.paging.LoadState.Error -> {
             val error = (components.loadState.refresh as androidx.paging.LoadState.Error).error
@@ -335,7 +338,7 @@ private fun CustomerListContent(
     val isSearching = searchQuery.isNotBlank()
     when {
         customers.loadState.refresh is androidx.paging.LoadState.Loading -> {
-            LoadingState(modifier = Modifier.padding(bottom = 88.dp))
+            SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
         }
         customers.loadState.refresh is androidx.paging.LoadState.Error -> {
             val error = (customers.loadState.refresh as androidx.paging.LoadState.Error).error
@@ -422,7 +425,7 @@ private fun MoldListContent(
     val isFiltered = searchQuery.isNotBlank() || selectedMoldStatus != null
     when {
         molds.loadState.refresh is androidx.paging.LoadState.Loading -> {
-            LoadingState(modifier = Modifier.padding(bottom = 88.dp))
+            SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
         }
         molds.loadState.refresh is androidx.paging.LoadState.Error -> {
             val error = (molds.loadState.refresh as androidx.paging.LoadState.Error).error
@@ -530,7 +533,7 @@ fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
                     Text(text = "SKU: ${component.sku}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            val isLowStock = component.qty < component.minStockThreshold
+            val isLowStock = component.qty <= component.minStockThreshold
             StatusBadge(
                 text = "${component.qty} ${component.unit}",
                 statusType = if (isLowStock) StatusType.WARNING else StatusType.SUCCESS

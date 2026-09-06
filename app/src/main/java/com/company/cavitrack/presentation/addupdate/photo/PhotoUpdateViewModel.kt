@@ -68,11 +68,6 @@ class PhotoUpdateViewModel @Inject constructor(
             _isUploading.value = true
             _error.value = null
             try {
-                if (entityType != EntityType.Component) {
-                    _error.value = UiText.DynamicString("Attaching photos to existing $entityType is not supported yet.")
-                    return@launch
-                }
-
                 val userId = authRepository.getCurrentUserUid()
                 if (userId.isNullOrBlank()) {
                     _error.value = UiText.DynamicString("User not authenticated.")
@@ -91,19 +86,51 @@ class PhotoUpdateViewModel @Inject constructor(
                 }
 
                 val downloadUrl = (uploadResult as DataResult.Success).data
+                val now = System.currentTimeMillis()
 
-                val result = useCases.getComponent(entityId)
-                if (result is DataResult.Success) {
-                    val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = System.currentTimeMillis())
-                    val saveResult = useCases.saveComponent(updated)
-                    if (saveResult is DataResult.Success) {
-                        writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
-                        _isSaved.send(Unit)
-                    } else if (saveResult is DataResult.Error) {
-                        _error.value = UiText.DynamicString(saveResult.message)
+                val saveResult: DataResult<Unit> = when (entityType) {
+                    EntityType.Component -> {
+                        when (val result = useCases.getComponent(entityId)) {
+                            is DataResult.Success -> {
+                                val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
+                                val res = useCases.saveComponent(updated)
+                                if (res is DataResult.Success) writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
+                                res
+                            }
+                            is DataResult.Error -> DataResult.Error(result.message)
+                        }
                     }
-                } else if (result is DataResult.Error) {
-                    _error.value = UiText.DynamicString(result.message)
+                    EntityType.Customer -> {
+                        when (val result = useCases.getCustomer(entityId)) {
+                            is DataResult.Success -> {
+                                val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
+                                val res = useCases.saveCustomer(updated)
+                                if (res is DataResult.Success) writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
+                                res
+                            }
+                            is DataResult.Error -> DataResult.Error(result.message)
+                        }
+                    }
+                    EntityType.Mold -> {
+                        when (val result = useCases.getMold(entityId)) {
+                            is DataResult.Success -> {
+                                val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
+                                val res = useCases.saveMold(updated)
+                                if (res is DataResult.Success) writeHistory(entityType, updated.id, updated.moldCode, "Photo Added", downloadUrl)
+                                res
+                            }
+                            is DataResult.Error -> DataResult.Error(result.message)
+                        }
+                    }
+                    EntityType.History -> {
+                        DataResult.Error("Attaching photos to history entries is not supported.")
+                    }
+                }
+
+                if (saveResult is DataResult.Success) {
+                    _isSaved.send(Unit)
+                } else if (saveResult is DataResult.Error) {
+                    _error.value = UiText.DynamicString(saveResult.message)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e

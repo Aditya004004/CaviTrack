@@ -9,6 +9,7 @@ import java.io.File
 import java.io.FileOutputStream
 
 object ImageUtil {
+    @android.annotation.SuppressLint("ExifInterface")
     suspend fun downscaleImage(file: File, maxDim: Int = 1280): File? = withContext(Dispatchers.IO) {
         if (!file.exists()) return@withContext null
 

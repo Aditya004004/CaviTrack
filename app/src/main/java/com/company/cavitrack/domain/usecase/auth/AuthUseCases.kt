@@ -57,7 +57,17 @@ class DeleteAccountUseCase @Inject constructor(
             return DataResult.Error("User not authenticated")
         }
 
+        val lastSignIn = authRepository.getLastSignInTimestamp() ?: 0L
+        val fiveMinutesAgo = System.currentTimeMillis() - 5 * 60 * 1000L
+        if (lastSignIn < fiveMinutesAgo) {
+            return DataResult.Error(
+                "For security reasons, please sign out and sign back in, then try deleting your account again.",
+                code = 401
+            )
+        }
+
         try {
+            authRepository.clearPushToken()
             val clearResult = inventoryRepository.clearUserData() // UID is resolved internally
             if (clearResult is DataResult.Error) {
                 return DataResult.Error("Failed to clear user data: ${clearResult.message}. Account deletion aborted to prevent data orphaning.")

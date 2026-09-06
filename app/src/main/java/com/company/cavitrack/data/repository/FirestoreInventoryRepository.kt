@@ -19,6 +19,9 @@ import com.company.cavitrack.domain.model.Mold
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.util.DataResult
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -48,9 +51,12 @@ class FirestoreInventoryRepository @Inject constructor(
             query = query.whereEqualTo("isLowStock", true)
         }
         
-        query = query.orderBy("createdAt", Query.Direction.DESCENDING)
-
         val cleanQuery = searchQuery.trim()
+        query = if (cleanQuery.isNotBlank()) {
+            query.orderBy("name").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
+        } else {
+            query.orderBy("createdAt", Query.Direction.DESCENDING)
+        }
 
         return androidx.paging.Pager(
             config = androidx.paging.PagingConfig(
@@ -63,26 +69,20 @@ class FirestoreInventoryRepository @Inject constructor(
             com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
                 doc.toObject(ComponentDto::class.java)?.toDomain() 
             }
-        }.flow.map { pagingData ->
-            if (cleanQuery.isNotBlank()) {
-                pagingData.filter { component ->
-                    component.name.contains(cleanQuery, ignoreCase = true) ||
-                    component.sku.contains(cleanQuery, ignoreCase = true) ||
-                    component.category.contains(cleanQuery, ignoreCase = true)
-                }
-            } else {
-                pagingData
-            }
-        }
+        }.flow
     }
 
     override fun getCustomers(searchQuery: String): Flow<PagingData<Customer>> {
-        val query = firestore.collection("customers")
+        var query = firestore.collection("customers")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
 
         val cleanQuery = searchQuery.trim()
+        query = if (cleanQuery.isNotBlank()) {
+            query.orderBy("name").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
+        } else {
+            query.orderBy("createdAt", Query.Direction.DESCENDING)
+        }
 
         return androidx.paging.Pager(
             config = androidx.paging.PagingConfig(
@@ -95,18 +95,7 @@ class FirestoreInventoryRepository @Inject constructor(
             com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
                 doc.toObject(CustomerDto::class.java)?.toDomain() 
             }
-        }.flow.map { pagingData ->
-            if (cleanQuery.isNotBlank()) {
-                pagingData.filter { customer ->
-                    customer.name.contains(cleanQuery, ignoreCase = true) ||
-                    customer.email.contains(cleanQuery, ignoreCase = true) ||
-                    customer.phone.contains(cleanQuery, ignoreCase = true) ||
-                    customer.address.contains(cleanQuery, ignoreCase = true)
-                }
-            } else {
-                pagingData
-            }
-        }
+        }.flow
     }
 
     override fun getMolds(searchQuery: String, status: String?): Flow<PagingData<Mold>> {
@@ -118,9 +107,12 @@ class FirestoreInventoryRepository @Inject constructor(
             query = query.whereEqualTo("status", status)
         }
         
-        query = query.orderBy("createdAt", Query.Direction.DESCENDING)
-
         val cleanQuery = searchQuery.trim()
+        query = if (cleanQuery.isNotBlank()) {
+            query.orderBy("moldCode").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
+        } else {
+            query.orderBy("createdAt", Query.Direction.DESCENDING)
+        }
 
         return androidx.paging.Pager(
             config = androidx.paging.PagingConfig(
@@ -133,17 +125,7 @@ class FirestoreInventoryRepository @Inject constructor(
             com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
                 doc.toObject(MoldDto::class.java)?.toDomain() 
             }
-        }.flow.map { pagingData ->
-            if (cleanQuery.isNotBlank()) {
-                pagingData.filter { mold ->
-                    mold.moldCode.contains(cleanQuery, ignoreCase = true) ||
-                    mold.location.contains(cleanQuery, ignoreCase = true) ||
-                    mold.status.name.contains(cleanQuery, ignoreCase = true)
-                }
-            } else {
-                pagingData
-            }
-        }
+        }.flow
     }
 
     override fun getHistory(action: String?): Flow<PagingData<HistoryLog>> {
@@ -354,6 +336,57 @@ class FirestoreInventoryRepository @Inject constructor(
         }
     }
 
+    override suspend fun saveComponentWithHistory(component: Component, log: HistoryLog): DataResult<Unit> {
+        return try {
+            val uid = currentUserId
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
+            val compDto = component.copy(ownerId = uid).toDto()
+            val logDto = log.copy(ownerId = uid).toDto()
+            val batch = firestore.batch()
+            batch.set(firestore.collection("components").document(compDto.id), compDto)
+            batch.set(firestore.collection("history").document(logDto.id), logDto)
+            batch.commit().await()
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to save")
+        }
+    }
+
+    override suspend fun saveCustomerWithHistory(customer: Customer, log: HistoryLog): DataResult<Unit> {
+        return try {
+            val uid = currentUserId
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
+            val custDto = customer.copy(ownerId = uid).toDto()
+            val logDto = log.copy(ownerId = uid).toDto()
+            val batch = firestore.batch()
+            batch.set(firestore.collection("customers").document(custDto.id), custDto)
+            batch.set(firestore.collection("history").document(logDto.id), logDto)
+            batch.commit().await()
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to save")
+        }
+    }
+
+    override suspend fun saveMoldWithHistory(mold: Mold, log: HistoryLog): DataResult<Unit> {
+        return try {
+            val uid = currentUserId
+            if (uid.isBlank()) return DataResult.Error("Not authenticated")
+            val moldDto = mold.copy(ownerId = uid).toDto()
+            val logDto = log.copy(ownerId = uid).toDto()
+            val batch = firestore.batch()
+            batch.set(firestore.collection("molds").document(moldDto.id), moldDto)
+            batch.set(firestore.collection("history").document(logDto.id), logDto)
+            batch.commit().await()
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to save")
+        }
+    }
+
     override suspend fun updateComponentQuantityTransaction(id: String, newQty: Int): DataResult<Component> {
         val uid = currentUserId
         if (uid.isBlank()) return DataResult.Error("Not authenticated")
@@ -430,20 +463,40 @@ class FirestoreInventoryRepository @Inject constructor(
         if (uid.isBlank()) return DataResult.Error("Not authenticated")
 
         return try {
-            val collections = listOf("components", "customers", "molds", "history")
-            for (coll in collections) {
-                var query = firestore.collection(coll)
-                    .whereEqualTo("ownerId", uid)
-                    .limit(500)
-                var docs = query.get().await()
-                while (docs.documents.isNotEmpty()) {
-                    val batch = firestore.batch()
-                    for (doc in docs.documents) {
-                        batch.delete(doc.reference)
+            coroutineScope {
+                val collections = listOf("components", "customers", "molds", "history")
+                val collJobs = collections.map { coll ->
+                    async {
+                        val query = firestore.collection(coll)
+                            .whereEqualTo("ownerId", uid)
+                            .limit(500)
+                        var docs = query.get().await()
+                        while (docs.documents.isNotEmpty()) {
+                            val batch = firestore.batch()
+                            for (doc in docs.documents) {
+                                batch.delete(doc.reference)
+                            }
+                            batch.commit().await()
+                            docs = query.get().await()
+                        }
                     }
-                    batch.commit().await()
-                    docs = query.get().await()
                 }
+                val fcmTokensJob = async {
+                    val tokensQuery = firestore.collection("users").document(uid)
+                        .collection("fcmTokens")
+                        .limit(500)
+                    var docs = tokensQuery.get().await()
+                    while (docs.documents.isNotEmpty()) {
+                        val batch = firestore.batch()
+                        for (doc in docs.documents) {
+                            batch.delete(doc.reference)
+                        }
+                        batch.commit().await()
+                        docs = tokensQuery.get().await()
+                    }
+                }
+                collJobs.awaitAll()
+                fcmTokensJob.await()
             }
             DataResult.Success(Unit)
         } catch (e: Exception) {

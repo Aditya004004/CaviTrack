@@ -1,18 +1,14 @@
 package com.company.cavitrack.presentation.history
 
 
-import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
-import com.company.cavitrack.presentation.components.UiState
-import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import androidx.paging.PagingData
@@ -31,7 +27,7 @@ class HistoryViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _selectedAction = MutableStateFlow<String?>(null)
-    val selectedAction = _selectedAction.asStateFlow()
+    val selectedAction: StateFlow<String?> = _selectedAction.asStateFlow()
 
     fun setActionFilter(action: String?) {
         _selectedAction.value = action

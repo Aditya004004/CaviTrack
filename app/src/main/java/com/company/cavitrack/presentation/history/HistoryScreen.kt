@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.ListCard
 import com.company.cavitrack.presentation.components.LoadingState
+import com.company.cavitrack.presentation.components.SkeletonList
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -51,12 +52,12 @@ fun HistoryScreen(
                 OutlinedButton(onClick = { showFilterSheet = true }) {
                     Icon(Icons.Default.FilterList, contentDescription = "Filter")
                     Spacer(Modifier.width(8.dp))
-                    Text(selectedAction ?: "Filter History")
+                    Text(selectedAction ?: androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_filter_history))
                 }
             }
 
             if (historyLogs.loadState.refresh is LoadState.Loading) {
-                LoadingState()
+                SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
             } else if (historyLogs.loadState.refresh is LoadState.Error) {
                 val error = (historyLogs.loadState.refresh as LoadState.Error).error.message
                 ErrorState(message = error ?: "Unknown error", onRetry = { historyLogs.retry() })
@@ -73,10 +74,10 @@ fun HistoryScreen(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No stock movements found", style = MaterialTheme.typography.titleMedium)
+                    Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.msg_no_stock_movements), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Try adjusting your filters.",
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.msg_adjust_filters),
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -131,7 +132,7 @@ fun HistoryScreen(
                         item {
                             Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
                                 Button(onClick = { historyLogs.retry() }) {
-                                    Text("Retry")
+                                    Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.btn_retry))
                                 }
                             }
                         }
@@ -147,11 +148,16 @@ fun HistoryScreen(
                 shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
-                    Text("Filter by Action", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_filter_action), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     val actions = listOf(null, "Created", "Stock Adjusted", "Photo Added")
-                    val labels = listOf("All", "Created", "Stock Adjusted", "Photo Added")
+                    val labels = listOf(
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_all),
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_created),
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_stock_adjusted),
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_photo_added)
+                    )
                     
                     actions.forEachIndexed { index, action ->
                         Row(
@@ -172,7 +178,7 @@ fun HistoryScreen(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(onClick = { showFilterSheet = false }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Apply Filters")
+                        Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.btn_apply_filters))
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }

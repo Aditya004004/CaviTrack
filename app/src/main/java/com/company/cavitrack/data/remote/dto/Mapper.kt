@@ -22,7 +22,7 @@ fun Component.toDto(): ComponentDto {
         photoUrl = photoUrl,
         createdAt = createdAt,
         updatedAt = updatedAt,
-        isLowStock = qty < minStockThreshold
+        isLowStock = qty <= minStockThreshold
     )
 }
 

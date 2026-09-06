@@ -17,9 +17,9 @@ data class ComponentDto @JvmOverloads constructor(
     val photoUrl: String? = null,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
-    @get:PropertyName("isDeleted")
-    val isDeleted: Boolean = false,
-    @get:PropertyName("isLowStock")
-    val isLowStock: Boolean = false
+    @get:PropertyName("isDeleted") @set:PropertyName("isDeleted")
+    var isDeleted: Boolean = false,
+    @get:PropertyName("isLowStock") @set:PropertyName("isLowStock")
+    var isLowStock: Boolean = false
 )
 

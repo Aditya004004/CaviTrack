@@ -13,6 +13,9 @@ import javax.inject.Singleton
 class SessionManager @Inject constructor(
     private val firebaseAuth: FirebaseAuth
 ) {
+    val currentFirebaseUser: FirebaseUser?
+        get() = firebaseAuth.currentUser
+
     val currentUser: Flow<FirebaseUser?> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { auth ->
             trySend(auth.currentUser)

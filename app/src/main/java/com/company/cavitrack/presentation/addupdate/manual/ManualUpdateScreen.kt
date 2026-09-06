@@ -24,7 +24,6 @@ fun ManualUpdateScreen(
     var quantity by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
     var hasError by rememberSaveable { mutableStateOf(false) }
-    var hasUnsupportedError by rememberSaveable { mutableStateOf(false) }
     
     var name by rememberSaveable { mutableStateOf("") }
     var sku by rememberSaveable { mutableStateOf("") }
@@ -38,20 +37,45 @@ fun ManualUpdateScreen(
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val currentQty by viewModel.currentQty.collectAsStateWithLifecycle()
+    val loadedCustomer by viewModel.loadedCustomer.collectAsStateWithLifecycle()
+    val loadedMold by viewModel.loadedMold.collectAsStateWithLifecycle()
     
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val scrollState = androidx.compose.foundation.rememberScrollState()
     
     LaunchedEffect(entityId, entityType) {
-        if (entityId != null && entityType == EntityType.Component) {
-            viewModel.loadComponent(entityId)
+        if (entityId != null) {
+            when (entityType) {
+                EntityType.Component -> viewModel.loadComponent(entityId)
+                EntityType.Customer -> viewModel.loadCustomer(entityId)
+                EntityType.Mold -> viewModel.loadMold(entityId)
+                else -> {}
+            }
         }
     }
 
     LaunchedEffect(currentQty) {
         if (currentQty != null && quantity.isEmpty()) {
             quantity = currentQty.toString()
+        }
+    }
+
+    LaunchedEffect(loadedCustomer) {
+        loadedCustomer?.let {
+            if (name.isEmpty()) name = it.name
+            if (phone.isEmpty()) phone = it.phone
+            if (email.isEmpty()) email = it.email
+            if (address.isEmpty()) address = it.address
+            if (note.isEmpty() && it.notes.isNotEmpty()) note = it.notes
+        }
+    }
+
+    LaunchedEffect(loadedMold) {
+        loadedMold?.let {
+            if (moldCode.isEmpty()) moldCode = it.moldCode
+            if (location.isEmpty()) location = it.location
+            if (quantity.isEmpty()) quantity = it.cavityCount.toString()
         }
     }
     
@@ -78,14 +102,11 @@ fun ManualUpdateScreen(
         if (error != null) {
             Text(error?.asString() ?: "", color = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(16.dp))
-        } else if (hasUnsupportedError) {
-            Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.unsupported_update), color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        if (entityId == null) {
-            when (entityType) {
-                EntityType.Component -> {
+        when (entityType) {
+            EntityType.Component -> {
+                if (entityId == null) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
@@ -114,66 +135,66 @@ fun ManualUpdateScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                EntityType.Customer -> {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_name)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_phone)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_email)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = address,
-                        onValueChange = { address = it },
-                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_address)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-                EntityType.Mold -> {
-                    OutlinedTextField(
-                        value = moldCode,
-                        onValueChange = { moldCode = it },
-                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_mold_code)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = location,
-                        onValueChange = { location = it },
-                        label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_location)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-                else -> {}
             }
+            EntityType.Customer -> {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_name)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_phone)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_email)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_address)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            EntityType.Mold -> {
+                OutlinedTextField(
+                    value = moldCode,
+                    onValueChange = { moldCode = it },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_mold_code)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_location)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            else -> {}
         }
 
         if (entityType != EntityType.Customer) {
@@ -209,24 +230,25 @@ fun ManualUpdateScreen(
             keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() })
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
                 val parsedQty = if (entityType == EntityType.Customer) 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
                 if (parsedQty != null) {
                     if (entityId != null) {
-                        if (entityType == EntityType.Component) {
-                            viewModel.updateComponentQuantity(entityId, parsedQty, note)
-                        } else {
-                            hasUnsupportedError = true // Only Component updates are supported right now
+                        when (entityType) {
+                            EntityType.Component -> viewModel.updateComponentQuantity(entityId, parsedQty, note)
+                            EntityType.Customer -> viewModel.updateCustomer(entityId, name, phone, email, address, note)
+                            EntityType.Mold -> viewModel.updateMold(entityId, moldCode, parsedQty, location, note)
+                            else -> {}
                         }
                     } else {
                         when (entityType) {
                             EntityType.Component -> viewModel.createComponent(name, sku, category, parsedQty, note)
                             EntityType.Customer -> viewModel.createCustomer(name, phone, email, address, note)
                             EntityType.Mold -> viewModel.createMold(moldCode, parsedQty, location, note)
-                            else -> hasUnsupportedError = true
+                            else -> {}
                         }
                     }
                 } else {

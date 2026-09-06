@@ -16,8 +16,6 @@ import com.company.cavitrack.domain.usecase.auth.AuthUseCases
 import com.company.cavitrack.util.SessionManager
 import com.company.cavitrack.util.DataResult
 
-enum class PendingDestructiveAction { LOGOUT, DELETE_ACCOUNT }
-
 sealed class AuthState {
     data object Unauthenticated : AuthState()
     data object Loading : AuthState()
@@ -37,20 +35,16 @@ class AuthViewModel @Inject constructor(
 
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
-    
-    private val _pendingDestructiveAction = MutableStateFlow<PendingDestructiveAction?>(null)
-    val pendingDestructiveAction: StateFlow<PendingDestructiveAction?> = _pendingDestructiveAction.asStateFlow()
 
     val currentUser: StateFlow<FirebaseUser?> = sessionManager.currentUser
         .stateIn(
             scope = viewModelScope,
             started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+            initialValue = sessionManager.currentFirebaseUser
         )
 
     fun clearAuthError() {
         _authError.value = null
-        _pendingDestructiveAction.value = null
     }
 
     fun resetAuthState() {
@@ -109,14 +103,14 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun logout(force: Boolean = false) {
+    fun logout() {
         viewModelScope.launch {
             authUseCases.logout()
             _authState.value = AuthState.Unauthenticated
         }
     }
 
-    fun deleteAccount(force: Boolean = false) {
+    fun deleteAccount() {
         viewModelScope.launch {
             val uid = authUseCases.getCurrentUserUid()
             if (uid == null) {

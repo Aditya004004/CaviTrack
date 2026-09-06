@@ -24,35 +24,40 @@ class CaviTrackApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         
+        val appCheck = com.google.firebase.appcheck.FirebaseAppCheck.getInstance()
         if (BuildConfig.DEBUG) {
-            com.google.firebase.appcheck.FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
-                com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
-            )
+            try {
+                val clazz = Class.forName("com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory")
+                val factory = clazz.getMethod("getInstance").invoke(null) as com.google.firebase.appcheck.AppCheckProviderFactory
+                appCheck.installAppCheckProviderFactory(factory)
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.w("CaviTrackApp", "DebugAppCheckProviderFactory reflection failed", e)
+                }
+            }
         } else {
-            com.google.firebase.appcheck.FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+            appCheck.installAppCheckProviderFactory(
                 com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance()
             )
         }
         
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val syncChannel = android.app.NotificationChannel(
-                "cavitrack_sync_channel",
-                "Sync Notifications",
-                android.app.NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notifications for background synchronization"
-            }
-            
-            val alertsChannel = android.app.NotificationChannel(
-                "cavi_track_alerts",
-                "CaviTrack Alerts",
-                android.app.NotificationManager.IMPORTANCE_DEFAULT
-            )
-            
-            val notificationManager = getSystemService(android.app.NotificationManager::class.java)
-            notificationManager.createNotificationChannel(syncChannel)
-            notificationManager.createNotificationChannel(alertsChannel)
+        val syncChannel = android.app.NotificationChannel(
+            "cavitrack_sync_channel",
+            "Sync Notifications",
+            android.app.NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Notifications for background synchronization"
         }
+        
+        val alertsChannel = android.app.NotificationChannel(
+            "cavi_track_alerts",
+            "CaviTrack Alerts",
+            android.app.NotificationManager.IMPORTANCE_DEFAULT
+        )
+        
+        val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+        notificationManager.createNotificationChannel(syncChannel)
+        notificationManager.createNotificationChannel(alertsChannel)
         
         // Clean up offline photos
         applicationScope.launch {

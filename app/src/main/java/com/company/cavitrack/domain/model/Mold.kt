@@ -1,7 +1,9 @@
 package com.company.cavitrack.domain.model
 
+import androidx.annotation.Keep
 import androidx.compose.runtime.Immutable
 
+@Keep
 enum class MoldStatus {
     Active,
     InMaintenance,

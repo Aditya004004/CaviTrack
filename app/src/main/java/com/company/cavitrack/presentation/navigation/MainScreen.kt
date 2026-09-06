@@ -60,22 +60,25 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.material3.CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(16.dp))
-                androidx.compose.material3.Text("Deleting your account...")
+                androidx.compose.material3.Text(stringResource(R.string.msg_deleting_account))
             }
         }
     } else if (authState !is AuthState.Authenticated) {
         // Show auth graph
         CaviTrackAuthGraph(
-            authViewModel = authViewModel,
             onAuthSuccess = { authViewModel.checkAuthStatus() }
         )
     } else {
-        val topLevelItems = remember {
+        val homeLabel = stringResource(R.string.nav_home)
+        val inventoryLabel = stringResource(R.string.nav_inventory)
+        val historyLabel = stringResource(R.string.nav_history)
+        val settingsLabel = stringResource(R.string.nav_settings)
+        val topLevelItems = remember(homeLabel, inventoryLabel, historyLabel, settingsLabel) {
             listOf(
-                BottomNavItem("Home", Route.Home::class, Route.Home, Icons.Filled.Home),
-                BottomNavItem("Inventory", Route.Inventory::class, Route.Inventory, Icons.AutoMirrored.Filled.List),
-                BottomNavItem("History", Route.History::class, Route.History, Icons.Filled.History),
-                BottomNavItem("Settings", Route.Settings::class, Route.Settings, Icons.Filled.Settings)
+                BottomNavItem(homeLabel, Route.Home::class, Route.Home, Icons.Filled.Home),
+                BottomNavItem(inventoryLabel, Route.Inventory::class, Route.Inventory, Icons.AutoMirrored.Filled.List),
+                BottomNavItem(historyLabel, Route.History::class, Route.History, Icons.Filled.History),
+                BottomNavItem(settingsLabel, Route.Settings::class, Route.Settings, Icons.Filled.Settings)
             )
         }
         val currentItem = topLevelItems.find { item -> currentDestination?.hasRoute(item.routeClass) == true }
@@ -139,12 +142,10 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         ) { innerPadding ->
             CaviTrackNavGraph(
                 navController = navController,
-                authViewModel = authViewModel,
                 modifier = Modifier.padding(innerPadding)
             )
             
             if (showUpdateSheet) {
-                BackHandler { showUpdateSheet = false }
                 ModalBottomSheet(
                     onDismissRequest = { showUpdateSheet = false },
                     shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),

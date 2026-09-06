@@ -25,7 +25,10 @@ data class InventoryUseCases @Inject constructor(
     val deleteCustomer: DeleteCustomerUseCase,
     val deleteMold: DeleteMoldUseCase,
     val saveHistoryLog: SaveHistoryLogUseCase,
-    val updateComponentQuantityTransaction: UpdateComponentQuantityTransactionUseCase
+    val updateComponentQuantityTransaction: UpdateComponentQuantityTransactionUseCase,
+    val saveComponentWithHistory: SaveComponentWithHistoryUseCase,
+    val saveCustomerWithHistory: SaveCustomerWithHistoryUseCase,
+    val saveMoldWithHistory: SaveMoldWithHistoryUseCase
 )
 
 class GetComponentsUseCase @Inject constructor(
@@ -145,5 +148,29 @@ class UpdateComponentQuantityTransactionUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(id: String, newQty: Int): DataResult<Component> {
         return repository.updateComponentQuantityTransaction(id, newQty)
+    }
+}
+
+class SaveComponentWithHistoryUseCase @Inject constructor(
+    private val repository: InventoryRepository
+) {
+    suspend operator fun invoke(component: Component, log: HistoryLog): DataResult<Unit> {
+        return repository.saveComponentWithHistory(component, log)
+    }
+}
+
+class SaveCustomerWithHistoryUseCase @Inject constructor(
+    private val repository: InventoryRepository
+) {
+    suspend operator fun invoke(customer: Customer, log: HistoryLog): DataResult<Unit> {
+        return repository.saveCustomerWithHistory(customer, log)
+    }
+}
+
+class SaveMoldWithHistoryUseCase @Inject constructor(
+    private val repository: InventoryRepository
+) {
+    suspend operator fun invoke(mold: Mold, log: HistoryLog): DataResult<Unit> {
+        return repository.saveMoldWithHistory(mold, log)
     }
 }

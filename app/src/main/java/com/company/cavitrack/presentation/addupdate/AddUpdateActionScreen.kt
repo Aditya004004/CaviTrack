@@ -1,22 +1,17 @@
 package com.company.cavitrack.presentation.addupdate
 
-
-
-
-
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +73,7 @@ fun AddUpdateActionScreen(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        val isPhotoUpdateSupported = selectedType == com.company.cavitrack.domain.model.EntityType.Component
+        val isPhotoUpdateSupported = entityType != null
         FilledTonalButton(
             onClick = { onNavigateToPhoto(selectedType) },
             enabled = isPhotoUpdateSupported,
@@ -92,7 +87,7 @@ fun AddUpdateActionScreen(
                     if (isPhotoUpdateSupported) {
                         androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.desc_photo_update)
                     } else {
-                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.desc_photo_coming_soon, selectedType.name)
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.desc_photo_existing_only)
                     }, 
                     style = MaterialTheme.typography.bodySmall, 
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
@@ -102,5 +97,3 @@ fun AddUpdateActionScreen(
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
-
-

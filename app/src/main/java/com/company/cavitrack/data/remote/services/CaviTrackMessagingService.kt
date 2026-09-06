@@ -1,33 +1,17 @@
 package com.company.cavitrack.data.remote.services
 
-
-
-
-
-
-import kotlinx.coroutines.Dispatchers
-import javax.inject.Inject
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.auth.FirebaseAuth
-import androidx.work.ExistingWorkPolicy
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.ExistingWorkPolicy
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlin.time.Duration.Companion.seconds
 
 @AndroidEntryPoint
 class CaviTrackMessagingService : FirebaseMessagingService() {
 
-    // Removed unused injected fields.
-
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         
@@ -96,11 +80,3 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
         notificationManager.notify(notificationId.incrementAndGet(), notificationBuilder.build())
     }
 }
-
-
-
-
-
-
-
-

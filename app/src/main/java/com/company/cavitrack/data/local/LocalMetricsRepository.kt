@@ -3,6 +3,7 @@ package com.company.cavitrack.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -20,13 +21,14 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 @Singleton
 class LocalMetricsRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     companion object {
         val TOTAL_COMPONENTS = longPreferencesKey("total_components")
         val LOW_STOCK_COUNT = longPreferencesKey("low_stock_count")
         val TOTAL_CUSTOMERS = longPreferencesKey("total_customers")
         val ACTIVE_MOLDS = longPreferencesKey("active_molds")
+        val NOTIFICATION_PROMPT_DISMISSED = booleanPreferencesKey("notification_prompt_dismissed")
     }
 
     private val safeData: Flow<Preferences> = context.dataStore.data
@@ -38,22 +40,60 @@ class LocalMetricsRepository @Inject constructor(
             }
         }
 
-    val totalComponents: Flow<Long> = safeData.map { it[TOTAL_COMPONENTS] ?: 0L }
-    val lowStockCount: Flow<Long> = safeData.map { it[LOW_STOCK_COUNT] ?: 0L }
-    val totalCustomers: Flow<Long> = safeData.map { it[TOTAL_CUSTOMERS] ?: 0L }
-    val activeMolds: Flow<Long> = safeData.map { it[ACTIVE_MOLDS] ?: 0L }
+    val totalComponents: Flow<Long> get() = getTotalComponents("")
+    val lowStockCount: Flow<Long> get() = getLowStockCount("")
+    val totalCustomers: Flow<Long> get() = getTotalCustomers("")
+    val activeMolds: Flow<Long> get() = getActiveMolds("")
+
+    fun getTotalComponents(uid: String = ""): Flow<Long> {
+        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_total_components") else TOTAL_COMPONENTS
+        return safeData.map { it[key] ?: 0L }
+    }
+
+    fun getLowStockCount(uid: String = ""): Flow<Long> {
+        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_low_stock_count") else LOW_STOCK_COUNT
+        return safeData.map { it[key] ?: 0L }
+    }
+
+    fun getTotalCustomers(uid: String = ""): Flow<Long> {
+        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_total_customers") else TOTAL_CUSTOMERS
+        return safeData.map { it[key] ?: 0L }
+    }
+
+    fun getActiveMolds(uid: String = ""): Flow<Long> {
+        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_active_molds") else ACTIVE_MOLDS
+        return safeData.map { it[key] ?: 0L }
+    }
 
     suspend fun saveMetrics(
+        uid: String = "",
         components: Long,
         lowStock: Long,
         customers: Long,
         molds: Long
     ) {
         context.dataStore.edit { prefs ->
-            prefs[TOTAL_COMPONENTS] = components
-            prefs[LOW_STOCK_COUNT] = lowStock
-            prefs[TOTAL_CUSTOMERS] = customers
-            prefs[ACTIVE_MOLDS] = molds
+            if (uid.isNotBlank()) {
+                prefs[longPreferencesKey("${uid}_total_components")] = components
+                prefs[longPreferencesKey("${uid}_low_stock_count")] = lowStock
+                prefs[longPreferencesKey("${uid}_total_customers")] = customers
+                prefs[longPreferencesKey("${uid}_active_molds")] = molds
+            } else {
+                prefs[TOTAL_COMPONENTS] = components
+                prefs[LOW_STOCK_COUNT] = lowStock
+                prefs[TOTAL_CUSTOMERS] = customers
+                prefs[ACTIVE_MOLDS] = molds
+            }
+        }
+    }
+
+    val isNotificationPromptDismissed: Flow<Boolean> = safeData.map {
+        it[NOTIFICATION_PROMPT_DISMISSED] ?: false
+    }
+
+    suspend fun setNotificationPromptDismissed(dismissed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[NOTIFICATION_PROMPT_DISMISSED] = dismissed
         }
     }
 

@@ -59,4 +59,27 @@ class GetDashboardMetricsUseCaseTest {
         assertEquals(5, cached.totalCustomers)
         assertEquals(4, cached.activeMolds)
     }
+
+    @Test
+    fun `useCase with uid emits user-scoped cached metrics`() = runTest {
+        // Arrange
+        val testUid = "user_123"
+        every { localMetricsRepository.getTotalComponents(testUid) } returns flowOf(25L)
+        every { localMetricsRepository.getLowStockCount(testUid) } returns flowOf(5L)
+        every { localMetricsRepository.getTotalCustomers(testUid) } returns flowOf(12L)
+        every { localMetricsRepository.getActiveMolds(testUid) } returns flowOf(8L)
+        every { repository.getRecentHistory(5) } returns flowOf(DataResult.Success(emptyList()))
+
+        // Act
+        val emissions = useCase(testUid).take(1).toList()
+
+        // Assert
+        val firstEmission = emissions.first()
+        assertTrue(firstEmission is DataResult.Success)
+        val cached = (firstEmission as DataResult.Success).data
+        assertEquals(25, cached.totalComponents)
+        assertEquals(5, cached.lowStockCount)
+        assertEquals(12, cached.totalCustomers)
+        assertEquals(8, cached.activeMolds)
+    }
 }
