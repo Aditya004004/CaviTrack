@@ -84,6 +84,9 @@ fun PhotoUpdateScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     val cannotAttachPhotoMsg = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.msg_cannot_attach_photo_unsaved)
+    val errorImageLoadMsg = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_image_load)
+    val errorCameraBindMsg = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_camera_bind)
+    val errorCameraCaptureFormat = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_camera_capture)
 
     val galleryLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
@@ -112,19 +115,17 @@ fun PhotoUpdateScreen(
                         android.util.Log.w("PhotoUpdateScreen", "Failed to load image", e)
                     }
                     withContext(Dispatchers.Main) {
-                        snackbarHostState.showSnackbar("Failed to load image: ${e.message}")
+                        snackbarHostState.showSnackbar(errorImageLoadMsg)
                     }
                 }
             }
         }
     }
 
-    LaunchedEffect(viewModel.isSaved, lifecycleOwner) {
-        viewModel.isSaved
-            .flowWithLifecycle(lifecycleOwner.lifecycle, androidx.lifecycle.Lifecycle.State.STARTED)
-            .collect {
-                onUpdateComplete()
-            }
+    LaunchedEffect(Unit) {
+        viewModel.isSaved.collect {
+            onUpdateComplete()
+        }
     }
 
     LaunchedEffect(error) {
@@ -199,7 +200,7 @@ fun PhotoUpdateScreen(
                                 if (com.company.cavitrack.BuildConfig.DEBUG) {
                                     android.util.Log.w("PhotoUpdateScreen", "Failed to bind camera", e)
                                 }
-                                coroutineScope.launch { snackbarHostState.showSnackbar("Failed to bind camera: ${e.message}") }
+                                coroutineScope.launch { snackbarHostState.showSnackbar(errorCameraBindMsg) }
                             }
                         }, mainExecutor)
                         previewView
@@ -300,7 +301,7 @@ fun PhotoUpdateScreen(
                                     if (com.company.cavitrack.BuildConfig.DEBUG) {
                                         android.util.Log.w("PhotoUpdateScreen", "Image capture error", exc)
                                     }
-                                    coroutineScope.launch { snackbarHostState.showSnackbar("Failed to capture image: ${exc.message}") }
+                                    coroutineScope.launch { snackbarHostState.showSnackbar(errorCameraCaptureFormat.format(exc.message ?: "")) }
                                 }
                             }
                         )

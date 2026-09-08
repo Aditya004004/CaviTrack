@@ -17,6 +17,7 @@ data class CustomerDto @JvmOverloads constructor(
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
     @get:PropertyName("isDeleted") @set:PropertyName("isDeleted")
-    var isDeleted: Boolean = false
+    var isDeleted: Boolean = false,
+    val nameLower: String = ""
 )
 

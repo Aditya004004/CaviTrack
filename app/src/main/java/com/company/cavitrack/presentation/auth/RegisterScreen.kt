@@ -155,8 +155,11 @@ fun RegisterScreen(
         val privacyPolicyUrl = androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.privacy_policy_url)
         TextButton(onClick = {
             try {
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, privacyPolicyUrl.toUri())
-                context.startActivity(intent)
+                val uri = privacyPolicyUrl.toUri()
+                if (uri.scheme.equals("https", ignoreCase = true) || uri.scheme.equals("http", ignoreCase = true)) {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                    context.startActivity(intent)
+                }
             } catch (_: Exception) {}
         }) {
             Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.label_privacy_policy), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

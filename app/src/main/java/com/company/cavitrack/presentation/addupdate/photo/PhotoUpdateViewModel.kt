@@ -41,32 +41,27 @@ class PhotoUpdateViewModel @Inject constructor(
     private val _error = MutableStateFlow<UiText?>(null)
     val error: StateFlow<UiText?> = _error.asStateFlow()
 
-    private suspend fun writeHistory(entityType: EntityType, entityId: String, entityName: String, action: String, photoUrl: String?) {
+    private fun makeHistoryLog(entityType: EntityType, entityId: String, entityName: String, photoUrl: String): HistoryLog {
         val performer = authRepository.getCurrentUserName()?.takeIf { it.isNotBlank() }
             ?: authRepository.getCurrentUserEmail() ?: "Unknown"
-        val log = HistoryLog(
+        return HistoryLog(
             id = UUID.randomUUID().toString(),
             entityType = entityType,
             entityId = entityId,
             entityName = entityName,
-            action = action,
+            action = "Photo Added",
             changeSource = com.company.cavitrack.domain.model.ChangeSource.Photo,
             photoUrl = photoUrl,
             performedBy = performer,
             timestamp = System.currentTimeMillis()
         )
-        val saveResult = useCases.saveHistoryLog(log)
-        if (saveResult is DataResult.Error) {
-            if (com.company.cavitrack.BuildConfig.DEBUG) {
-                Log.w("PhotoUpdateViewModel", "Failed to save history log: ${saveResult.message}")
-            }
-        }
     }
 
     fun uploadPhotoAndUpdateEntity(entityType: EntityType, entityId: String, photoFile: File) {
         viewModelScope.launch {
             _isUploading.value = true
             _error.value = null
+            var uploadedDownloadUrl: String? = null
             try {
                 val userId = authRepository.getCurrentUserUid()
                 if (userId.isNullOrBlank()) {
@@ -86,16 +81,18 @@ class PhotoUpdateViewModel @Inject constructor(
                 }
 
                 val downloadUrl = (uploadResult as DataResult.Success).data
+                uploadedDownloadUrl = downloadUrl
                 val now = System.currentTimeMillis()
 
+                var oldPhotoUrl: String? = null
                 val saveResult: DataResult<Unit> = when (entityType) {
                     EntityType.Component -> {
                         when (val result = useCases.getComponent(entityId)) {
                             is DataResult.Success -> {
+                                oldPhotoUrl = result.data.photoUrl
                                 val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
-                                val res = useCases.saveComponent(updated)
-                                if (res is DataResult.Success) writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
-                                res
+                                val log = makeHistoryLog(entityType, updated.id, updated.name, downloadUrl)
+                                useCases.saveComponentWithHistory(updated, log)
                             }
                             is DataResult.Error -> DataResult.Error(result.message)
                         }
@@ -103,10 +100,10 @@ class PhotoUpdateViewModel @Inject constructor(
                     EntityType.Customer -> {
                         when (val result = useCases.getCustomer(entityId)) {
                             is DataResult.Success -> {
+                                oldPhotoUrl = result.data.photoUrl
                                 val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
-                                val res = useCases.saveCustomer(updated)
-                                if (res is DataResult.Success) writeHistory(entityType, updated.id, updated.name, "Photo Added", downloadUrl)
-                                res
+                                val log = makeHistoryLog(entityType, updated.id, updated.name, downloadUrl)
+                                useCases.saveCustomerWithHistory(updated, log)
                             }
                             is DataResult.Error -> DataResult.Error(result.message)
                         }
@@ -114,10 +111,10 @@ class PhotoUpdateViewModel @Inject constructor(
                     EntityType.Mold -> {
                         when (val result = useCases.getMold(entityId)) {
                             is DataResult.Success -> {
+                                oldPhotoUrl = result.data.photoUrl
                                 val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
-                                val res = useCases.saveMold(updated)
-                                if (res is DataResult.Success) writeHistory(entityType, updated.id, updated.moldCode, "Photo Added", downloadUrl)
-                                res
+                                val log = makeHistoryLog(entityType, updated.id, updated.moldCode, downloadUrl)
+                                useCases.saveMoldWithHistory(updated, log)
                             }
                             is DataResult.Error -> DataResult.Error(result.message)
                         }
@@ -128,12 +125,25 @@ class PhotoUpdateViewModel @Inject constructor(
                 }
 
                 if (saveResult is DataResult.Success) {
+                    if (!oldPhotoUrl.isNullOrBlank()) {
+                        try {
+                            storageRepository.deletePhoto(oldPhotoUrl)
+                        } catch (_: Exception) {}
+                    }
                     _isSaved.send(Unit)
                 } else if (saveResult is DataResult.Error) {
+                    try {
+                        storageRepository.deletePhoto(downloadUrl)
+                    } catch (_: Exception) {}
                     _error.value = UiText.DynamicString(saveResult.message)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                uploadedDownloadUrl?.let { url ->
+                    try {
+                        storageRepository.deletePhoto(url)
+                    } catch (_: Exception) {}
+                }
                 _error.value = UiText.DynamicString(e.message ?: "Failed to upload photo. Please check your internet connection.")
             } finally {
                 _isUploading.value = false

@@ -33,7 +33,7 @@ interface InventoryRepository {
     suspend fun saveCustomerWithHistory(customer: Customer, log: HistoryLog): DataResult<Unit>
     suspend fun saveMoldWithHistory(mold: Mold, log: HistoryLog): DataResult<Unit>
     
-    suspend fun updateComponentQuantityTransaction(id: String, newQty: Int): DataResult<Component>
+    suspend fun updateComponentQuantityTransaction(id: String, newQty: Int, log: com.company.cavitrack.domain.model.HistoryLog? = null): DataResult<Component>
 
     suspend fun deleteComponent(id: String): DataResult<Unit>
     suspend fun deleteCustomer(id: String): DataResult<Unit>

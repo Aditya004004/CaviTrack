@@ -40,6 +40,7 @@ fun HistoryScreen(
     val historyLogs = viewModel.pagedHistoryLogs.collectAsLazyPagingItems()
     val selectedAction by viewModel.selectedAction.collectAsStateWithLifecycle()
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -59,8 +60,12 @@ fun HistoryScreen(
             if (historyLogs.loadState.refresh is LoadState.Loading) {
                 SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
             } else if (historyLogs.loadState.refresh is LoadState.Error) {
-                val error = (historyLogs.loadState.refresh as LoadState.Error).error.message
-                ErrorState(message = error ?: "Unknown error", onRetry = { historyLogs.retry() })
+                val error = (historyLogs.loadState.refresh as LoadState.Error).error
+                val errorMessage = when (error) {
+                    is java.io.IOException -> androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_network)
+                    else -> androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.error_load_history)
+                }
+                ErrorState(message = errorMessage, onRetry = { historyLogs.retry() })
             } else if (historyLogs.itemCount == 0) {
                 Column(
                     modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -84,7 +89,6 @@ fun HistoryScreen(
                     )
                 }
             } else {
-                val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 88.dp)
@@ -107,12 +111,20 @@ fun HistoryScreen(
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "${log.action} via ${log.changeSource}",
+                                        text = androidx.compose.ui.res.stringResource(
+                                            com.company.cavitrack.R.string.history_log_action_format,
+                                            log.action,
+                                            log.changeSource
+                                        ),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     if (log.beforeValue != null && log.afterValue != null) {
                                         Text(
-                                            text = "${log.beforeValue} -> ${log.afterValue}",
+                                            text = androidx.compose.ui.res.stringResource(
+                                                com.company.cavitrack.R.string.history_log_value_format,
+                                                log.beforeValue,
+                                                log.afterValue
+                                            ),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.secondary
                                         )
@@ -151,10 +163,11 @@ fun HistoryScreen(
                     Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_filter_action), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    val actions = listOf(null, "Created", "Stock Adjusted", "Photo Added")
+                    val actions = listOf(null, "Created", "Updated", "Stock Adjusted", "Photo Added")
                     val labels = listOf(
                         androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_all),
                         androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_created),
+                        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_updated),
                         androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_stock_adjusted),
                         androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.filter_photo_added)
                     )

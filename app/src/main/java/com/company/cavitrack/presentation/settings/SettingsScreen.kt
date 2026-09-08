@@ -64,9 +64,9 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            Toast.makeText(context, "Notifications enabled", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_notifications_enabled, Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(context, "Notifications permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.toast_notifications_denied, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -160,7 +160,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                             if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
                                 requestPermissionLauncher.launch(permission)
                             } else {
-                                Toast.makeText(context, "Notifications are already enabled.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, R.string.toast_notifications_already_enabled, Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -193,12 +193,12 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                                 context.startActivity(intent)
                             } else {
-                                Toast.makeText(context, "Invalid privacy policy URL.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, R.string.toast_invalid_privacy_url, Toast.LENGTH_SHORT).show()
                             }
                         } catch (e: android.content.ActivityNotFoundException) {
-                            Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.toast_no_browser, Toast.LENGTH_SHORT).show()
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Unable to open link.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.toast_unable_to_open_link, Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -270,12 +270,16 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                     modifier = Modifier.clickable {
                         try {
                             val uri = webDeletionUrl.toUri()
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
-                            context.startActivity(intent)
+                            if (uri.scheme.equals("https", ignoreCase = true) || uri.scheme.equals("http", ignoreCase = true)) {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                                context.startActivity(intent)
+                            } else {
+                                Toast.makeText(context, R.string.toast_invalid_deletion_url, Toast.LENGTH_SHORT).show()
+                            }
                         } catch (e: android.content.ActivityNotFoundException) {
-                            Toast.makeText(context, "No web browser installed.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.toast_no_browser, Toast.LENGTH_SHORT).show()
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Unable to open link.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.toast_unable_to_open_link, Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -308,7 +312,7 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         Spacer(modifier = Modifier.height(36.dp))
 
         Text(
-            text = "CaviTrack v1.1",
+            text = "CaviTrack v${com.company.cavitrack.BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )

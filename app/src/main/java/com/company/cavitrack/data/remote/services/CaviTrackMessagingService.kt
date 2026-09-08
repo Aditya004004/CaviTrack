@@ -39,17 +39,18 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
-        // Handle notification payload
-        message.notification?.let {
-            showNotification(it.title ?: "CaviTrack", it.body ?: "")
+        val title = message.notification?.title ?: message.data["title"] ?: "CaviTrack"
+        val body = message.notification?.body ?: message.data["body"] ?: message.data["message"]
+        if (body != null || message.notification != null) {
+            showNotification(title, body ?: "")
         }
     }
 
     companion object {
-        private val notificationId = java.util.concurrent.atomic.AtomicInteger(0)
+        private const val NOTIFICATION_TAG_ALERT = "cavitrack_alert"
+        private const val NOTIFICATION_ID_ALERT = 1001
+        private const val NOTIFICATION_GROUP_KEY = "com.company.cavitrack.ALERTS"
     }
-
-
 
     private fun showNotification(title: String, body: String) {
         val channelId = "cavi_track_alerts"
@@ -67,6 +68,7 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
+            .setGroup(NOTIFICATION_GROUP_KEY)
             .setContentIntent(pendingIntent)
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -77,6 +79,6 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
             }
         }
 
-        notificationManager.notify(notificationId.incrementAndGet(), notificationBuilder.build())
+        notificationManager.notify(NOTIFICATION_TAG_ALERT, NOTIFICATION_ID_ALERT, notificationBuilder.build())
     }
 }

@@ -8,6 +8,7 @@ data class MoldDto @JvmOverloads constructor(
     val id: String = "",
     val ownerId: String = "",
     val moldCode: String = "",
+    val moldCodeLower: String = "",
     val cavityCount: Int = 0,
     val linkedComponentId: String? = null,
     val status: String = "",

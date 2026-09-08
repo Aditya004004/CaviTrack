@@ -64,6 +64,9 @@ class ManualUpdateViewModel @Inject constructor(
     private val _currentQty = MutableStateFlow<Int?>(null)
     val currentQty: StateFlow<Int?> = _currentQty.asStateFlow()
 
+    private val _loadedComponent = MutableStateFlow<Component?>(null)
+    val loadedComponent: StateFlow<Component?> = _loadedComponent.asStateFlow()
+
     private val _loadedCustomer = MutableStateFlow<Customer?>(null)
     val loadedCustomer: StateFlow<Customer?> = _loadedCustomer.asStateFlow()
 
@@ -75,6 +78,7 @@ class ManualUpdateViewModel @Inject constructor(
             try {
                 val result = useCases.getComponent(entityId)
                 if (result is DataResult.Success) {
+                    _loadedComponent.value = result.data
                     _currentQty.value = result.data.qty
                 }
             } catch (e: Exception) {
@@ -117,11 +121,18 @@ class ManualUpdateViewModel @Inject constructor(
         viewModelScope.launch {
             _isSaving.value = true
             try {
-                when (val saveResult = useCases.updateComponentQuantityTransaction(entityId, newQuantity)) {
+                val componentName = _loadedComponent.value?.name ?: "Component"
+                val log = makeHistoryLog(
+                    EntityType.Component,
+                    entityId,
+                    componentName,
+                    "Stock Adjusted",
+                    _currentQty.value?.toString(),
+                    newQuantity.toString(),
+                    note
+                )
+                when (val saveResult = useCases.updateComponentQuantityTransaction(entityId, newQuantity, log)) {
                     is DataResult.Success -> {
-                        val component = saveResult.data
-                        val log = makeHistoryLog(EntityType.Component, component.id, component.name, "Stock Adjusted", _currentQty.value?.toString(), newQuantity.toString(), note)
-                        useCases.saveHistoryLog(log)
                         _isSaved.send(Unit)
                     }
                     is DataResult.Error -> _error.value = com.company.cavitrack.util.UiText.DynamicString(saveResult.message)
@@ -135,7 +146,7 @@ class ManualUpdateViewModel @Inject constructor(
         }
     }
 
-    private inline fun executeWithLoading(crossinline action: suspend () -> Unit) {
+    private fun executeWithLoading(action: suspend () -> Unit) {
         viewModelScope.launch {
             _isSaving.value = true
             try {

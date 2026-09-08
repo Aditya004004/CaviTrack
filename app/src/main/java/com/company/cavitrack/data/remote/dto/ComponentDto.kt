@@ -20,6 +20,7 @@ data class ComponentDto @JvmOverloads constructor(
     @get:PropertyName("isDeleted") @set:PropertyName("isDeleted")
     var isDeleted: Boolean = false,
     @get:PropertyName("isLowStock") @set:PropertyName("isLowStock")
-    var isLowStock: Boolean = false
+    var isLowStock: Boolean = false,
+    val nameLower: String = ""
 )
 

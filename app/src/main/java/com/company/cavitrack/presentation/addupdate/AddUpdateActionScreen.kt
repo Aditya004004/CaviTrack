@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -77,7 +78,10 @@ fun AddUpdateActionScreen(
         FilledTonalButton(
             onClick = { onNavigateToPhoto(selectedType) },
             enabled = isPhotoUpdateSupported,
-            modifier = Modifier.fillMaxWidth().height(64.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .alpha(if (isPhotoUpdateSupported) 1f else 0.5f),
             shape = RoundedCornerShape(8.dp),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
         ) {

@@ -33,22 +33,46 @@ class CustomerDetailViewModel @Inject constructor(
         loadCustomer()
     }
 
-    fun loadCustomer() {
+    fun loadCustomer(isRefresh: Boolean = false) {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            if (!isRefresh && _uiState.value !is UiState.Success) {
+                _uiState.value = UiState.Loading
+            }
             try {
                 when (val result = useCases.getCustomer(entityId)) {
                     is DataResult.Success -> _uiState.value = UiState.Success(result.data)
-                    is DataResult.Error -> _uiState.value = UiState.Error(result.message)
+                    is DataResult.Error -> {
+                        if (_uiState.value !is UiState.Success) {
+                            _uiState.value = UiState.Error(result.message)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                _uiState.value = UiState.Error(e.message ?: "Failed to load customer")
+                if (_uiState.value !is UiState.Success) {
+                    _uiState.value = UiState.Error(e.message ?: "Failed to load customer")
+                }
             }
         }
     }
 
     fun retry() {
         loadCustomer()
+    }
+
+    fun deleteCustomer(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val result = useCases.deleteCustomer(entityId)
+                if (result is DataResult.Success) {
+                    onSuccess()
+                } else if (result is DataResult.Error) {
+                    _uiState.value = UiState.Error(result.message)
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.value = UiState.Error(e.message ?: "Failed to delete customer")
+            }
+        }
     }
 }

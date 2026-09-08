@@ -146,8 +146,8 @@ class SaveHistoryLogUseCase @Inject constructor(
 class UpdateComponentQuantityTransactionUseCase @Inject constructor(
     private val repository: InventoryRepository
 ) {
-    suspend operator fun invoke(id: String, newQty: Int): DataResult<Component> {
-        return repository.updateComponentQuantityTransaction(id, newQty)
+    suspend operator fun invoke(id: String, newQty: Int, log: HistoryLog? = null): DataResult<Component> {
+        return repository.updateComponentQuantityTransaction(id, newQty, log)
     }
 }
 

@@ -33,22 +33,46 @@ class MoldDetailViewModel @Inject constructor(
         loadMold()
     }
 
-    fun loadMold() {
+    fun loadMold(isRefresh: Boolean = false) {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            if (!isRefresh && _uiState.value !is UiState.Success) {
+                _uiState.value = UiState.Loading
+            }
             try {
                 when (val result = useCases.getMold(entityId)) {
                     is DataResult.Success -> _uiState.value = UiState.Success(result.data)
-                    is DataResult.Error -> _uiState.value = UiState.Error(result.message)
+                    is DataResult.Error -> {
+                        if (_uiState.value !is UiState.Success) {
+                            _uiState.value = UiState.Error(result.message)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                _uiState.value = UiState.Error(e.message ?: "Failed to load mold")
+                if (_uiState.value !is UiState.Success) {
+                    _uiState.value = UiState.Error(e.message ?: "Failed to load mold")
+                }
             }
         }
     }
 
     fun retry() {
         loadMold()
+    }
+
+    fun deleteMold(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val result = useCases.deleteMold(entityId)
+                if (result is DataResult.Success) {
+                    onSuccess()
+                } else if (result is DataResult.Error) {
+                    _uiState.value = UiState.Error(result.message)
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.value = UiState.Error(e.message ?: "Failed to delete mold")
+            }
+        }
     }
 }

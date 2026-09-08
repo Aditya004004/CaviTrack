@@ -7,9 +7,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.company.cavitrack.R
@@ -35,6 +40,36 @@ fun ComponentDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+
+    LifecycleResumeEffect(viewModel) {
+        viewModel.loadComponent(isRefresh = true)
+        onPauseOrDispose { }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.title_delete_item, "Component")) },
+            text = { Text(stringResource(R.string.msg_confirm_delete_item, "component")) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteComponent(onSuccess = onBack)
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.btn_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -44,7 +79,24 @@ fun ComponentDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                actions = {
+                    if (uiState is UiState.Success) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = stringResource(R.string.label_delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         }
     ) { padding ->
@@ -124,11 +176,42 @@ fun ComponentDetailScreen(
 fun CustomerDetailScreen(
     viewModel: CustomerDetailViewModel = hiltViewModel(),
     onNavigateToUpdate: (String) -> Unit = {},
+    onNavigateToPhotoUpdate: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+
+    LifecycleResumeEffect(viewModel) {
+        viewModel.loadCustomer(isRefresh = true)
+        onPauseOrDispose { }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.title_delete_item, "Customer")) },
+            text = { Text(stringResource(R.string.msg_confirm_delete_item, "customer")) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteCustomer(onSuccess = onBack)
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.btn_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -138,7 +221,24 @@ fun CustomerDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                actions = {
+                    if (uiState is UiState.Success) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = stringResource(R.string.label_delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         }
     ) { padding ->
@@ -196,6 +296,13 @@ fun CustomerDetailScreen(
                     ) {
                         Text(stringResource(R.string.label_edit_customer))
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { onNavigateToPhotoUpdate(customer.id) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                    ) {
+                        Text(stringResource(R.string.label_update_photo))
+                    }
                 }
             }
         }
@@ -207,11 +314,42 @@ fun CustomerDetailScreen(
 fun MoldDetailScreen(
     viewModel: MoldDetailViewModel = hiltViewModel(),
     onNavigateToUpdate: (String) -> Unit = {},
+    onNavigateToPhotoUpdate: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+
+    LifecycleResumeEffect(viewModel) {
+        viewModel.loadMold(isRefresh = true)
+        onPauseOrDispose { }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.title_delete_item, "Mold")) },
+            text = { Text(stringResource(R.string.msg_confirm_delete_item, "mold")) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteMold(onSuccess = onBack)
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.btn_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -221,7 +359,24 @@ fun MoldDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                actions = {
+                    if (uiState is UiState.Success) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = stringResource(R.string.label_delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         }
     ) { padding ->
@@ -277,6 +432,13 @@ fun MoldDetailScreen(
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
                         Text(stringResource(R.string.label_edit_mold))
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { onNavigateToPhotoUpdate(mold.id) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                    ) {
+                        Text(stringResource(R.string.label_update_photo))
                     }
                 }
             }

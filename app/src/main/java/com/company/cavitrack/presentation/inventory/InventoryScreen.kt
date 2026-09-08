@@ -38,6 +38,11 @@ import androidx.compose.material.icons.outlined.PersonSearch
 import androidx.compose.material.icons.outlined.PrecisionManufacturing
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.res.stringResource
+import com.company.cavitrack.R
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,34 +53,31 @@ fun InventoryScreen(
     onMoldClick: (String) -> Unit = {},
     onAddNewItem: ((EntityType) -> Unit)? = null
 ) {
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState { 3 }
+    val coroutineScope = rememberCoroutineScope()
     val tabs = listOf(
-        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_components),
-        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_customers),
-        androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_molds)
+        stringResource(R.string.title_components),
+        stringResource(R.string.title_customers),
+        stringResource(R.string.title_molds)
     )
 
     val componentsListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val customersListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val moldsListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-    val components = viewModel.componentsFlow.collectAsLazyPagingItems()
-    val customers = viewModel.customersFlow.collectAsLazyPagingItems()
-    val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
-
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
     val lowStockOnly by viewModel.lowStockOnly.collectAsStateWithLifecycle()
     val selectedMoldStatus by viewModel.selectedMoldStatus.collectAsStateWithLifecycle()
 
-    val hasActiveFilter = (selectedTabIndex == 0 && lowStockOnly) ||
-            (selectedTabIndex == 2 && selectedMoldStatus != null)
+    val hasActiveFilter = (pagerState.currentPage == 0 && lowStockOnly) ||
+            (pagerState.currentPage == 2 && selectedMoldStatus != null)
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { viewModel.updateSearchQuery(it) },
-            placeholder = { Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.placeholder_search_inventory)) },
+            placeholder = { Text(stringResource(R.string.placeholder_search_inventory)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
@@ -104,23 +106,30 @@ fun InventoryScreen(
             singleLine = true
         )
         
-        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
+        PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
             tabs.forEachIndexed { index, title ->
                 Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
+                    selected = pagerState.currentPage == index,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
                     text = { Text(title) }
                 )
             }
         }
 
-        Box(
+        HorizontalPager(
+            state = pagerState,
+            beyondViewportPageCount = 1,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-        ) {
-            when (selectedTabIndex) {
+        ) { page ->
+            when (page) {
                 0 -> {
+                    val components = viewModel.componentsFlow.collectAsLazyPagingItems()
                     ComponentListContent(
                         components = components,
                         listState = componentsListState,
@@ -135,6 +144,7 @@ fun InventoryScreen(
                     )
                 }
                 1 -> {
+                    val customers = viewModel.customersFlow.collectAsLazyPagingItems()
                     CustomerListContent(
                         customers = customers,
                         listState = customersListState,
@@ -147,6 +157,7 @@ fun InventoryScreen(
                     )
                 }
                 2 -> {
+                    val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
                     MoldListContent(
                         molds = molds,
                         listState = moldsListState,
@@ -175,19 +186,19 @@ fun InventoryScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.title_filter_options), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.title_filter_options), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     if (hasActiveFilter) {
                         TextButton(onClick = {
-                            if (selectedTabIndex == 0) viewModel.updateLowStockFilter(false)
-                            if (selectedTabIndex == 2) viewModel.updateMoldStatusFilter(null)
+                            if (pagerState.currentPage == 0) viewModel.updateLowStockFilter(false)
+                            if (pagerState.currentPage == 2) viewModel.updateMoldStatusFilter(null)
                         }) {
-                            Text(androidx.compose.ui.res.stringResource(com.company.cavitrack.R.string.btn_reset))
+                            Text(stringResource(R.string.btn_reset))
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                when (selectedTabIndex) {
+                when (pagerState.currentPage) {
                     0 -> {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -198,13 +209,18 @@ fun InventoryScreen(
                         ) {
                             Checkbox(checked = lowStockOnly, onCheckedChange = { viewModel.updateLowStockFilter(it) })
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Low Stock Only")
+                            Text(stringResource(R.string.filter_low_stock_only))
                         }
                     }
                     2 -> {
-                        Text("Mold Status", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                        Text(stringResource(R.string.label_mold_status), fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
                         val statuses = listOf(null, MoldStatus.Active, MoldStatus.InMaintenance, MoldStatus.Retired)
-                        val labels = listOf("All", "Active", "In Maintenance", "Retired")
+                        val labels = listOf(
+                            stringResource(R.string.mold_status_all),
+                            stringResource(R.string.mold_status_active),
+                            stringResource(R.string.mold_status_maintenance),
+                            stringResource(R.string.mold_status_retired)
+                        )
                         statuses.forEachIndexed { index, status ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -220,12 +236,12 @@ fun InventoryScreen(
                         }
                     }
                     else -> {
-                        Text("No filters available for Customers.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.msg_no_customer_filters), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(onClick = { showFilterSheet = false }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Apply Filters")
+                    Text(stringResource(R.string.btn_apply_filters))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -250,8 +266,12 @@ private fun ComponentListContent(
         }
         components.loadState.refresh is androidx.paging.LoadState.Error -> {
             val error = (components.loadState.refresh as androidx.paging.LoadState.Error).error
+            val errorMessage = when (error) {
+                is java.io.IOException -> stringResource(R.string.error_network)
+                else -> stringResource(R.string.error_load_components)
+            }
             ErrorState(
-                message = error.localizedMessage ?: "Failed to load components",
+                message = errorMessage,
                 onRetry = { components.retry() },
                 modifier = Modifier.padding(bottom = 88.dp)
             )
@@ -260,19 +280,23 @@ private fun ComponentListContent(
             EmptyState(
                 modifier = Modifier.padding(bottom = 88.dp),
                 icon = if (isFiltered) Icons.Outlined.SearchOff else Icons.Outlined.Category,
-                title = if (isFiltered) "No components found" else "No components yet",
+                title = stringResource(
+                    if (isFiltered) R.string.empty_components_filtered_title else R.string.empty_components_title
+                ),
                 description = if (isFiltered) {
                     if (searchQuery.isNotBlank() && lowStockOnly) {
-                        "No low-stock components match \"$searchQuery\"."
+                        stringResource(R.string.empty_components_search_low_stock_desc, searchQuery)
                     } else if (searchQuery.isNotBlank()) {
-                        "No components match \"$searchQuery\". Try checking the SKU or name."
+                        stringResource(R.string.empty_components_search_desc, searchQuery)
                     } else {
-                        "No components are currently below the minimum stock threshold."
+                        stringResource(R.string.empty_components_low_stock_desc)
                     }
                 } else {
-                    "Your inventory is empty. Add components to track quantities, SKUs, and reorder thresholds."
+                    stringResource(R.string.empty_components_desc)
                 },
-                actionLabel = if (isFiltered) "Clear filters" else "Add Component",
+                actionLabel = stringResource(
+                    if (isFiltered) R.string.action_clear_filters else R.string.action_add_component
+                ),
                 actionIcon = if (isFiltered) Icons.Default.Clear else Icons.Default.Add,
                 onActionClick = {
                     if (isFiltered) {
@@ -316,7 +340,7 @@ private fun ComponentListContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Button(onClick = { components.retry() }) {
-                                Text("Retry")
+                                Text(stringResource(R.string.btn_retry))
                             }
                         }
                     }
@@ -342,8 +366,12 @@ private fun CustomerListContent(
         }
         customers.loadState.refresh is androidx.paging.LoadState.Error -> {
             val error = (customers.loadState.refresh as androidx.paging.LoadState.Error).error
+            val errorMessage = when (error) {
+                is java.io.IOException -> stringResource(R.string.error_network)
+                else -> stringResource(R.string.error_load_customers)
+            }
             ErrorState(
-                message = error.localizedMessage ?: "Failed to load customers",
+                message = errorMessage,
                 onRetry = { customers.retry() },
                 modifier = Modifier.padding(bottom = 88.dp)
             )
@@ -352,13 +380,17 @@ private fun CustomerListContent(
             EmptyState(
                 modifier = Modifier.padding(bottom = 88.dp),
                 icon = if (isSearching) Icons.Outlined.PersonSearch else Icons.Outlined.People,
-                title = if (isSearching) "No customers found" else "No customers yet",
+                title = stringResource(
+                    if (isSearching) R.string.empty_customers_filtered_title else R.string.empty_customers_title
+                ),
                 description = if (isSearching) {
-                    "No customers match \"$searchQuery\". Try checking the name or phone number."
+                    stringResource(R.string.empty_customers_search_desc, searchQuery)
                 } else {
-                    "Add customer accounts to manage client relationships, orders, and assigned molds."
+                    stringResource(R.string.empty_customers_desc)
                 },
-                actionLabel = if (isSearching) "Clear search" else "Add Customer",
+                actionLabel = stringResource(
+                    if (isSearching) R.string.action_clear_search else R.string.action_add_customer
+                ),
                 actionIcon = if (isSearching) Icons.Default.Clear else Icons.Default.Add,
                 onActionClick = {
                     if (isSearching) {
@@ -402,7 +434,7 @@ private fun CustomerListContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Button(onClick = { customers.retry() }) {
-                                Text("Retry")
+                                Text(stringResource(R.string.btn_retry))
                             }
                         }
                     }
@@ -429,8 +461,12 @@ private fun MoldListContent(
         }
         molds.loadState.refresh is androidx.paging.LoadState.Error -> {
             val error = (molds.loadState.refresh as androidx.paging.LoadState.Error).error
+            val errorMessage = when (error) {
+                is java.io.IOException -> stringResource(R.string.error_network)
+                else -> stringResource(R.string.error_load_molds)
+            }
             ErrorState(
-                message = error.localizedMessage ?: "Failed to load molds",
+                message = errorMessage,
                 onRetry = { molds.retry() },
                 modifier = Modifier.padding(bottom = 88.dp)
             )
@@ -439,19 +475,23 @@ private fun MoldListContent(
             EmptyState(
                 modifier = Modifier.padding(bottom = 88.dp),
                 icon = if (isFiltered) Icons.Outlined.SearchOff else Icons.Outlined.PrecisionManufacturing,
-                title = if (isFiltered) "No molds found" else "No molds yet",
+                title = stringResource(
+                    if (isFiltered) R.string.empty_molds_filtered_title else R.string.empty_molds_title
+                ),
                 description = if (isFiltered) {
                     if (searchQuery.isNotBlank() && selectedMoldStatus != null) {
-                        "No molds match \"$searchQuery\" with status \"${selectedMoldStatus.name}\"."
+                        stringResource(R.string.empty_molds_search_status_desc, selectedMoldStatus.name, searchQuery)
                     } else if (searchQuery.isNotBlank()) {
-                        "No molds match \"$searchQuery\". Try checking the mold code or name."
+                        stringResource(R.string.empty_molds_search_desc, searchQuery)
                     } else {
-                        "No molds found with status \"${selectedMoldStatus?.name}\"."
+                        stringResource(R.string.empty_molds_status_desc)
                     }
                 } else {
-                    "Register production molds to track cavity configurations, tooling status, and maintenance."
+                    stringResource(R.string.empty_molds_desc)
                 },
-                actionLabel = if (isFiltered) "Clear filters" else "Add Mold",
+                actionLabel = stringResource(
+                    if (isFiltered) R.string.action_clear_filters else R.string.action_add_mold
+                ),
                 actionIcon = if (isFiltered) Icons.Default.Clear else Icons.Default.Add,
                 onActionClick = {
                     if (isFiltered) {
@@ -495,7 +535,7 @@ private fun MoldListContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Button(onClick = { molds.retry() }) {
-                                Text("Retry")
+                                Text(stringResource(R.string.btn_retry))
                             }
                         }
                     }

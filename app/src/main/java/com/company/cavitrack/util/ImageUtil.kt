@@ -66,43 +66,45 @@ object ImageUtil {
         }
 
         var processedBitmap = bitmap
-        if (rotationDegrees != 0f) {
-            val matrix = android.graphics.Matrix().apply { postRotate(rotationDegrees) }
-            try {
-                val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-                if (rotated != bitmap) {
-                    bitmap.recycle()
-                    processedBitmap = rotated
-                }
-            } catch (oom: OutOfMemoryError) {
-                if (com.company.cavitrack.BuildConfig.DEBUG) {
-                    Log.w("ImageUtil", "OOM rotating bitmap, falling back to unrotated", oom)
-                }
-            }
-        }
-
-        val parentDir = file.parentFile ?: return@withContext null
-        val tempFile = File(parentDir, "downscaled_${System.currentTimeMillis()}_${file.name}")
         try {
-            FileOutputStream(tempFile).use { out ->
-                processedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+            if (rotationDegrees != 0f) {
+                val matrix = android.graphics.Matrix().apply { postRotate(rotationDegrees) }
+                try {
+                    val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                    if (rotated != bitmap) {
+                        bitmap.recycle()
+                        processedBitmap = rotated
+                    }
+                } catch (oom: OutOfMemoryError) {
+                    if (com.company.cavitrack.BuildConfig.DEBUG) {
+                        Log.w("ImageUtil", "OOM rotating bitmap, falling back to unrotated", oom)
+                    }
+                }
             }
-            if (tempFile.exists() && tempFile.length() > 0) {
-                // Safe replacement: try atomic rename, fallback to overwrite copy
-                if (!tempFile.renameTo(file)) {
-                    tempFile.copyTo(file, overwrite = true)
+
+            val parentDir = file.parentFile ?: return@withContext null
+            val tempFile = File(parentDir, "downscaled_${System.currentTimeMillis()}_${file.name}")
+            try {
+                FileOutputStream(tempFile).use { out ->
+                    processedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                }
+                if (tempFile.exists() && tempFile.length() > 0) {
+                    // Safe replacement: try atomic rename, fallback to overwrite copy
+                    if (!tempFile.renameTo(file)) {
+                        tempFile.copyTo(file, overwrite = true)
+                        tempFile.delete()
+                    }
+                }
+                file
+            } catch (t: Throwable) {
+                if (com.company.cavitrack.BuildConfig.DEBUG) {
+                    Log.e("ImageUtil", "Failed to downscale image", t)
+                }
+                if (tempFile.exists()) {
                     tempFile.delete()
                 }
+                null
             }
-            file
-        } catch (t: Throwable) {
-            if (com.company.cavitrack.BuildConfig.DEBUG) {
-                Log.e("ImageUtil", "Failed to downscale image", t)
-            }
-            if (tempFile.exists()) {
-                tempFile.delete()
-            }
-            null
         } finally {
             processedBitmap.recycle()
         }

@@ -1,49 +1,37 @@
 package com.company.cavitrack.presentation.navigation
 
-
-
-
-
-
-
 import androidx.activity.compose.BackHandler
-import androidx.compose.ui.graphics.Color
-import com.company.cavitrack.presentation.addupdate.AddUpdateActionScreen
-import com.company.cavitrack.domain.model.EntityType
-import androidx.compose.ui.res.stringResource
-import com.company.cavitrack.R
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.mutableStateOf
-import androidx.hilt.navigation.compose.hiltViewModel
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.company.cavitrack.R
+import com.company.cavitrack.domain.model.EntityType
+import com.company.cavitrack.presentation.addupdate.AddUpdateActionScreen
 import com.company.cavitrack.presentation.auth.AuthState
 import com.company.cavitrack.presentation.auth.AuthViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -174,10 +162,3 @@ data class BottomNavItem(
     val routeObj: Any, 
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
-
-
-
-
-
-
-

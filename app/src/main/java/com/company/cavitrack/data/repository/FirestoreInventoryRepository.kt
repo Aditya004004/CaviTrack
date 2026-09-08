@@ -51,9 +51,9 @@ class FirestoreInventoryRepository @Inject constructor(
             query = query.whereEqualTo("isLowStock", true)
         }
         
-        val cleanQuery = searchQuery.trim()
+        val cleanQuery = searchQuery.trim().lowercase()
         query = if (cleanQuery.isNotBlank()) {
-            query.orderBy("name").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
+            query.orderBy("nameLower").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
         } else {
             query.orderBy("createdAt", Query.Direction.DESCENDING)
         }
@@ -77,9 +77,9 @@ class FirestoreInventoryRepository @Inject constructor(
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
 
-        val cleanQuery = searchQuery.trim()
+        val cleanQuery = searchQuery.trim().lowercase()
         query = if (cleanQuery.isNotBlank()) {
-            query.orderBy("name").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
+            query.orderBy("nameLower").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
         } else {
             query.orderBy("createdAt", Query.Direction.DESCENDING)
         }
@@ -107,9 +107,9 @@ class FirestoreInventoryRepository @Inject constructor(
             query = query.whereEqualTo("status", status)
         }
         
-        val cleanQuery = searchQuery.trim()
+        val cleanQuery = searchQuery.trim().lowercase()
         query = if (cleanQuery.isNotBlank()) {
-            query.orderBy("moldCode").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
+            query.orderBy("moldCodeLower").startAt(cleanQuery).endAt(cleanQuery + "\uf8ff")
         } else {
             query.orderBy("createdAt", Query.Direction.DESCENDING)
         }
@@ -387,10 +387,15 @@ class FirestoreInventoryRepository @Inject constructor(
         }
     }
 
-    override suspend fun updateComponentQuantityTransaction(id: String, newQty: Int): DataResult<Component> {
+    override suspend fun updateComponentQuantityTransaction(
+        id: String,
+        newQty: Int,
+        log: HistoryLog?
+    ): DataResult<Component> {
         val uid = currentUserId
         if (uid.isBlank()) return DataResult.Error("Not authenticated")
         val docRef = firestore.collection("components").document(id)
+        val historyDocRef = log?.let { firestore.collection("history").document(it.id) }
         
         return try {
             val updatedDto = firestore.runTransaction { transaction ->
@@ -405,6 +410,15 @@ class FirestoreInventoryRepository @Inject constructor(
                 val isLowStock = newQty <= dto.minStockThreshold
                 val newDto = dto.copy(qty = newQty, isLowStock = isLowStock, updatedAt = System.currentTimeMillis())
                 transaction.set(docRef, newDto)
+                if (log != null && historyDocRef != null) {
+                    val logDto = log.copy(
+                        ownerId = uid,
+                        entityName = dto.name,
+                        beforeValue = dto.qty.toString(),
+                        afterValue = newQty.toString()
+                    ).toDto()
+                    transaction.set(historyDocRef, logDto)
+                }
                 newDto
             }.await()
             
@@ -469,7 +483,7 @@ class FirestoreInventoryRepository @Inject constructor(
                     async {
                         val query = firestore.collection(coll)
                             .whereEqualTo("ownerId", uid)
-                            .limit(500)
+                            .limit(400)
                         var docs = query.get().await()
                         while (docs.documents.isNotEmpty()) {
                             val batch = firestore.batch()
@@ -484,7 +498,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 val fcmTokensJob = async {
                     val tokensQuery = firestore.collection("users").document(uid)
                         .collection("fcmTokens")
-                        .limit(500)
+                        .limit(400)
                     var docs = tokensQuery.get().await()
                     while (docs.documents.isNotEmpty()) {
                         val batch = firestore.batch()

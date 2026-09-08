@@ -7,7 +7,7 @@ import com.company.cavitrack.util.DataResult
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -35,14 +35,13 @@ class GetDashboardMetricsUseCase @Inject constructor(
         )
         emit(DataResult.Success(initialData))
 
-        // 2. Combine history flow and fetch fresh server counts
-        val combinedFlow = repository.getRecentHistory(5).combine(flow {
-            emit(fetchFreshCounts(effectiveUid))
-        }) { historyResult, countsResult ->
+        // 2. Combine history flow and fetch fresh server counts on update
+        val liveFlow = repository.getRecentHistory(5).map { historyResult ->
             if (historyResult is DataResult.Error) {
                 DataResult.Error(historyResult.message)
             } else {
                 val history = (historyResult as DataResult.Success).data
+                val countsResult = fetchFreshCounts(effectiveUid)
                 if (countsResult != null) {
                     DataResult.Success(
                         DashboardMetrics(
@@ -61,7 +60,7 @@ class GetDashboardMetricsUseCase @Inject constructor(
             }
         }
 
-        emitAll(combinedFlow)
+        emitAll(liveFlow)
     }
 
     private suspend fun fetchFreshCounts(uid: String): DashboardMetrics? = coroutineScope {

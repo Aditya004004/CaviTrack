@@ -69,12 +69,13 @@ fun HomeScreen(
         hasNotificationPermission = isGranted
     }
 
+    val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
+
     when (val state = uiState) {
         is UiState.Loading -> LoadingState()
         is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
         is UiState.Success -> {
             val data = state.data
-            val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
@@ -206,9 +207,24 @@ fun HomeScreen(
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "${log.action} via ${log.changeSource}",
+                                    text = stringResource(
+                                        R.string.history_log_action_format,
+                                        log.action,
+                                        log.changeSource
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
+                                if (log.beforeValue != null && log.afterValue != null) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.history_log_value_format,
+                                            log.beforeValue,
+                                            log.afterValue
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
                             }
                         }
                     }

@@ -40,28 +40,34 @@ class LocalMetricsRepository @Inject constructor(
             }
         }
 
+    private val keyCache = java.util.concurrent.ConcurrentHashMap<String, Preferences.Key<Long>>()
+
+    private fun getLongKey(name: String): Preferences.Key<Long> {
+        return keyCache.computeIfAbsent(name) { longPreferencesKey(it) }
+    }
+
     val totalComponents: Flow<Long> get() = getTotalComponents("")
     val lowStockCount: Flow<Long> get() = getLowStockCount("")
     val totalCustomers: Flow<Long> get() = getTotalCustomers("")
     val activeMolds: Flow<Long> get() = getActiveMolds("")
 
     fun getTotalComponents(uid: String = ""): Flow<Long> {
-        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_total_components") else TOTAL_COMPONENTS
+        val key = if (uid.isNotBlank()) getLongKey("${uid}_total_components") else TOTAL_COMPONENTS
         return safeData.map { it[key] ?: 0L }
     }
 
     fun getLowStockCount(uid: String = ""): Flow<Long> {
-        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_low_stock_count") else LOW_STOCK_COUNT
+        val key = if (uid.isNotBlank()) getLongKey("${uid}_low_stock_count") else LOW_STOCK_COUNT
         return safeData.map { it[key] ?: 0L }
     }
 
     fun getTotalCustomers(uid: String = ""): Flow<Long> {
-        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_total_customers") else TOTAL_CUSTOMERS
+        val key = if (uid.isNotBlank()) getLongKey("${uid}_total_customers") else TOTAL_CUSTOMERS
         return safeData.map { it[key] ?: 0L }
     }
 
     fun getActiveMolds(uid: String = ""): Flow<Long> {
-        val key = if (uid.isNotBlank()) longPreferencesKey("${uid}_active_molds") else ACTIVE_MOLDS
+        val key = if (uid.isNotBlank()) getLongKey("${uid}_active_molds") else ACTIVE_MOLDS
         return safeData.map { it[key] ?: 0L }
     }
 
@@ -74,10 +80,10 @@ class LocalMetricsRepository @Inject constructor(
     ) {
         context.dataStore.edit { prefs ->
             if (uid.isNotBlank()) {
-                prefs[longPreferencesKey("${uid}_total_components")] = components
-                prefs[longPreferencesKey("${uid}_low_stock_count")] = lowStock
-                prefs[longPreferencesKey("${uid}_total_customers")] = customers
-                prefs[longPreferencesKey("${uid}_active_molds")] = molds
+                prefs[getLongKey("${uid}_total_components")] = components
+                prefs[getLongKey("${uid}_low_stock_count")] = lowStock
+                prefs[getLongKey("${uid}_total_customers")] = customers
+                prefs[getLongKey("${uid}_active_molds")] = molds
             } else {
                 prefs[TOTAL_COMPONENTS] = components
                 prefs[LOW_STOCK_COUNT] = lowStock

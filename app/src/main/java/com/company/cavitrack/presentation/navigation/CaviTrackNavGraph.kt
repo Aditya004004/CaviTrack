@@ -93,12 +93,14 @@ fun CaviTrackNavGraph(
         composable<Route.CustomerDetail> { 
             com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(
                 onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Customer, id)) { launchSingleTop = true } },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Customer, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }
         composable<Route.MoldDetail> { 
             com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(
                 onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Mold, id)) { launchSingleTop = true } },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Mold, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }

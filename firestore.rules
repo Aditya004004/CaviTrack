@@ -77,7 +77,10 @@ service cloud.firestore {
     }
 
     match /users/{userId}/fcmTokens/{tokenId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read, delete: if isAuthenticated() && request.auth.uid == userId;
+      allow create, update: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.token is string
+        && request.resource.data.token.size() < 500;
     }
   }
 }

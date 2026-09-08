@@ -40,7 +40,6 @@ fun ManualUpdateScreen(
     val loadedCustomer by viewModel.loadedCustomer.collectAsStateWithLifecycle()
     val loadedMold by viewModel.loadedMold.collectAsStateWithLifecycle()
     
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val scrollState = androidx.compose.foundation.rememberScrollState()
     
@@ -79,12 +78,10 @@ fun ManualUpdateScreen(
         }
     }
     
-    LaunchedEffect(viewModel.isSaved, lifecycleOwner) {
-        viewModel.isSaved
-            .flowWithLifecycle(lifecycleOwner.lifecycle, androidx.lifecycle.Lifecycle.State.STARTED)
-            .collect {
-                onUpdateComplete()
-            }
+    LaunchedEffect(Unit) {
+        viewModel.isSaved.collect {
+            onUpdateComplete()
+        }
     }
 
     Column(
@@ -202,7 +199,7 @@ fun ManualUpdateScreen(
                 value = quantity,
                 onValueChange = { 
                     quantity = it
-                    hasError = it.toIntOrNull()?.takeIf { v -> v >= 0 } == null
+                    hasError = it.toIntOrNull()?.let { v -> if (entityType == EntityType.Mold) v > 0 else v >= 0 } != true
                 },
                 label = { 
                     val labelRes = if (entityType == EntityType.Mold) 
@@ -234,7 +231,7 @@ fun ManualUpdateScreen(
 
         Button(
             onClick = {
-                val parsedQty = if (entityType == EntityType.Customer) 0 else quantity.toIntOrNull()?.takeIf { v -> v >= 0 }
+                val parsedQty = if (entityType == EntityType.Customer) 0 else quantity.toIntOrNull()?.takeIf { v -> if (entityType == EntityType.Mold) v > 0 else v >= 0 }
                 if (parsedQty != null) {
                     if (entityId != null) {
                         when (entityType) {
