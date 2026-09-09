@@ -73,7 +73,11 @@ fun InventoryScreen(
     val hasActiveFilter = (pagerState.currentPage == 0 && lowStockOnly) ||
             (pagerState.currentPage == 2 && selectedMoldStatus != null)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { viewModel.updateSearchQuery(it) },

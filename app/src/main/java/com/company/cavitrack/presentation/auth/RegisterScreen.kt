@@ -2,6 +2,7 @@ package com.company.cavitrack.presentation.auth
 
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -40,6 +41,7 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
             .imePadding()
             .verticalScroll(scrollState),

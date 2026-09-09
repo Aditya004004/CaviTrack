@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import com.company.cavitrack.R
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -71,7 +72,12 @@ fun HomeScreen(
 
     val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
 
-    when (val state = uiState) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        when (val state = uiState) {
         is UiState.Loading -> LoadingState()
         is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.loadData() })
         is UiState.Success -> {
@@ -231,6 +237,7 @@ fun HomeScreen(
                 }
             }
         }
+    }
     }
 }
 

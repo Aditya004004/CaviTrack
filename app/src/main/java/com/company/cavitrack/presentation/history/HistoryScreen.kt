@@ -3,6 +3,7 @@ package com.company.cavitrack.presentation.history
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,7 +43,11 @@ fun HistoryScreen(
     var showFilterSheet by rememberSaveable { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
