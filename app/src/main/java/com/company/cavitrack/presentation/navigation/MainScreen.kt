@@ -75,7 +75,7 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                if (isTopLevel) {
+                if (isTopLevel && currentDestination?.hasRoute(Route.Home::class) != true) {
                     TopAppBar(
                         title = { Text(currentItem?.label ?: stringResource(R.string.app_name)) },
                         colors = TopAppBarDefaults.topAppBarColors(

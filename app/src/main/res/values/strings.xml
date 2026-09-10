@@ -165,4 +165,17 @@
     <string name="title_delete_item">Delete %1$s</string>
     <string name="msg_confirm_delete_item">Are you sure you want to delete this %1$s? This action cannot be undone.</string>
     <string name="btn_delete">Delete</string>
+
+    <!-- Home Dashboard Redesign Strings -->
+    <string name="home_greeting_hello">Hello,</string>
+    <string name="home_greeting_welcome">Welcome Back!</string>
+    <string name="home_greeting_subtitle">Here\'s what\'s happening with your inventory.</string>
+    <string name="home_dashboard_subtitle">Quick overview of your system</string>
+    <string name="home_desc_components">Components in inventory</string>
+    <string name="home_desc_low_stock">Items running low</string>
+    <string name="home_desc_customers">Registered customers</string>
+    <string name="home_desc_molds">Currently in use</string>
+    <string name="home_recent_activity_subtitle">Latest updates from your system</string>
+    <string name="home_no_activity_desc">Your latest actions will appear here</string>
+    <string name="cd_refresh_dashboard">Refresh Dashboard</string>
 </resources>
