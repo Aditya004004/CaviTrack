@@ -16,8 +16,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 
-@Composable
-fun Modifier.shimmer(): Modifier {
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
+
+fun Modifier.shimmer(): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "shimmerTransition")
     val translateAnim = transition.animateFloat(
         initialValue = 0f,
@@ -33,13 +35,16 @@ fun Modifier.shimmer(): Modifier {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
     )
-    return this.background(
-        brush = Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset.Zero,
-            end = Offset(x = translateAnim.value, y = translateAnim.value)
+    this.drawWithContent {
+        drawContent()
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = shimmerColors,
+                start = Offset.Zero,
+                end = Offset(x = translateAnim.value, y = translateAnim.value)
+            )
         )
-    )
+    }
 }
 
 @Composable

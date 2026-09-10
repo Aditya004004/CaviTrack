@@ -161,4 +161,14 @@ class AuthRepositoryImpl @Inject constructor(
             DataResult.Error(e.message ?: "Failed to reload user")
         }
     }
+
+    override suspend fun sendPasswordResetEmail(email: String): DataResult<Unit> {
+        return try {
+            firebaseAuth.sendPasswordResetEmail(email).await()
+            DataResult.Success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            DataResult.Error(e.message ?: "Failed to send password reset email")
+        }
+    }
 }

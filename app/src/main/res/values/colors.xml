@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="cavitrack_primary">#FF1657C4</color>
+    <color name="cavitrack_splash_background">#FFEEF4FF</color>
+    <color name="cavitrack_dark_background">#FF121417</color>
+</resources>

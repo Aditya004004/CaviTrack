@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CaviTrack.Starting" parent="Theme.CaviTrack">
+        <item name="android:windowBackground">@color/cavitrack_dark_background</item>
+    </style>
+
+    <style name="Theme.CaviTrack" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

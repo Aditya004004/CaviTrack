@@ -48,7 +48,6 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
 
     companion object {
         private const val NOTIFICATION_TAG_ALERT = "cavitrack_alert"
-        private const val NOTIFICATION_ID_ALERT = 1001
         private const val NOTIFICATION_GROUP_KEY = "com.company.cavitrack.ALERTS"
     }
 
@@ -79,6 +78,6 @@ class CaviTrackMessagingService : FirebaseMessagingService() {
             }
         }
 
-        notificationManager.notify(NOTIFICATION_TAG_ALERT, NOTIFICATION_ID_ALERT, notificationBuilder.build())
+        notificationManager.notify(NOTIFICATION_TAG_ALERT, System.currentTimeMillis().toInt(), notificationBuilder.build())
     }
 }

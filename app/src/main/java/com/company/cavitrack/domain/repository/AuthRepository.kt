@@ -16,4 +16,5 @@ interface AuthRepository {
     fun isEmailVerified(): Boolean
     fun getLastSignInTimestamp(): Long?
     suspend fun reloadUser(): DataResult<Unit>
+    suspend fun sendPasswordResetEmail(email: String): DataResult<Unit>
 }

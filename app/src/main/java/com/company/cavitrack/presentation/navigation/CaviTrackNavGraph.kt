@@ -22,7 +22,8 @@ import com.company.cavitrack.presentation.auth.AuthViewModel
 @Composable
 fun CaviTrackNavGraph(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     NavHost(
         navController = navController,
@@ -61,7 +62,7 @@ fun CaviTrackNavGraph(
                 }
             ) 
         }
-        composable<Route.Settings> { SettingsScreen() }
+        composable<Route.Settings> { SettingsScreen(authViewModel = authViewModel) }
         
 
         

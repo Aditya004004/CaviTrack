@@ -93,7 +93,7 @@ fun HomeScreen(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(150.dp)
         ) {
             drawCircle(
                 brush = Brush.radialGradient(
@@ -121,52 +121,26 @@ fun HomeScreen(
                     contentPadding = PaddingValues(bottom = 88.dp)
                 ) {
                     item {
-                        // Greeting Header
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .statusBarsPadding()
-                                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 12.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.home_greeting_hello),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = stringResource(R.string.home_greeting_welcome),
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.home_greeting_subtitle),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                        }
-
                         // Dashboard Section Title & Refresh Action
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 14.dp),
+                                .statusBarsPadding()
+                                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
                                 Text(
                                     text = stringResource(R.string.title_dashboard),
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = stringResource(R.string.home_dashboard_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                 )
                             }
@@ -249,7 +223,7 @@ fun HomeScreen(
                                 icon = Icons.Outlined.Inventory2,
                                 cardBg = if (isDark) Color(0xFF132035) else Color(0xFFF0F6FE),
                                 badgeBg = if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE),
-                                iconColor = if (isDark) Color(0xFF60A5FA) else Color(0xFF2563EB),
+                                iconColor = MaterialTheme.colorScheme.primary,
                                 waveColor = if (isDark) Color(0xFF1D4ED8).copy(alpha = 0.25f) else Color(0xFFBFDBFE).copy(alpha = 0.45f),
                                 modifier = Modifier.weight(1f)
                             )
@@ -357,9 +331,16 @@ fun HomeScreen(
                         }
                     } else {
                         items(data.recentActivity, key = { it.id }) { log ->
+                            val isDeleted = log.action.equals("Deleted", ignoreCase = true)
                             ListCard(
-                                onClick = { onNavigateToDetail(log.entityType.name, log.entityId) },
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                                onClick = {
+                                    if (isDeleted) {
+                                        android.widget.Toast.makeText(context, R.string.toast_item_deleted, android.widget.Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        onNavigateToDetail(log.entityType.name, log.entityId)
+                                    }
+                                },
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Row(
@@ -506,6 +487,9 @@ private fun DashboardMetricCard(
 
 @Composable
 private fun RecentActivityEmptyIllustration() {
+    val dotColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    val sheetLineColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+
     Box(
         modifier = Modifier.size(72.dp),
         contentAlignment = Alignment.Center
@@ -515,25 +499,25 @@ private fun RecentActivityEmptyIllustration() {
             modifier = Modifier
                 .size(6.dp)
                 .offset(x = (-24).dp, y = (-14).dp)
-                .background(Color(0xFFE2E8F0), CircleShape)
+                .background(dotColor, CircleShape)
         )
         Box(
             modifier = Modifier
                 .size(5.dp)
                 .offset(x = 24.dp, y = (-18).dp)
-                .background(Color(0xFFE2E8F0), CircleShape)
+                .background(dotColor, CircleShape)
         )
         Box(
             modifier = Modifier
                 .size(4.dp)
                 .offset(x = (-18).dp, y = 20.dp)
-                .background(Color(0xFFE2E8F0), CircleShape)
+                .background(dotColor, CircleShape)
         )
 
         // Document sheet base
         Surface(
             shape = RoundedCornerShape(10.dp),
-            color = Color(0xFFF1F5F9),
+            color = MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier.size(width = 46.dp, height = 54.dp)
         ) {
             Column(
@@ -546,19 +530,19 @@ private fun RecentActivityEmptyIllustration() {
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
                         .height(3.dp)
-                        .background(Color(0xFFCBD5E1), RoundedCornerShape(2.dp))
+                        .background(sheetLineColor, RoundedCornerShape(2.dp))
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.65f)
                         .height(3.dp)
-                        .background(Color(0xFFCBD5E1), RoundedCornerShape(2.dp))
+                        .background(sheetLineColor, RoundedCornerShape(2.dp))
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.45f)
                         .height(3.dp)
-                        .background(Color(0xFFCBD5E1), RoundedCornerShape(2.dp))
+                        .background(sheetLineColor, RoundedCornerShape(2.dp))
                 )
             }
         }
@@ -566,7 +550,7 @@ private fun RecentActivityEmptyIllustration() {
         // Clock badge overlay
         Surface(
             shape = CircleShape,
-            color = Color(0xFF3B82F6),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .size(22.dp)
                 .align(Alignment.BottomEnd)
@@ -576,7 +560,7 @@ private fun RecentActivityEmptyIllustration() {
                 Icon(
                     imageVector = Icons.Filled.Schedule,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(13.dp)
                 )
             }

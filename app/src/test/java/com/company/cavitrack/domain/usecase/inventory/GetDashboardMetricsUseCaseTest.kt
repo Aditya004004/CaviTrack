@@ -22,19 +22,26 @@ class GetDashboardMetricsUseCaseTest {
 
     private lateinit var repository: InventoryRepository
     private lateinit var localMetricsRepository: LocalMetricsRepository
+    private lateinit var authRepository: com.company.cavitrack.domain.repository.AuthRepository
     private lateinit var useCase: GetDashboardMetricsUseCase
 
     @Before
     fun setup() {
         repository = mockk(relaxed = true)
         localMetricsRepository = mockk(relaxed = true)
+        authRepository = mockk(relaxed = true)
 
+        every { authRepository.getCurrentUserUid() } returns "test_user_id"
         every { localMetricsRepository.totalComponents } returns flowOf(10L)
         every { localMetricsRepository.lowStockCount } returns flowOf(2L)
         every { localMetricsRepository.totalCustomers } returns flowOf(5L)
         every { localMetricsRepository.activeMolds } returns flowOf(4L)
+        every { localMetricsRepository.getTotalComponents("test_user_id") } returns flowOf(10L)
+        every { localMetricsRepository.getLowStockCount("test_user_id") } returns flowOf(2L)
+        every { localMetricsRepository.getTotalCustomers("test_user_id") } returns flowOf(5L)
+        every { localMetricsRepository.getActiveMolds("test_user_id") } returns flowOf(4L)
 
-        useCase = GetDashboardMetricsUseCase(repository, localMetricsRepository)
+        useCase = GetDashboardMetricsUseCase(repository, localMetricsRepository, authRepository)
     }
 
     @Test

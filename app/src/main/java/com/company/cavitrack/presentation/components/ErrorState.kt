@@ -17,7 +17,8 @@ import com.company.cavitrack.R
 fun ErrorState(
     message: String,
     modifier: Modifier = Modifier,
-    onRetry: (() -> Unit)? = null
+    onRetry: (() -> Unit)? = null,
+    onBack: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -35,12 +36,25 @@ fun ErrorState(
                 Text(
                     text = message,
                     color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                if (onRetry != null) {
+                if (onRetry != null || onBack != null) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onRetry) {
-                        Text(stringResource(R.string.btn_retry))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (onBack != null) {
+                            androidx.compose.material3.OutlinedButton(onClick = onBack) {
+                                Text(stringResource(R.string.btn_go_back))
+                            }
+                        }
+                        if (onRetry != null) {
+                            Button(onClick = onRetry) {
+                                Text(stringResource(R.string.btn_retry))
+                            }
+                        }
                     }
                 }
             }

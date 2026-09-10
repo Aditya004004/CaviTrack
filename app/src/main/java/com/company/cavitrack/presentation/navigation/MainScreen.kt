@@ -74,17 +74,6 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            topBar = {
-                if (isTopLevel && currentDestination?.hasRoute(Route.Home::class) != true) {
-                    TopAppBar(
-                        title = { Text(currentItem?.label ?: stringResource(R.string.app_name)) },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                }
-            },
             bottomBar = {
                 if (isTopLevel) {
                     NavigationBar {
@@ -130,7 +119,8 @@ fun MainScreen(authViewModel: AuthViewModel = hiltViewModel()) {
         ) { innerPadding ->
             CaviTrackNavGraph(
                 navController = navController,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(innerPadding),
+                authViewModel = authViewModel
             )
             
             if (showUpdateSheet) {

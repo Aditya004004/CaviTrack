@@ -43,6 +43,22 @@ class AuthViewModel @Inject constructor(
             initialValue = sessionManager.currentFirebaseUser
         )
 
+    init {
+        viewModelScope.launch {
+            sessionManager.currentUser.collect { user ->
+                if (user == null) {
+                    if (_authState.value !is AuthState.Deleting && _authState.value !is AuthState.Loading) {
+                        _authState.value = AuthState.Unauthenticated
+                    }
+                } else {
+                    if (_authState.value !is AuthState.Deleting) {
+                        _authState.value = AuthState.Authenticated
+                    }
+                }
+            }
+        }
+    }
+
     fun clearAuthError() {
         _authError.value = null
     }
@@ -53,19 +69,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    init {
-        viewModelScope.launch {
-            sessionManager.currentUser.collect { user ->
-                if (user != null) {
-                    _authState.value = AuthState.Authenticated
-                } else {
-                    if (_authState.value !is AuthState.Loading && _authState.value !is AuthState.Error && _authState.value !is AuthState.Deleting) {
-                        _authState.value = AuthState.Unauthenticated
-                    }
-                }
-            }
-        }
-    }
+
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
@@ -134,6 +138,13 @@ class AuthViewModel @Inject constructor(
     fun reloadUser() {
         viewModelScope.launch {
             authUseCases.reloadUser()
+        }
+    }
+
+    fun sendPasswordReset(email: String, onResult: (DataResult<Unit>) -> Unit) {
+        viewModelScope.launch {
+            val result = authUseCases.sendPasswordResetEmail(email)
+            onResult(result)
         }
     }
 

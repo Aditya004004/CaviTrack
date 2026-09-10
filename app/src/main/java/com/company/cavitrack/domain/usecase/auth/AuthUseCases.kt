@@ -116,6 +116,14 @@ class ReloadUserUseCase @Inject constructor(
     }
 }
 
+class SendPasswordResetEmailUseCase @Inject constructor(
+    private val authRepository: AuthRepository
+) {
+    suspend operator fun invoke(email: String): DataResult<Unit> {
+        return authRepository.sendPasswordResetEmail(email)
+    }
+}
+
 data class AuthUseCases @Inject constructor(
     val login: LoginUseCase,
     val register: RegisterUseCase,
@@ -124,6 +132,7 @@ data class AuthUseCases @Inject constructor(
     val getCurrentUserUid: GetCurrentUserUidUseCase,
     val isEmailVerified: IsEmailVerifiedUseCase,
     val reloadUser: ReloadUserUseCase,
+    val sendPasswordResetEmail: SendPasswordResetEmailUseCase,
     val validateEmail: ValidateEmailUseCase,
     val validatePassword: ValidatePasswordUseCase,
     val validateName: ValidateNameUseCase

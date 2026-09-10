@@ -18,8 +18,20 @@ object ImageUtil {
         }
         BitmapFactory.decodeFile(file.absolutePath, options)
 
-        // If the image already fits within the max dimension, avoid unnecessary recompression
-        if (options.outHeight > 0 && options.outWidth > 0 &&
+        // Check EXIF orientation before deciding to skip
+        val earlyExifOrientation = try {
+            android.media.ExifInterface(file.absolutePath).getAttributeInt(
+                android.media.ExifInterface.TAG_ORIENTATION,
+                android.media.ExifInterface.ORIENTATION_NORMAL
+            )
+        } catch (_: Exception) {
+            android.media.ExifInterface.ORIENTATION_NORMAL
+        }
+        val needsRotation = earlyExifOrientation != android.media.ExifInterface.ORIENTATION_NORMAL &&
+                earlyExifOrientation != android.media.ExifInterface.ORIENTATION_UNDEFINED
+
+        // If the image already fits and has no EXIF rotation, avoid unnecessary recompression
+        if (!needsRotation && options.outHeight > 0 && options.outWidth > 0 &&
             options.outHeight <= maxDim && options.outWidth <= maxDim &&
             file.name.endsWith(".jpg", ignoreCase = true)
         ) {

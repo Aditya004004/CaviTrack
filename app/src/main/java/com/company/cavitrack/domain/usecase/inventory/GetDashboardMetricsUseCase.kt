@@ -16,10 +16,10 @@ import javax.inject.Inject
 class GetDashboardMetricsUseCase @Inject constructor(
     private val repository: InventoryRepository,
     private val localMetricsRepository: LocalMetricsRepository,
-    private val authRepository: com.company.cavitrack.domain.repository.AuthRepository? = null
+    private val authRepository: com.company.cavitrack.domain.repository.AuthRepository
 ) {
     operator fun invoke(uid: String? = null): Flow<DataResult<DashboardMetrics>> = flow {
-        val effectiveUid = uid ?: authRepository?.getCurrentUserUid() ?: ""
+        val effectiveUid = uid ?: authRepository.getCurrentUserUid() ?: ""
         // 1. Emit cached local metrics immediately
         val cachedComponents = (if (effectiveUid.isBlank()) localMetricsRepository.totalComponents else localMetricsRepository.getTotalComponents(effectiveUid)).first()
         val cachedLowStock = (if (effectiveUid.isBlank()) localMetricsRepository.lowStockCount else localMetricsRepository.getLowStockCount(effectiveUid)).first()
@@ -35,28 +35,19 @@ class GetDashboardMetricsUseCase @Inject constructor(
         )
         emit(DataResult.Success(initialData))
 
-        // 2. Combine history flow and fetch fresh server counts on update
+        // 2. Fetch fresh server counts once
+        val freshCounts = fetchFreshCounts(effectiveUid)
+        val activeCounts = freshCounts ?: initialData
+
+        // 3. Stream history updates using the latest counts without re-querying 4 aggregations per event
         val liveFlow = repository.getRecentHistory(5).map { historyResult ->
             if (historyResult is DataResult.Error) {
                 DataResult.Error(historyResult.message)
             } else {
                 val history = (historyResult as DataResult.Success).data
-                val countsResult = fetchFreshCounts(effectiveUid)
-                if (countsResult != null) {
-                    DataResult.Success(
-                        DashboardMetrics(
-                            totalComponents = countsResult.totalComponents,
-                            lowStockCount = countsResult.lowStockCount,
-                            totalCustomers = countsResult.totalCustomers,
-                            activeMolds = countsResult.activeMolds,
-                            recentActivity = history
-                        )
-                    )
-                } else {
-                    DataResult.Success(
-                        initialData.copy(recentActivity = history)
-                    )
-                }
+                DataResult.Success(
+                    activeCounts.copy(recentActivity = history)
+                )
             }
         }
 

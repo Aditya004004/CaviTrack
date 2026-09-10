@@ -51,13 +51,20 @@ class FirebaseStorageRepository @Inject constructor(
 
     override suspend fun deleteUserPhotos(userId: String): DataResult<Unit> {
         return try {
-            val userFolderRef = storage.reference.child("photos/$userId")
-            val listResult = userFolderRef.listAll().await()
-            coroutineScope {
-                listResult.items.chunked(10).forEach { chunk ->
-                    chunk.map { item -> async { item.delete().await() } }.awaitAll()
+            suspend fun deleteRecursive(ref: com.google.firebase.storage.StorageReference) {
+                val listResult = ref.listAll().await()
+                coroutineScope {
+                    listResult.items.chunked(10).forEach { chunk ->
+                        chunk.map { item -> async { item.delete().await() } }.awaitAll()
+                    }
+                }
+                // Recurse into subdirectories
+                for (prefix in listResult.prefixes) {
+                    deleteRecursive(prefix)
                 }
             }
+            val userFolderRef = storage.reference.child("photos/$userId")
+            deleteRecursive(userFolderRef)
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e

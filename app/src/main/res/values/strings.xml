@@ -95,7 +95,7 @@
     <string name="btn_go_back">Go Back</string>
     <string name="label_edit_customer">Edit Customer</string>
     <string name="label_edit_mold">Edit Mold</string>
-    <string name="web_account_deletion_url">https://github.com/Aditya004004/CaviTrack/blob/main/PRIVACY.md</string>
+    <string name="web_account_deletion_url">https://github.com/Aditya004004/CaviTrack/blob/main/PRIVACY.md#4-account-and-data-deletion-google-play-data-safety-compliance</string>
     <string name="label_request_web_deletion">Request Account Deletion (Web)</string>
     <string name="desc_request_web_deletion">Submit an online request to delete your account and data</string>
     <string name="notification_permission_title">Enable Notifications</string>
@@ -178,4 +178,71 @@
     <string name="home_recent_activity_subtitle">Latest updates from your system</string>
     <string name="home_no_activity_desc">Your latest actions will appear here</string>
     <string name="cd_refresh_dashboard">Refresh Dashboard</string>
+
+    <!-- History Redesign Strings -->
+    <string name="history_title">History</string>
+    <string name="history_subtitle">Track all inventory changes</string>
+    <string name="history_records_count">%1$d Records</string>
+
+    <!-- Inventory Redesign Strings -->
+    <string name="inventory_title">Inventory</string>
+    <string name="inventory_subtitle">Manage and track your stock items</string>
+    <string name="inventory_sort_by_name">Sort by: Name</string>
+    <string name="inventory_in_stock">In Stock</string>
+    <string name="inventory_low_stock_status">Low Stock</string>
+    <string name="inventory_tag_component">Component</string>
+    <string name="inventory_tag_customer">Customer</string>
+    <string name="inventory_tag_mold">Mold</string>
+    <string name="inventory_items_count">%1$d %2$s</string>
+    <string name="cd_inventory_icon">Inventory Category</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="settings_subtitle">Manage your account and preferences</string>
+
+    <!-- Login Redesign Strings -->
+    <string name="tagline_app">Track Smarter. Build Better.</string>
+    <string name="welcome_back_title">Welcome Back!</string>
+    <string name="welcome_back_subtitle">Sign in to continue managing\nyour inventory.</string>
+    <string name="placeholder_enter_email">Enter your email</string>
+    <string name="placeholder_enter_password">Enter your password</string>
+    <string name="btn_forgot_password">Forgot Password?</string>
+    <string name="label_or">OR</string>
+    <string name="label_dont_have_account_prefix">Don\'t have an account? </string>
+    <string name="btn_register_highlight">Register</string>
+    <string name="agreement_prefix">By continuing, you agree to our</string>
+    <string name="title_forgot_password_dialog">Reset Password</string>
+    <string name="msg_forgot_password_dialog">To reset your password or regain access, please contact your workspace administrator or reach out to support@cavitrack.com.</string>
+    <string name="cd_app_logo">CaviTrack Logo</string>
+    <string name="cd_show_password">Show password</string>
+    <string name="cd_hide_password">Hide password</string>
+
+    <!-- Register Redesign Strings -->
+    <string name="register_subtitle">Join CaviTrack and start managing\nyour inventory with ease.</string>
+    <string name="placeholder_enter_name">Enter your name</string>
+    <string name="placeholder_create_password">Create a password</string>
+    <string name="req_at_least_8_chars">At least 8 characters</string>
+    <string name="req_one_number">One number</string>
+    <string name="req_one_letter">One letter</string>
+    <string name="label_already_have_account">Already have an account? </string>
+    <string name="btn_login_highlight">Login</string>
+    <string name="agreement_prefix_create_account">By creating an account, you agree to our</string>
+
+    <!-- General Redesign Strings for Remaining Screens -->
+    <string name="title_add_entry">Add to Inventory</string>
+    <string name="subtitle_add_entry">Choose how you would like to record this item</string>
+    <string name="title_new_item">New %1$s</string>
+    <string name="title_edit_item">Edit %1$s</string>
+    <string name="subtitle_manual_update">Fill in the details below to update records</string>
+    <string name="btn_save">Save Changes</string>
+    <string name="btn_capture_photo">Capture Photo</string>
+    <string name="btn_save_photo">Save Photo</string>
+    <string name="label_item_details">ITEM DETAILS</string>
+    <string name="label_contact_details">CONTACT DETAILS</string>
+    <string name="label_specs">SPECIFICATIONS</string>
+    <string name="cd_back">Back</string>
+    <string name="label_edit_component">Edit Component</string>
+    <string name="toast_item_deleted">This item was deleted and is no longer available.</string>
+    <string name="toast_password_reset_sent">Password reset email sent! Check your inbox.</string>
+    <string name="dialog_desc_forgot_password">Enter your registered account email to receive a password reset link.</string>
+    <string name="btn_send_reset_link">Send Reset Link</string>
 </resources>

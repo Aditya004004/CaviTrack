@@ -15,6 +15,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -82,5 +84,42 @@ class AuthViewModelTest {
         // Assert
         assertTrue(viewModel.authState.value is AuthState.Unauthenticated)
         coVerify { authUseCases.logout() }
+    }
+
+    @Test
+    fun `sessionManager user null emission transitions to Unauthenticated`() = runTest(testDispatcher) {
+        val userFlow = MutableStateFlow<com.google.firebase.auth.FirebaseUser?>(mockk())
+        every { sessionManager.currentUser } returns userFlow
+
+        val testVm = AuthViewModel(authUseCases, sessionManager)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        userFlow.value = null
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(testVm.authState.value is AuthState.Unauthenticated)
+    }
+
+    @Test
+    fun `uiText StringResource value equality works for matching args`() {
+        val text1 = com.company.cavitrack.util.UiText.StringResource(101, "abc", 99)
+        val text2 = com.company.cavitrack.util.UiText.StringResource(101, "abc", 99)
+        val text3 = com.company.cavitrack.util.UiText.StringResource(101, "different")
+
+        assertEquals(text1, text2)
+        assertEquals(text1.hashCode(), text2.hashCode())
+        assertNotEquals(text1, text3)
+    }
+
+    @Test
+    fun `sendPasswordReset delegates to authUseCases and returns result`() = runTest(testDispatcher) {
+        coEvery { authUseCases.sendPasswordResetEmail("reset@example.com") } returns DataResult.Success(Unit)
+
+        var result: DataResult<Unit>? = null
+        viewModel.sendPasswordReset("reset@example.com") { result = it }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(result is DataResult.Success)
+        coVerify { authUseCases.sendPasswordResetEmail("reset@example.com") }
     }
 }

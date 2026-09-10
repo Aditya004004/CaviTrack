@@ -42,6 +42,11 @@ class TokenSyncWorker @AssistedInject constructor(
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
+            if (e is com.google.firebase.firestore.FirebaseFirestoreException &&
+                e.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED
+            ) {
+                return Result.failure()
+            }
             if (runAttemptCount > 3) {
                 Result.failure()
             } else {

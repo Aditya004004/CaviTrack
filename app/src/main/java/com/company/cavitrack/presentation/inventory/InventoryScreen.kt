@@ -1,48 +1,73 @@
 package com.company.cavitrack.presentation.inventory
 
-
-
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.FilterAlt
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.LocalOffer
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PrecisionManufacturing
+import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import coil.compose.AsyncImage
-import com.company.cavitrack.presentation.components.*
-import com.company.cavitrack.domain.model.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.SearchOff
-import androidx.compose.material.icons.outlined.Category
-import androidx.compose.material.icons.outlined.People
-import androidx.compose.material.icons.outlined.PersonSearch
-import androidx.compose.material.icons.outlined.PrecisionManufacturing
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.ui.res.stringResource
 import com.company.cavitrack.R
+import com.company.cavitrack.domain.model.Component
+import com.company.cavitrack.domain.model.Customer
+import com.company.cavitrack.domain.model.EntityType
+import com.company.cavitrack.domain.model.Mold
+import com.company.cavitrack.domain.model.MoldStatus
+import com.company.cavitrack.presentation.components.EmptyState
+import com.company.cavitrack.presentation.components.ErrorState
+import com.company.cavitrack.presentation.components.SkeletonList
+import com.company.cavitrack.presentation.components.StatusBadge
+import com.company.cavitrack.presentation.components.StatusType
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,13 +78,9 @@ fun InventoryScreen(
     onMoldClick: (String) -> Unit = {},
     onAddNewItem: ((EntityType) -> Unit)? = null
 ) {
-    val pagerState = rememberPagerState { 3 }
     val coroutineScope = rememberCoroutineScope()
-    val tabs = listOf(
-        stringResource(R.string.title_components),
-        stringResource(R.string.title_customers),
-        stringResource(R.string.title_molds)
-    )
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val isDark = isSystemInDarkTheme()
 
     val componentsListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val customersListState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -73,116 +94,302 @@ fun InventoryScreen(
     val hasActiveFilter = (pagerState.currentPage == 0 && lowStockOnly) ||
             (pagerState.currentPage == 2 && selectedMoldStatus != null)
 
-    Column(
+    val components = viewModel.componentsFlow.collectAsLazyPagingItems()
+    val customers = viewModel.customersFlow.collectAsLazyPagingItems()
+    val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { viewModel.updateSearchQuery(it) },
-            placeholder = { Text(stringResource(R.string.placeholder_search_inventory)) },
+        // Atmospheric radial gradient in top-right corner
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(8.dp),
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-            trailingIcon = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                .height(150.dp)
+        ) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.16f),
+                        Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                        Color.Transparent
+                    ),
+                    center = Offset(size.width * 0.90f, size.height * 0.15f),
+                    radius = size.width * 0.48f
+                )
+            )
+        }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header Section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.inventory_title),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.inventory_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+
+                // Category Icon Badge
+                Surface(
+                    shape = CircleShape,
+                    color = if (isDark) Color(0xFF1E3A8A) else Color(0xFFEFF6FF),
+                    border = BorderStroke(1.dp, if (isDark) Color(0xFF1E40AF) else Color(0xFFDBEAFE)),
+                    modifier = Modifier.size(46.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Outlined.Inventory2,
+                            contentDescription = stringResource(R.string.cd_inventory_icon),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
+
+            // Search Bar with Integrated Filter Trigger
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                shadowElevation = 0.5.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (searchQuery.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.placeholder_search_inventory),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
+                        BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.updateSearchQuery(it) },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                        IconButton(
+                            onClick = { viewModel.updateSearchQuery("") },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
-                    IconButton(onClick = { showFilterSheet = true }) {
+                    IconButton(
+                        onClick = { showFilterSheet = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         BadgedBox(
                             badge = {
                                 if (hasActiveFilter) {
-                                    Badge()
+                                    Badge(containerColor = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         ) {
-                            Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                            Icon(
+                                imageVector = Icons.Outlined.FilterAlt,
+                                contentDescription = "Filter",
+                                tint = if (hasActiveFilter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
                 }
-            },
-            singleLine = true
-        )
-        
-        PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Segmented Pill Tab Bar
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val tabData = listOf(
+                        Triple(stringResource(R.string.title_components), Icons.Outlined.Inventory2, 0),
+                        Triple(stringResource(R.string.title_customers), Icons.Outlined.People, 1),
+                        Triple(stringResource(R.string.title_molds), Icons.Outlined.Settings, 2)
+                    )
+
+                    tabData.forEach { (title, icon, index) ->
+                        val isSelected = pagerState.currentPage == index
+                        val containerColor by animateColorAsState(
+                            targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            label = "tabContainerColor"
+                        )
+                        val contentColor by animateColorAsState(
+                            targetValue = if (isSelected) Color.White else (if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)),
+                            label = "tabContentColor"
+                        )
+
+                        Surface(
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            color = containerColor,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = contentColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = title,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                    color = contentColor
+                                )
+                            }
                         }
-                    },
-                    text = { Text(title) }
+                    }
+                }
+            }
+
+            // Section Subheader: Item Count
+            val currentCount = when (pagerState.currentPage) {
+                0 -> components.itemCount
+                1 -> customers.itemCount
+                else -> molds.itemCount
+            }
+            val currentEntityLabel = when (pagerState.currentPage) {
+                0 -> stringResource(R.string.title_components)
+                1 -> stringResource(R.string.title_customers)
+                else -> stringResource(R.string.title_molds)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 10.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.inventory_items_count, currentCount, currentEntityLabel),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
-        }
 
-        HorizontalPager(
-            state = pagerState,
-            beyondViewportPageCount = 1,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) { page ->
-            when (page) {
-                0 -> {
-                    val components = viewModel.componentsFlow.collectAsLazyPagingItems()
-                    ComponentListContent(
-                        components = components,
-                        listState = componentsListState,
-                        searchQuery = searchQuery,
-                        lowStockOnly = lowStockOnly,
-                        onComponentClick = onComponentClick,
-                        onAddNewItem = onAddNewItem,
-                        onClearFilters = {
-                            viewModel.updateSearchQuery("")
-                            viewModel.updateLowStockFilter(false)
-                        }
-                    )
-                }
-                1 -> {
-                    val customers = viewModel.customersFlow.collectAsLazyPagingItems()
-                    CustomerListContent(
-                        customers = customers,
-                        listState = customersListState,
-                        searchQuery = searchQuery,
-                        onCustomerClick = onCustomerClick,
-                        onAddNewItem = onAddNewItem,
-                        onClearSearch = {
-                            viewModel.updateSearchQuery("")
-                        }
-                    )
-                }
-                2 -> {
-                    val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
-                    MoldListContent(
-                        molds = molds,
-                        listState = moldsListState,
-                        searchQuery = searchQuery,
-                        selectedMoldStatus = selectedMoldStatus,
-                        onMoldClick = onMoldClick,
-                        onAddNewItem = onAddNewItem,
-                        onClearFilters = {
-                            viewModel.updateSearchQuery("")
-                            viewModel.updateMoldStatusFilter(null)
-                        }
-                    )
+            // Horizontal Pager with Items
+            HorizontalPager(
+                state = pagerState,
+                beyondViewportPageCount = 0,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        ComponentListContent(
+                            components = components,
+                            listState = componentsListState,
+                            searchQuery = searchQuery,
+                            lowStockOnly = lowStockOnly,
+                            onComponentClick = onComponentClick,
+                            onAddNewItem = onAddNewItem,
+                            onClearFilters = {
+                                viewModel.updateSearchQuery("")
+                                viewModel.updateLowStockFilter(false)
+                            }
+                        )
+                    }
+                    1 -> {
+                        CustomerListContent(
+                            customers = customers,
+                            listState = customersListState,
+                            searchQuery = searchQuery,
+                            onCustomerClick = onCustomerClick,
+                            onAddNewItem = onAddNewItem,
+                            onClearFilters = { viewModel.updateSearchQuery("") }
+                        )
+                    }
+                    2 -> {
+                        MoldListContent(
+                            molds = molds,
+                            listState = moldsListState,
+                            searchQuery = searchQuery,
+                            selectedMoldStatus = selectedMoldStatus,
+                            onMoldClick = onMoldClick,
+                            onAddNewItem = onAddNewItem,
+                            onClearFilters = {
+                                viewModel.updateSearchQuery("")
+                                viewModel.updateMoldStatusFilter(null)
+                            }
+                        )
+                    }
                 }
             }
         }
     }
-    
+
+    // Filter Options Bottom Sheet
     if (showFilterSheet) {
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
                 Row(
@@ -190,7 +397,11 @@ fun InventoryScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.title_filter_options), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.title_filter_options),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
                     if (hasActiveFilter) {
                         TextButton(onClick = {
                             if (pagerState.currentPage == 0) viewModel.updateLowStockFilter(false)
@@ -201,7 +412,7 @@ fun InventoryScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 when (pagerState.currentPage) {
                     0 -> {
                         Row(
@@ -217,7 +428,11 @@ fun InventoryScreen(
                         }
                     }
                     2 -> {
-                        Text(stringResource(R.string.label_mold_status), fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                        Text(
+                            stringResource(R.string.label_mold_status),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
                         val statuses = listOf(null, MoldStatus.Active, MoldStatus.InMaintenance, MoldStatus.Retired)
                         val labels = listOf(
                             stringResource(R.string.mold_status_all),
@@ -233,18 +448,28 @@ fun InventoryScreen(
                                     .clickable { viewModel.updateMoldStatusFilter(status) }
                                     .padding(vertical = 4.dp)
                             ) {
-                                RadioButton(selected = selectedMoldStatus == status, onClick = { viewModel.updateMoldStatusFilter(status) })
+                                RadioButton(
+                                    selected = selectedMoldStatus == status,
+                                    onClick = { viewModel.updateMoldStatusFilter(status) }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(labels[index])
                             }
                         }
                     }
                     else -> {
-                        Text(stringResource(R.string.msg_no_customer_filters), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.msg_no_customer_filters),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { showFilterSheet = false }, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = { showFilterSheet = false },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(stringResource(R.string.btn_apply_filters))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -255,8 +480,8 @@ fun InventoryScreen(
 
 @Composable
 private fun ComponentListContent(
-    components: androidx.paging.compose.LazyPagingItems<Component>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    components: LazyPagingItems<Component>,
+    listState: LazyListState,
     searchQuery: String,
     lowStockOnly: Boolean,
     onComponentClick: (String) -> Unit,
@@ -265,11 +490,11 @@ private fun ComponentListContent(
 ) {
     val isFiltered = searchQuery.isNotBlank() || lowStockOnly
     when {
-        components.loadState.refresh is androidx.paging.LoadState.Loading -> {
+        components.loadState.refresh is LoadState.Loading -> {
             SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
         }
-        components.loadState.refresh is androidx.paging.LoadState.Error -> {
-            val error = (components.loadState.refresh as androidx.paging.LoadState.Error).error
+        components.loadState.refresh is LoadState.Error -> {
+            val error = (components.loadState.refresh as LoadState.Error).error
             val errorMessage = when (error) {
                 is java.io.IOException -> stringResource(R.string.error_network)
                 else -> stringResource(R.string.error_load_components)
@@ -280,7 +505,7 @@ private fun ComponentListContent(
                 modifier = Modifier.padding(bottom = 88.dp)
             )
         }
-        components.loadState.refresh is androidx.paging.LoadState.NotLoading && components.itemCount == 0 -> {
+        components.loadState.refresh is LoadState.NotLoading && components.itemCount == 0 -> {
             EmptyState(
                 modifier = Modifier.padding(bottom = 88.dp),
                 icon = if (isFiltered) Icons.Outlined.SearchOff else Icons.Outlined.Category,
@@ -315,7 +540,8 @@ private fun ComponentListContent(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp)
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(count = components.itemCount, key = components.itemKey { it.id }) { idx ->
                     val component = components[idx]
@@ -323,7 +549,7 @@ private fun ComponentListContent(
                         ComponentItem(component, onClick = { onComponentClick(component.id) })
                     }
                 }
-                if (components.loadState.append is androidx.paging.LoadState.Loading) {
+                if (components.loadState.append is LoadState.Loading) {
                     item {
                         Box(
                             modifier = Modifier
@@ -335,7 +561,7 @@ private fun ComponentListContent(
                         }
                     }
                 }
-                if (components.loadState.append is androidx.paging.LoadState.Error) {
+                if (components.loadState.append is LoadState.Error) {
                     item {
                         Box(
                             modifier = Modifier
@@ -356,20 +582,20 @@ private fun ComponentListContent(
 
 @Composable
 private fun CustomerListContent(
-    customers: androidx.paging.compose.LazyPagingItems<Customer>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    customers: LazyPagingItems<Customer>,
+    listState: LazyListState,
     searchQuery: String,
     onCustomerClick: (String) -> Unit,
     onAddNewItem: ((EntityType) -> Unit)?,
-    onClearSearch: () -> Unit
+    onClearFilters: () -> Unit
 ) {
-    val isSearching = searchQuery.isNotBlank()
+    val isFiltered = searchQuery.isNotBlank()
     when {
-        customers.loadState.refresh is androidx.paging.LoadState.Loading -> {
+        customers.loadState.refresh is LoadState.Loading -> {
             SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
         }
-        customers.loadState.refresh is androidx.paging.LoadState.Error -> {
-            val error = (customers.loadState.refresh as androidx.paging.LoadState.Error).error
+        customers.loadState.refresh is LoadState.Error -> {
+            val error = (customers.loadState.refresh as LoadState.Error).error
             val errorMessage = when (error) {
                 is java.io.IOException -> stringResource(R.string.error_network)
                 else -> stringResource(R.string.error_load_customers)
@@ -380,25 +606,25 @@ private fun CustomerListContent(
                 modifier = Modifier.padding(bottom = 88.dp)
             )
         }
-        customers.loadState.refresh is androidx.paging.LoadState.NotLoading && customers.itemCount == 0 -> {
+        customers.loadState.refresh is LoadState.NotLoading && customers.itemCount == 0 -> {
             EmptyState(
                 modifier = Modifier.padding(bottom = 88.dp),
-                icon = if (isSearching) Icons.Outlined.PersonSearch else Icons.Outlined.People,
+                icon = if (isFiltered) Icons.Outlined.SearchOff else Icons.Outlined.People,
                 title = stringResource(
-                    if (isSearching) R.string.empty_customers_filtered_title else R.string.empty_customers_title
+                    if (isFiltered) R.string.empty_customers_filtered_title else R.string.empty_customers_title
                 ),
-                description = if (isSearching) {
+                description = if (isFiltered) {
                     stringResource(R.string.empty_customers_search_desc, searchQuery)
                 } else {
                     stringResource(R.string.empty_customers_desc)
                 },
                 actionLabel = stringResource(
-                    if (isSearching) R.string.action_clear_search else R.string.action_add_customer
+                    if (isFiltered) R.string.action_clear_search else R.string.action_add_customer
                 ),
-                actionIcon = if (isSearching) Icons.Default.Clear else Icons.Default.Add,
+                actionIcon = if (isFiltered) Icons.Default.Clear else Icons.Default.Add,
                 onActionClick = {
-                    if (isSearching) {
-                        onClearSearch()
+                    if (isFiltered) {
+                        onClearFilters()
                     } else {
                         onAddNewItem?.invoke(EntityType.Customer)
                     }
@@ -409,7 +635,8 @@ private fun CustomerListContent(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp)
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(count = customers.itemCount, key = customers.itemKey { it.id }) { idx ->
                     val customer = customers[idx]
@@ -417,7 +644,7 @@ private fun CustomerListContent(
                         CustomerItem(customer, onClick = { onCustomerClick(customer.id) })
                     }
                 }
-                if (customers.loadState.append is androidx.paging.LoadState.Loading) {
+                if (customers.loadState.append is LoadState.Loading) {
                     item {
                         Box(
                             modifier = Modifier
@@ -429,7 +656,7 @@ private fun CustomerListContent(
                         }
                     }
                 }
-                if (customers.loadState.append is androidx.paging.LoadState.Error) {
+                if (customers.loadState.append is LoadState.Error) {
                     item {
                         Box(
                             modifier = Modifier
@@ -450,8 +677,8 @@ private fun CustomerListContent(
 
 @Composable
 private fun MoldListContent(
-    molds: androidx.paging.compose.LazyPagingItems<Mold>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    molds: LazyPagingItems<Mold>,
+    listState: LazyListState,
     searchQuery: String,
     selectedMoldStatus: MoldStatus?,
     onMoldClick: (String) -> Unit,
@@ -460,11 +687,11 @@ private fun MoldListContent(
 ) {
     val isFiltered = searchQuery.isNotBlank() || selectedMoldStatus != null
     when {
-        molds.loadState.refresh is androidx.paging.LoadState.Loading -> {
+        molds.loadState.refresh is LoadState.Loading -> {
             SkeletonList(modifier = Modifier.padding(bottom = 88.dp))
         }
-        molds.loadState.refresh is androidx.paging.LoadState.Error -> {
-            val error = (molds.loadState.refresh as androidx.paging.LoadState.Error).error
+        molds.loadState.refresh is LoadState.Error -> {
+            val error = (molds.loadState.refresh as LoadState.Error).error
             val errorMessage = when (error) {
                 is java.io.IOException -> stringResource(R.string.error_network)
                 else -> stringResource(R.string.error_load_molds)
@@ -475,7 +702,7 @@ private fun MoldListContent(
                 modifier = Modifier.padding(bottom = 88.dp)
             )
         }
-        molds.loadState.refresh is androidx.paging.LoadState.NotLoading && molds.itemCount == 0 -> {
+        molds.loadState.refresh is LoadState.NotLoading && molds.itemCount == 0 -> {
             EmptyState(
                 modifier = Modifier.padding(bottom = 88.dp),
                 icon = if (isFiltered) Icons.Outlined.SearchOff else Icons.Outlined.PrecisionManufacturing,
@@ -510,7 +737,8 @@ private fun MoldListContent(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp)
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(count = molds.itemCount, key = molds.itemKey { it.id }) { idx ->
                     val mold = molds[idx]
@@ -518,7 +746,7 @@ private fun MoldListContent(
                         MoldItem(mold, onClick = { onMoldClick(mold.id) })
                     }
                 }
-                if (molds.loadState.append is androidx.paging.LoadState.Loading) {
+                if (molds.loadState.append is LoadState.Loading) {
                     item {
                         Box(
                             modifier = Modifier
@@ -530,7 +758,7 @@ private fun MoldListContent(
                         }
                     }
                 }
-                if (molds.loadState.append is androidx.paging.LoadState.Error) {
+                if (molds.loadState.append is LoadState.Error) {
                     item {
                         Box(
                             modifier = Modifier
@@ -549,47 +777,177 @@ private fun MoldListContent(
     }
 }
 
-
-
 @Composable
 fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
-    ListCard(onClick = onClick) {
-        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!component.photoUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = component.photoUrl,
-                        contentDescription = "Component Photo",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
-                } else {
-                    Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    val isDark = isSystemInDarkTheme()
+    val isLowStock = component.qty <= component.minStockThreshold
+    val formattedQty = remember(component.qty) {
+        NumberFormat.getNumberInstance(Locale.US).format(component.qty)
+    }
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Item Icon / Image Badge
+            if (!component.photoUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = component.photoUrl,
+                    contentDescription = "Component Photo",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isDark) Color(0xFF132035) else Color(0xFFEFF6FF),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Outlined.Inventory2,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Column {
-                    Text(text = component.name, fontWeight = FontWeight.Bold)
-                    Text(text = "SKU: ${component.sku}", style = MaterialTheme.typography.bodyMedium)
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Center Content: Name, SKU, Tag Badge
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = component.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "SKU: ${component.sku}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                    modifier = Modifier.wrapContentSize()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.LocalOffer,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = component.category.ifBlank { stringResource(R.string.inventory_tag_component) },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
-            val isLowStock = component.qty <= component.minStockThreshold
-            StatusBadge(
-                text = "${component.qty} ${component.unit}",
-                statusType = if (isLowStock) StatusType.WARNING else StatusType.SUCCESS
-            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Right Column: Quantity Badge & Navigation Chevron
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isLowStock) {
+                        if (isDark) Color(0xFF331818) else Color(0xFFFEF2F2)
+                    } else {
+                        if (isDark) Color(0xFF0E281E) else Color(0xFFF0FDF4)
+                    },
+                    modifier = Modifier.wrapContentSize()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "$formattedQty ${component.unit.ifBlank { "PCS" }}",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isLowStock) {
+                                if (isDark) Color(0xFFF87171) else Color(0xFFDC2626)
+                            } else {
+                                if (isDark) Color(0xFF4ADE80) else Color(0xFF16A34A)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(1.dp))
+                        Text(
+                            text = if (isLowStock) {
+                                stringResource(R.string.inventory_low_stock_status)
+                            } else {
+                                stringResource(R.string.inventory_in_stock)
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isLowStock) {
+                                if (isDark) Color(0xFFF87171) else Color(0xFFDC2626)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            }
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
 fun CustomerItem(customer: Customer, onClick: () -> Unit = {}) {
-    ListCard(onClick = onClick) {
-        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    val isDark = isSystemInDarkTheme()
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (!customer.photoUrl.isNullOrEmpty()) {
                 AsyncImage(
                     model = customer.photoUrl,
@@ -597,60 +955,192 @@ fun CustomerItem(customer: Customer, onClick: () -> Unit = {}) {
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(12.dp))
                 )
             } else {
-                Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isDark) Color(0xFF0E281E) else Color(0xFFDCFCE7),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Outlined.People,
+                            contentDescription = null,
+                            tint = if (isDark) Color(0xFF34D399) else Color(0xFF16A34A),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column {
-                Text(text = customer.name, fontWeight = FontWeight.Bold)
-                Text(text = customer.email, style = MaterialTheme.typography.bodyMedium)
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = customer.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = customer.phone.ifBlank { customer.email },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                    modifier = Modifier.wrapContentSize()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.inventory_tag_customer),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
+                }
             }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                modifier = Modifier.size(14.dp)
+            )
         }
     }
 }
 
 @Composable
 fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
-    ListCard(onClick = onClick) {
-        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!mold.photoUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = mold.photoUrl,
-                        contentDescription = "Mold Photo",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
-                } else {
-                    Box(modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    val isDark = isSystemInDarkTheme()
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (!mold.photoUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = mold.photoUrl,
+                    contentDescription = "Mold Photo",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isDark) Color(0xFF261838) else Color(0xFFF3E8FF),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Outlined.PrecisionManufacturing,
+                            contentDescription = null,
+                            tint = if (isDark) Color(0xFFC084FC) else Color(0xFF9333EA),
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Column {
-                    Text(text = mold.moldCode, fontWeight = FontWeight.Bold)
-                    Text(text = "${mold.cavityCount} cavities", style = MaterialTheme.typography.bodyMedium)
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = mold.moldCode,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${mold.cavityCount} cavities" + if (mold.location.isNotBlank()) " • ${mold.location}" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                    modifier = Modifier.wrapContentSize()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.inventory_tag_mold),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
-            StatusBadge(
-                text = mold.status.name,
-                statusType = when(mold.status) {
-                    MoldStatus.Active -> StatusType.SUCCESS
-                    MoldStatus.InMaintenance -> StatusType.WARNING
-                    MoldStatus.Retired -> StatusType.NEUTRAL
-                    MoldStatus.Unknown -> StatusType.NEUTRAL
-                }
-            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatusBadge(
+                    text = mold.status.name,
+                    statusType = when (mold.status) {
+                        MoldStatus.Active -> StatusType.SUCCESS
+                        MoldStatus.InMaintenance -> StatusType.WARNING
+                        MoldStatus.Retired -> StatusType.NEUTRAL
+                        MoldStatus.Unknown -> StatusType.NEUTRAL
+                    }
+                )
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
         }
     }
 }
-
-
