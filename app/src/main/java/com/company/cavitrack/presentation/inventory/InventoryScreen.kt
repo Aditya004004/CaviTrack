@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Person
@@ -147,21 +148,22 @@ fun InventoryScreen(
                     )
                 }
 
-                // Category Icon Badge
-                Surface(
-                    shape = CircleShape,
-                    color = if (isDark) Color(0xFF1E3A8A) else Color(0xFFEFF6FF),
-                    border = BorderStroke(1.dp, if (isDark) Color(0xFF1E40AF) else Color(0xFFDBEAFE)),
-                    modifier = Modifier.size(46.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Outlined.Inventory2,
-                            contentDescription = stringResource(R.string.cd_inventory_icon),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
+                // Refresh Button
+                IconButton(
+                    onClick = {
+                        when (pagerState.currentPage) {
+                            0 -> components.refresh()
+                            1 -> customers.refresh()
+                            2 -> molds.refresh()
+                        }
                     }
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Refresh,
+                        contentDescription = "Refresh",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
