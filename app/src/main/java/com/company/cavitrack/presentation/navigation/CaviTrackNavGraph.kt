@@ -71,7 +71,10 @@ fun CaviTrackNavGraph(
             ManualUpdateScreen(
                 entityType = route.entityType,
                 entityId = route.entityId,
-                onUpdateComplete = { navController.popBackStack() }
+                onUpdateComplete = {
+                    navController.popBackStack() // pop ManualUpdate
+                    if (route.entityId != null) navController.popBackStack() // also pop Detail
+                }
             )
         }
         
@@ -80,7 +83,10 @@ fun CaviTrackNavGraph(
             PhotoUpdateScreen(
                 entityType = route.entityType, 
                 entityId = route.entityId,
-                onUpdateComplete = { navController.popBackStack() }
+                onUpdateComplete = {
+                    navController.popBackStack() // pop PhotoUpdate
+                    navController.popBackStack() // pop Detail
+                }
             )
         }
         
