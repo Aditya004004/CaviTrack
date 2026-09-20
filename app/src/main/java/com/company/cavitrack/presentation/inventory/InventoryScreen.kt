@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
@@ -98,6 +99,14 @@ fun InventoryScreen(
     val components = viewModel.componentsFlow.collectAsLazyPagingItems()
     val customers = viewModel.customersFlow.collectAsLazyPagingItems()
     val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
+
+    LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        when (pagerState.currentPage) {
+            0 -> components.refresh()
+            1 -> customers.refresh()
+            2 -> molds.refresh()
+        }
+    }
 
     Box(
         modifier = Modifier

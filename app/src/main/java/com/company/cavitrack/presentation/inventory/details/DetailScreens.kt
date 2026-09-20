@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -53,6 +54,10 @@ fun ComponentDetailScreen(
     val scrollState = rememberScrollState()
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val isDark = isSystemInDarkTheme()
+
+    LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        viewModel.loadComponent(isRefresh = true)
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -244,6 +249,10 @@ fun CustomerDetailScreen(
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val isDark = isSystemInDarkTheme()
 
+    LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        viewModel.loadCustomer(isRefresh = true)
+    }
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -410,6 +419,10 @@ fun MoldDetailScreen(
     val scrollState = rememberScrollState()
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val isDark = isSystemInDarkTheme()
+
+    LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        viewModel.loadMold(isRefresh = true)
+    }
 
     if (showDeleteDialog) {
         AlertDialog(

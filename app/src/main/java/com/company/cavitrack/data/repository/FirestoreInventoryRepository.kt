@@ -14,10 +14,12 @@ import com.company.cavitrack.data.remote.dto.toDomain
 import com.company.cavitrack.data.remote.dto.toDto
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.Customer
+import com.company.cavitrack.domain.model.EntityType
 import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.domain.model.Mold
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.util.DataResult
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -37,6 +39,29 @@ class FirestoreInventoryRepository @Inject constructor(
 
     private val currentUserId: String
         get() = firebaseAuth.currentUser?.uid ?: ""
+
+    // ──────────────────────────────────────────────
+    // PagingSource Invalidation Management
+    // ──────────────────────────────────────────────
+
+    private val activeInvalidators = java.util.concurrent.CopyOnWriteArraySet<() -> Unit>()
+
+    private fun invalidateAll() {
+        activeInvalidators.forEach { it.invoke() }
+    }
+
+    private fun <T : Any> createPagingSource(
+        query: Query,
+        mapper: (com.google.firebase.firestore.DocumentSnapshot) -> T?
+    ): com.company.cavitrack.data.paging.FirestorePagingSource<T> {
+        val source = com.company.cavitrack.data.paging.FirestorePagingSource(query, mapper)
+        val invalidator: () -> Unit = { source.invalidate() }
+        activeInvalidators.add(invalidator)
+        source.registerInvalidatedCallback {
+            activeInvalidators.remove(invalidator)
+        }
+        return source
+    }
 
     // ──────────────────────────────────────────────
     // Flow-based real-time listeners
@@ -66,7 +91,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 enablePlaceholders = false
             )
         ) {
-            com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
+            createPagingSource(query) { doc -> 
                 doc.toObject(ComponentDto::class.java)?.toDomain() 
             }
         }.flow
@@ -92,7 +117,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 enablePlaceholders = false
             )
         ) {
-            com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
+            createPagingSource(query) { doc -> 
                 doc.toObject(CustomerDto::class.java)?.toDomain() 
             }
         }.flow
@@ -122,7 +147,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 enablePlaceholders = false
             )
         ) {
-            com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc -> 
+            createPagingSource(query) { doc -> 
                 doc.toObject(MoldDto::class.java)?.toDomain() 
             }
         }.flow
@@ -144,7 +169,7 @@ class FirestoreInventoryRepository @Inject constructor(
         return androidx.paging.Pager(
             config = androidx.paging.PagingConfig(pageSize = 20)
         ) {
-            com.company.cavitrack.data.paging.FirestorePagingSource(query) { doc ->
+            createPagingSource(query) { doc ->
                 doc.toObject(HistoryLogDto::class.java)?.toDomain()
             }
         }.flow
@@ -155,6 +180,7 @@ class FirestoreInventoryRepository @Inject constructor(
             close()
             return@callbackFlow
         }
+        var isInitialSnapshot = true
         val listener = firestore.collection("history")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
@@ -168,6 +194,11 @@ class FirestoreInventoryRepository @Inject constructor(
                 if (snapshot != null) {
                     val logs = snapshot.toObjects(HistoryLogDto::class.java).map { it.toDomain() }
                     trySend(DataResult.Success(logs))
+                    if (!isInitialSnapshot) {
+                        invalidateAll()
+                    } else {
+                        isInitialSnapshot = false
+                    }
                 }
             }
         awaitClose { listener.remove() }
@@ -290,6 +321,7 @@ class FirestoreInventoryRepository @Inject constructor(
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = component.copy(ownerId = uid).toDto()
             firestore.collection("components").document(dto.id).set(dto).await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -303,6 +335,7 @@ class FirestoreInventoryRepository @Inject constructor(
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = customer.copy(ownerId = uid).toDto()
             firestore.collection("customers").document(dto.id).set(dto).await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -316,6 +349,7 @@ class FirestoreInventoryRepository @Inject constructor(
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = mold.copy(ownerId = uid).toDto()
             firestore.collection("molds").document(dto.id).set(dto).await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -329,6 +363,7 @@ class FirestoreInventoryRepository @Inject constructor(
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
             val dto = log.copy(ownerId = uid).toDto()
             firestore.collection("history").document(dto.id).set(dto).await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -346,6 +381,7 @@ class FirestoreInventoryRepository @Inject constructor(
             batch.set(firestore.collection("components").document(compDto.id), compDto)
             batch.set(firestore.collection("history").document(logDto.id), logDto)
             batch.commit().await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -363,6 +399,7 @@ class FirestoreInventoryRepository @Inject constructor(
             batch.set(firestore.collection("customers").document(custDto.id), custDto)
             batch.set(firestore.collection("history").document(logDto.id), logDto)
             batch.commit().await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -380,6 +417,7 @@ class FirestoreInventoryRepository @Inject constructor(
             batch.set(firestore.collection("molds").document(moldDto.id), moldDto)
             batch.set(firestore.collection("history").document(logDto.id), logDto)
             batch.commit().await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -422,6 +460,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 newDto
             }.await()
             
+            invalidateAll()
             DataResult.Success(updatedDto.toDomain())
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -433,8 +472,29 @@ class FirestoreInventoryRepository @Inject constructor(
         return try {
             val uid = currentUserId
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
+            val docRef = firestore.collection("components").document(id)
+            val doc = docRef.get().await()
+            val name = doc.getString("name") ?: "Component"
             val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
-            firestore.collection("components").document(id).update(updateData).await()
+
+            val performer = firebaseAuth.currentUser?.displayName?.takeIf { it.isNotBlank() }
+                ?: firebaseAuth.currentUser?.email ?: "Unknown"
+            val logDto = HistoryLog(
+                id = UUID.randomUUID().toString(),
+                entityType = EntityType.Component,
+                entityId = id,
+                entityName = name,
+                action = "Deleted",
+                changeSource = com.company.cavitrack.domain.model.ChangeSource.Manual,
+                performedBy = performer,
+                timestamp = System.currentTimeMillis()
+            ).copy(ownerId = uid).toDto()
+
+            val batch = firestore.batch()
+            batch.update(docRef, updateData)
+            batch.set(firestore.collection("history").document(logDto.id), logDto)
+            batch.commit().await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -446,8 +506,29 @@ class FirestoreInventoryRepository @Inject constructor(
         return try {
             val uid = currentUserId
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
+            val docRef = firestore.collection("customers").document(id)
+            val doc = docRef.get().await()
+            val name = doc.getString("name") ?: "Customer"
             val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
-            firestore.collection("customers").document(id).update(updateData).await()
+
+            val performer = firebaseAuth.currentUser?.displayName?.takeIf { it.isNotBlank() }
+                ?: firebaseAuth.currentUser?.email ?: "Unknown"
+            val logDto = HistoryLog(
+                id = UUID.randomUUID().toString(),
+                entityType = EntityType.Customer,
+                entityId = id,
+                entityName = name,
+                action = "Deleted",
+                changeSource = com.company.cavitrack.domain.model.ChangeSource.Manual,
+                performedBy = performer,
+                timestamp = System.currentTimeMillis()
+            ).copy(ownerId = uid).toDto()
+
+            val batch = firestore.batch()
+            batch.update(docRef, updateData)
+            batch.set(firestore.collection("history").document(logDto.id), logDto)
+            batch.commit().await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -459,8 +540,29 @@ class FirestoreInventoryRepository @Inject constructor(
         return try {
             val uid = currentUserId
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
+            val docRef = firestore.collection("molds").document(id)
+            val doc = docRef.get().await()
+            val moldCode = doc.getString("moldCode") ?: "Mold"
             val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
-            firestore.collection("molds").document(id).update(updateData).await()
+
+            val performer = firebaseAuth.currentUser?.displayName?.takeIf { it.isNotBlank() }
+                ?: firebaseAuth.currentUser?.email ?: "Unknown"
+            val logDto = HistoryLog(
+                id = UUID.randomUUID().toString(),
+                entityType = EntityType.Mold,
+                entityId = id,
+                entityName = moldCode,
+                action = "Deleted",
+                changeSource = com.company.cavitrack.domain.model.ChangeSource.Manual,
+                performedBy = performer,
+                timestamp = System.currentTimeMillis()
+            ).copy(ownerId = uid).toDto()
+
+            val batch = firestore.batch()
+            batch.update(docRef, updateData)
+            batch.set(firestore.collection("history").document(logDto.id), logDto)
+            batch.commit().await()
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -512,6 +614,7 @@ class FirestoreInventoryRepository @Inject constructor(
                 collJobs.awaitAll()
                 fcmTokensJob.await()
             }
+            invalidateAll()
             DataResult.Success(Unit)
         } catch (e: Exception) {
             if (e is CancellationException) throw e

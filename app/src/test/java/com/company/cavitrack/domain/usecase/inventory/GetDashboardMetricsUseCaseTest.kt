@@ -1,6 +1,9 @@
 package com.company.cavitrack.domain.usecase.inventory
 
 import com.company.cavitrack.data.local.LocalMetricsRepository
+import com.company.cavitrack.domain.model.ChangeSource
+import com.company.cavitrack.domain.model.DashboardMetrics
+import com.company.cavitrack.domain.model.EntityType
 import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.util.DataResult
@@ -11,6 +14,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -88,5 +92,52 @@ class GetDashboardMetricsUseCaseTest {
         assertEquals(5, cached.lowStockCount)
         assertEquals(12, cached.totalCustomers)
         assertEquals(8, cached.activeMolds)
+    }
+
+    @Test
+    fun `useCase recalculates counts dynamically when new history arrives`() = runTest {
+        // Arrange
+        val historyFlow = kotlinx.coroutines.flow.MutableSharedFlow<DataResult<List<HistoryLog>>>(extraBufferCapacity = 2)
+        every { repository.getRecentHistory(5) } returns historyFlow
+
+        coEvery { repository.getComponentsCount() } returnsMany listOf(
+            DataResult.Success(10L),
+            DataResult.Success(11L)
+        )
+        coEvery { repository.getLowStockComponentsCount() } returns DataResult.Success(2L)
+        coEvery { repository.getCustomersCount() } returns DataResult.Success(5L)
+        coEvery { repository.getActiveMoldsCount() } returns DataResult.Success(4L)
+
+        val log = HistoryLog(
+            id = "log1",
+            entityType = EntityType.Component,
+            entityId = "c1",
+            entityName = "New Part",
+            action = "Created",
+            changeSource = ChangeSource.Manual,
+            performedBy = "Tester",
+            timestamp = 1000L
+        )
+
+        // Act
+        val emissions = mutableListOf<DataResult<DashboardMetrics>>()
+        val job = launch {
+            useCase("test_user_id").collect { emissions.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+
+        historyFlow.emit(DataResult.Success(listOf(log)))
+        testScheduler.advanceUntilIdle()
+
+        // Assert
+        assertTrue(emissions.size >= 2)
+        val latest = emissions.last()
+        assertTrue(latest is DataResult.Success)
+        val data = (latest as DataResult.Success<DashboardMetrics>).data
+        assertEquals(11, data.totalComponents)
+        assertEquals(1, data.recentActivity.size)
+        assertEquals("New Part", data.recentActivity.first().entityName)
+
+        job.cancel()
     }
 }

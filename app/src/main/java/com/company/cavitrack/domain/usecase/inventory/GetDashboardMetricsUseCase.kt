@@ -8,6 +8,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -37,17 +38,18 @@ class GetDashboardMetricsUseCase @Inject constructor(
 
         // 2. Fetch fresh server counts once
         val freshCounts = fetchFreshCounts(effectiveUid)
-        val activeCounts = freshCounts ?: initialData
+        var activeCounts = freshCounts ?: initialData
 
-        // 3. Stream history updates using the latest counts without re-querying 4 aggregations per event
-        val liveFlow = repository.getRecentHistory(5).map { historyResult ->
-            if (historyResult is DataResult.Error) {
-                DataResult.Error(historyResult.message)
-            } else {
-                val history = (historyResult as DataResult.Success).data
-                DataResult.Success(
-                    activeCounts.copy(recentActivity = history)
-                )
+        // 3. Stream history updates and re-fetch fresh counts when history logs change
+        val liveFlow = repository.getRecentHistory(5).transform { historyResult ->
+            when (historyResult) {
+                is DataResult.Error -> emit(DataResult.Error(historyResult.message))
+                is DataResult.Success -> {
+                    val history = historyResult.data
+                    val updatedCounts = fetchFreshCounts(effectiveUid) ?: activeCounts
+                    activeCounts = updatedCounts
+                    emit(DataResult.Success(activeCounts.copy(recentActivity = history)))
+                }
             }
         }
 
