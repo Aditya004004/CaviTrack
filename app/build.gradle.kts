@@ -3,6 +3,7 @@ import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("com.google.dagger.hilt.android")
@@ -70,6 +71,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
     implementation(libs.firebase.appcheck)
     debugImplementation(libs.firebase.appcheck.debug)
 

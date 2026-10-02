@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.R
+import com.company.cavitrack.presentation.theme.*
 import com.company.cavitrack.domain.model.EntityType
 import com.company.cavitrack.domain.model.MoldStatus
 
@@ -125,8 +126,8 @@ fun ManualUpdateScreen(
     }
 
     val inputColors = OutlinedTextFieldDefaults.colors(
-        unfocusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-        focusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
+        unfocusedContainerColor = if (isDark) SlateDark else SlateLight,
+        focusedContainerColor = if (isDark) SlateDark else SlateLight,
         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
         focusedBorderColor = MaterialTheme.colorScheme.primary
     )
@@ -145,8 +146,8 @@ fun ManualUpdateScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.16f),
-                        Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                        AmbientGlowPrimary.copy(alpha = if (isDark) 0.08f else 0.16f),
+                        AmbientGlowSecondary.copy(alpha = if (isDark) 0.03f else 0.06f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.90f, size.height * 0.15f),

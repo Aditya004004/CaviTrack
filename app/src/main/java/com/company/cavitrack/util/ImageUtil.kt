@@ -108,9 +108,9 @@ object ImageUtil {
                     }
                 }
                 file
-            } catch (t: Throwable) {
+            } catch (e: Exception) {
                 if (com.company.cavitrack.BuildConfig.DEBUG) {
-                    Log.e("ImageUtil", "Failed to downscale image", t)
+                    Log.e("ImageUtil", "Failed to downscale image", e)
                 }
                 if (tempFile.exists()) {
                     tempFile.delete()

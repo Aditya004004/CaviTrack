@@ -1,23 +1,26 @@
 package com.company.cavitrack.presentation.navigation
 
-
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.company.cavitrack.domain.model.EntityType
 import com.company.cavitrack.presentation.addupdate.manual.ManualUpdateScreen
 import com.company.cavitrack.presentation.addupdate.photo.PhotoUpdateScreen
+import com.company.cavitrack.presentation.auth.AuthViewModel
+import com.company.cavitrack.presentation.auth.LoginScreen
+import com.company.cavitrack.presentation.auth.RegisterScreen
 import com.company.cavitrack.presentation.history.HistoryScreen
 import com.company.cavitrack.presentation.home.HomeScreen
 import com.company.cavitrack.presentation.inventory.InventoryScreen
+import com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen
+import com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen
+import com.company.cavitrack.presentation.inventory.details.MoldDetailScreen
 import com.company.cavitrack.presentation.settings.SettingsScreen
-import com.company.cavitrack.presentation.auth.LoginScreen
-import com.company.cavitrack.presentation.auth.RegisterScreen
-import com.company.cavitrack.presentation.auth.AuthViewModel
 
 @Composable
 fun CaviTrackNavGraph(
@@ -33,10 +36,10 @@ fun CaviTrackNavGraph(
         composable<Route.Home> { 
             HomeScreen(
                 onNavigateToDetail = { type, id -> 
-                    when(type) {
-                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true }
-                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true }
-                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true }
+                    when (type) {
+                        EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true }
+                        EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true }
+                        EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true }
                         else -> { /* Ignore unknown types like History */ }
                     }
                 }
@@ -53,18 +56,16 @@ fun CaviTrackNavGraph(
         composable<Route.History> { 
             HistoryScreen(
                 onNavigateToDetail = { type, id -> 
-                    when(type) {
-                        com.company.cavitrack.domain.model.EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true }
-                        com.company.cavitrack.domain.model.EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true }
-                        com.company.cavitrack.domain.model.EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true }
+                    when (type) {
+                        EntityType.Component.name -> navController.navigate(Route.ComponentDetail(id)) { launchSingleTop = true }
+                        EntityType.Customer.name -> navController.navigate(Route.CustomerDetail(id)) { launchSingleTop = true }
+                        EntityType.Mold.name -> navController.navigate(Route.MoldDetail(id)) { launchSingleTop = true }
                         else -> { /* Ignore unknown types */ }
                     }
                 }
             ) 
         }
         composable<Route.Settings> { SettingsScreen(authViewModel = authViewModel) }
-        
-
         
         composable<Route.ManualUpdate> { backStackEntry ->
             val route: Route.ManualUpdate = backStackEntry.toRoute()
@@ -85,29 +86,29 @@ fun CaviTrackNavGraph(
                 entityId = route.entityId,
                 onUpdateComplete = {
                     navController.popBackStack() // pop PhotoUpdate
-                    navController.popBackStack() // pop Detail
+                    if (route.entityId != null) navController.popBackStack() // also pop Detail
                 }
             )
         }
         
         composable<Route.ComponentDetail> { 
-            com.company.cavitrack.presentation.inventory.details.ComponentDetailScreen(
-                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } },
-                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Component, id)) { launchSingleTop = true } },
+            ComponentDetailScreen(
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(EntityType.Component, id)) { launchSingleTop = true } },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(EntityType.Component, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }
         composable<Route.CustomerDetail> { 
-            com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen(
-                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Customer, id)) { launchSingleTop = true } },
-                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Customer, id)) { launchSingleTop = true } },
+            CustomerDetailScreen(
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(EntityType.Customer, id)) { launchSingleTop = true } },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(EntityType.Customer, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }
         composable<Route.MoldDetail> { 
-            com.company.cavitrack.presentation.inventory.details.MoldDetailScreen(
-                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(com.company.cavitrack.domain.model.EntityType.Mold, id)) { launchSingleTop = true } },
-                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(com.company.cavitrack.domain.model.EntityType.Mold, id)) { launchSingleTop = true } },
+            MoldDetailScreen(
+                onNavigateToUpdate = { id -> navController.navigate(Route.ManualUpdate(EntityType.Mold, id)) { launchSingleTop = true } },
+                onNavigateToPhotoUpdate = { id -> navController.navigate(Route.PhotoUpdate(EntityType.Mold, id)) { launchSingleTop = true } },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -138,5 +139,3 @@ fun CaviTrackAuthGraph(onAuthSuccess: () -> Unit) {
         }
     }
 }
-
-

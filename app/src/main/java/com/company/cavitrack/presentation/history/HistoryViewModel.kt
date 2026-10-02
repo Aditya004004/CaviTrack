@@ -4,7 +4,7 @@ package com.company.cavitrack.presentation.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.HistoryLog
-import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
+import com.company.cavitrack.domain.repository.InventoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
-    private val useCases: InventoryUseCases,
+    private val repository: InventoryRepository,
     private val sessionManager: com.company.cavitrack.util.SessionManager
 ) : ViewModel() {
 
@@ -41,7 +41,7 @@ class HistoryViewModel @Inject constructor(
         Pair(uid, action)
     }.flatMapLatest { (uid, action) ->
         if (uid != null) {
-            useCases.getHistory(action)
+            repository.getHistory(action)
         } else {
             emptyFlow()
         }

@@ -9,7 +9,6 @@ data class Component(
     val unit: String,
     val minStockThreshold: Int,
     val ownerId: String = "",
-    val linkedMoldIds: List<String> = emptyList(),
     val photoUrl: String? = null,
     val createdAt: Long,
     val updatedAt: Long

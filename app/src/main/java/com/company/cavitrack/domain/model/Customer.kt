@@ -7,7 +7,6 @@ data class Customer(
     val email: String,
     val address: String,
     val ownerId: String = "",
-    val linkedComponentIds: List<String> = emptyList(),
     val notes: String = "",
     val photoUrl: String? = null,
     val createdAt: Long,

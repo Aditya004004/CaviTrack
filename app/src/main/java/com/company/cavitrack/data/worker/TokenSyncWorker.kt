@@ -21,7 +21,9 @@ class TokenSyncWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val token = inputData.getString("fcm_token")
         if (token.isNullOrBlank()) {
-            android.util.Log.w("TokenSyncWorker", "No fcm_token supplied in inputData; aborting sync.")
+            if (com.company.cavitrack.BuildConfig.DEBUG) {
+                android.util.Log.w("TokenSyncWorker", "No fcm_token supplied in inputData; aborting sync.")
+            }
             return Result.failure()
         }
         

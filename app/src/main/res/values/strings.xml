@@ -245,4 +245,6 @@
     <string name="toast_password_reset_sent">Password reset email sent! Check your inbox.</string>
     <string name="dialog_desc_forgot_password">Enter your registered account email to receive a password reset link.</string>
     <string name="btn_send_reset_link">Send Reset Link</string>
+    <string name="default_user_name">User</string>
+    <string name="default_user_email">No Email</string>
 </resources>

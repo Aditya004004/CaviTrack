@@ -67,8 +67,14 @@ fun HomeScreen(
         )
     }
 
+    var isFirstResume by remember { mutableStateOf(true) }
+
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-        viewModel.loadData()
+        if (isFirstResume) {
+            isFirstResume = false
+        } else {
+            viewModel.loadData()
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             hasNotificationPermission = ContextCompat.checkSelfPermission(
                 context,
@@ -99,8 +105,8 @@ fun HomeScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.16f),
-                        Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                        com.company.cavitrack.presentation.theme.AmbientGlowPrimary.copy(alpha = if (isDark) 0.08f else 0.16f),
+                        com.company.cavitrack.presentation.theme.AmbientGlowSecondary.copy(alpha = if (isDark) 0.03f else 0.06f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.90f, size.height * 0.12f),

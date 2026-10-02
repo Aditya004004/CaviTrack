@@ -47,6 +47,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.R
 import com.company.cavitrack.domain.usecase.auth.ValidationReason
 import com.company.cavitrack.domain.usecase.auth.ValidationResult
+import com.company.cavitrack.presentation.theme.AmbientGlowPrimary
+import com.company.cavitrack.presentation.theme.AmbientGlowSecondary
+import com.company.cavitrack.presentation.theme.BlueTintBorder
+import com.company.cavitrack.presentation.theme.BlueTintLight
+import com.company.cavitrack.presentation.theme.LightBlue
+import com.company.cavitrack.presentation.theme.SlateDark
+import com.company.cavitrack.presentation.theme.SlateDarkBorder
+import com.company.cavitrack.presentation.theme.SlateLight
+import com.company.cavitrack.presentation.theme.SoftBlue
+import com.company.cavitrack.presentation.theme.SoftIndigo
+import com.company.cavitrack.presentation.theme.SuccessDark
+import com.company.cavitrack.presentation.theme.SuccessLight
 
 @Composable
 fun RegisterScreen(
@@ -94,8 +106,8 @@ fun RegisterScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.14f),
-                        Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                        AmbientGlowPrimary.copy(alpha = if (isDark) 0.08f else 0.14f),
+                        AmbientGlowSecondary.copy(alpha = if (isDark) 0.03f else 0.06f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.12f, size.height * 0.08f),
@@ -106,8 +118,8 @@ fun RegisterScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF93C5FD).copy(alpha = if (isDark) 0.06f else 0.12f),
-                        Color(0xFFE0E7FF).copy(alpha = if (isDark) 0.02f else 0.04f),
+                        SoftBlue.copy(alpha = if (isDark) 0.06f else 0.12f),
+                        SoftIndigo.copy(alpha = if (isDark) 0.02f else 0.04f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.96f, size.height * 0.22f),
@@ -118,7 +130,7 @@ fun RegisterScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFBFDBFE).copy(alpha = if (isDark) 0.05f else 0.10f),
+                        LightBlue.copy(alpha = if (isDark) 0.05f else 0.10f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.15f, size.height * 0.94f),
@@ -142,8 +154,8 @@ fun RegisterScreen(
             // App Logo Squircle Badge
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = if (isDark) Color(0xFF1E293B) else Color(0xFFEFF6FF),
-                border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else Color(0xFFDBEAFE)),
+                color = if (isDark) SlateDark else BlueTintLight,
+                border = BorderStroke(1.dp, if (isDark) SlateDarkBorder else BlueTintBorder),
                 shadowElevation = 1.dp,
                 modifier = Modifier.size(68.dp)
             ) {
@@ -257,8 +269,8 @@ fun RegisterScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-                            focusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
+                            unfocusedContainerColor = if (isDark) SlateDark else SlateLight,
+                            focusedContainerColor = if (isDark) SlateDark else SlateLight,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
                             focusedBorderColor = MaterialTheme.colorScheme.primary
                         ),
@@ -308,8 +320,8 @@ fun RegisterScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-                            focusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
+                            unfocusedContainerColor = if (isDark) SlateDark else SlateLight,
+                            focusedContainerColor = if (isDark) SlateDark else SlateLight,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
                             focusedBorderColor = MaterialTheme.colorScheme.primary
                         ),
@@ -371,8 +383,8 @@ fun RegisterScreen(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
-                            focusedContainerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC),
+                            unfocusedContainerColor = if (isDark) SlateDark else SlateLight,
+                            focusedContainerColor = if (isDark) SlateDark else SlateLight,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
                             focusedBorderColor = MaterialTheme.colorScheme.primary
                         ),
@@ -578,6 +590,7 @@ private fun PasswordRequirementItem(
     isMet: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val successColor = if (isSystemInDarkTheme()) SuccessDark else SuccessLight
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -585,14 +598,14 @@ private fun PasswordRequirementItem(
         Icon(
             imageVector = if (isMet) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
             contentDescription = null,
-            tint = if (isMet) Color(0xFF16A34A) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+            tint = if (isMet) successColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
             modifier = Modifier.size(13.dp)
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-            color = if (isMet) Color(0xFF16A34A) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            color = if (isMet) successColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
 }

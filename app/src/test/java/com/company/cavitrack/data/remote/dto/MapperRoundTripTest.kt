@@ -11,7 +11,7 @@ class MapperRoundTripTest {
         val original = Component(
             id = "c1", ownerId = "u1", name = "Test Component", sku = "SKU-1",
             category = "Parts", qty = 100, unit = "pcs", minStockThreshold = 10,
-            linkedMoldIds = listOf("m1", "m2"), photoUrl = "url", createdAt = 1L, updatedAt = 2L
+            photoUrl = "url", createdAt = 1L, updatedAt = 2L
         )
 
         val dto = original.toDto()
@@ -24,7 +24,7 @@ class MapperRoundTripTest {
     fun `Customer round trip mapping`() {
         val original = Customer(
             id = "c1", ownerId = "u1", name = "Customer", phone = "123", email = "email",
-            address = "address", linkedComponentIds = listOf("c2"), notes = "note",
+            address = "address", notes = "note",
             photoUrl = "url", createdAt = 1L, updatedAt = 2L
         )
 
@@ -38,7 +38,7 @@ class MapperRoundTripTest {
     fun `Mold round trip mapping`() {
         val original = Mold(
             id = "m1", ownerId = "u1", moldCode = "M-1", cavityCount = 4,
-            linkedComponentId = "c1", status = MoldStatus.Active, location = "A1",
+            status = MoldStatus.Active, location = "A1",
             photoUrl = "url", createdAt = 1L, updatedAt = 2L
         )
 

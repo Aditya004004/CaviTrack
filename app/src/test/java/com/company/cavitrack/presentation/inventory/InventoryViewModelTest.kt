@@ -2,7 +2,7 @@ package com.company.cavitrack.presentation.inventory
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
+import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.util.SessionManager
 import io.mockk.every
 import io.mockk.mockk
@@ -19,7 +19,7 @@ import androidx.paging.PagingData
 class InventoryViewModelTest {
 
     private lateinit var viewModel: InventoryViewModel
-    private val useCases: InventoryUseCases = mockk(relaxed = true)
+    private val repository: InventoryRepository = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -33,11 +33,11 @@ class InventoryViewModelTest {
     }
 
     @Test
-    fun `viewModel exposes paging flows from useCases`() = runTest {
+    fun `viewModel exposes paging flows from repository`() = runTest {
         // Arrange
-        every { useCases.getComponents() } returns flowOf(PagingData.empty())
-        every { useCases.getCustomers() } returns flowOf(PagingData.empty())
-        every { useCases.getMolds() } returns flowOf(PagingData.empty())
+        every { repository.getComponents(any(), any()) } returns flowOf(PagingData.empty())
+        every { repository.getCustomers(any()) } returns flowOf(PagingData.empty())
+        every { repository.getMolds(any(), any()) } returns flowOf(PagingData.empty())
         
         val mockUser = mockk<com.google.firebase.auth.FirebaseUser>(relaxed = true) {
             every { uid } returns "123"
@@ -47,7 +47,7 @@ class InventoryViewModelTest {
         }
 
         // Act
-        viewModel = InventoryViewModel(useCases, sessionManager)
+        viewModel = InventoryViewModel(repository, sessionManager)
 
         // Assert
         assertNotNull(viewModel.componentsFlow)

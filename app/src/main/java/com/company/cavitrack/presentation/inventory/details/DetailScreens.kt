@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -41,6 +42,7 @@ import com.company.cavitrack.R
 import com.company.cavitrack.domain.model.MoldStatus
 import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.UiState
+import com.company.cavitrack.presentation.theme.*
 import java.text.NumberFormat
 
 @Composable
@@ -59,6 +61,12 @@ fun ComponentDetailScreen(
         viewModel.loadComponent(isRefresh = true)
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.isDeleted.collect {
+            onBack()
+        }
+    }
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -68,7 +76,7 @@ fun ComponentDetailScreen(
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        viewModel.deleteComponent(onSuccess = onBack)
+                        viewModel.deleteComponent()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -127,7 +135,7 @@ fun ComponentDetailScreen(
                             photoUrl = component.photoUrl,
                             placeholderIcon = Icons.Outlined.Inventory2,
                             placeholderTint = MaterialTheme.colorScheme.primary,
-                            placeholderBg = if (isDark) Color(0xFF1E293B) else Color(0xFFEFF6FF),
+                            placeholderBg = if (isDark) SlateDark else BlueTintLight,
                             contentDescription = component.name
                         )
 
@@ -143,7 +151,7 @@ fun ComponentDetailScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9)
+                            color = if (isDark) SlateDark else SlateLightSurface
                         ) {
                             Text(
                                 text = "SKU: ${component.sku}",
@@ -253,6 +261,12 @@ fun CustomerDetailScreen(
         viewModel.loadCustomer(isRefresh = true)
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.isDeleted.collect {
+            onBack()
+        }
+    }
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -262,7 +276,7 @@ fun CustomerDetailScreen(
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        viewModel.deleteCustomer(onSuccess = onBack)
+                        viewModel.deleteCustomer()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -424,6 +438,12 @@ fun MoldDetailScreen(
         viewModel.loadMold(isRefresh = true)
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.isDeleted.collect {
+            onBack()
+        }
+    }
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -433,7 +453,7 @@ fun MoldDetailScreen(
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        viewModel.deleteMold(onSuccess = onBack)
+                        viewModel.deleteMold()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -654,8 +674,8 @@ private fun AmbientDetailBackground(isDark: Boolean) {
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.16f),
-                    Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                    AmbientGlowPrimary.copy(alpha = if (isDark) 0.08f else 0.16f),
+                    AmbientGlowSecondary.copy(alpha = if (isDark) 0.03f else 0.06f),
                     Color.Transparent
                 ),
                 center = Offset(size.width * 0.90f, size.height * 0.15f),

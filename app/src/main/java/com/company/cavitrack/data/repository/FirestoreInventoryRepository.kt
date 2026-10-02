@@ -12,6 +12,8 @@ import com.company.cavitrack.data.remote.dto.HistoryLogDto
 import com.company.cavitrack.data.remote.dto.MoldDto
 import com.company.cavitrack.data.remote.dto.toDomain
 import com.company.cavitrack.data.remote.dto.toDto
+import com.company.cavitrack.data.paging.FirestorePagingSource
+import com.company.cavitrack.domain.model.ChangeSource
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.Customer
 import com.company.cavitrack.domain.model.EntityType
@@ -19,6 +21,7 @@ import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.domain.model.Mold
 import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.util.DataResult
+import com.google.firebase.firestore.DocumentSnapshot
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -52,9 +55,9 @@ class FirestoreInventoryRepository @Inject constructor(
 
     private fun <T : Any> createPagingSource(
         query: Query,
-        mapper: (com.google.firebase.firestore.DocumentSnapshot) -> T?
-    ): com.company.cavitrack.data.paging.FirestorePagingSource<T> {
-        val source = com.company.cavitrack.data.paging.FirestorePagingSource(query, mapper)
+        mapper: (DocumentSnapshot) -> T?
+    ): FirestorePagingSource<T> {
+        val source = FirestorePagingSource(query, mapper)
         val invalidator: () -> Unit = { source.invalidate() }
         activeInvalidators.add(invalidator)
         source.registerInvalidatedCallback {
@@ -468,24 +471,30 @@ class FirestoreInventoryRepository @Inject constructor(
         }
     }
 
-    override suspend fun deleteComponent(id: String): DataResult<Unit> {
+    private suspend fun deleteEntity(
+        collection: String,
+        id: String,
+        entityType: EntityType,
+        nameField: String,
+        fallbackName: String
+    ): DataResult<Unit> {
         return try {
             val uid = currentUserId
             if (uid.isBlank()) return DataResult.Error("Not authenticated")
-            val docRef = firestore.collection("components").document(id)
+            val docRef = firestore.collection(collection).document(id)
             val doc = docRef.get().await()
-            val name = doc.getString("name") ?: "Component"
+            val name = doc.getString(nameField) ?: fallbackName
             val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
 
             val performer = firebaseAuth.currentUser?.displayName?.takeIf { it.isNotBlank() }
                 ?: firebaseAuth.currentUser?.email ?: "Unknown"
             val logDto = HistoryLog(
                 id = UUID.randomUUID().toString(),
-                entityType = EntityType.Component,
+                entityType = entityType,
                 entityId = id,
                 entityName = name,
                 action = "Deleted",
-                changeSource = com.company.cavitrack.domain.model.ChangeSource.Manual,
+                changeSource = ChangeSource.Manual,
                 performedBy = performer,
                 timestamp = System.currentTimeMillis()
             ).copy(ownerId = uid).toDto()
@@ -502,73 +511,14 @@ class FirestoreInventoryRepository @Inject constructor(
         }
     }
 
-    override suspend fun deleteCustomer(id: String): DataResult<Unit> {
-        return try {
-            val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Not authenticated")
-            val docRef = firestore.collection("customers").document(id)
-            val doc = docRef.get().await()
-            val name = doc.getString("name") ?: "Customer"
-            val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
+    override suspend fun deleteComponent(id: String): DataResult<Unit> =
+        deleteEntity("components", id, EntityType.Component, "name", "Component")
 
-            val performer = firebaseAuth.currentUser?.displayName?.takeIf { it.isNotBlank() }
-                ?: firebaseAuth.currentUser?.email ?: "Unknown"
-            val logDto = HistoryLog(
-                id = UUID.randomUUID().toString(),
-                entityType = EntityType.Customer,
-                entityId = id,
-                entityName = name,
-                action = "Deleted",
-                changeSource = com.company.cavitrack.domain.model.ChangeSource.Manual,
-                performedBy = performer,
-                timestamp = System.currentTimeMillis()
-            ).copy(ownerId = uid).toDto()
+    override suspend fun deleteCustomer(id: String): DataResult<Unit> =
+        deleteEntity("customers", id, EntityType.Customer, "name", "Customer")
 
-            val batch = firestore.batch()
-            batch.update(docRef, updateData)
-            batch.set(firestore.collection("history").document(logDto.id), logDto)
-            batch.commit().await()
-            invalidateAll()
-            DataResult.Success(Unit)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            DataResult.Error(e.message ?: "Failed to delete")
-        }
-    }
-
-    override suspend fun deleteMold(id: String): DataResult<Unit> {
-        return try {
-            val uid = currentUserId
-            if (uid.isBlank()) return DataResult.Error("Not authenticated")
-            val docRef = firestore.collection("molds").document(id)
-            val doc = docRef.get().await()
-            val moldCode = doc.getString("moldCode") ?: "Mold"
-            val updateData = mapOf("isDeleted" to true, "updatedAt" to System.currentTimeMillis())
-
-            val performer = firebaseAuth.currentUser?.displayName?.takeIf { it.isNotBlank() }
-                ?: firebaseAuth.currentUser?.email ?: "Unknown"
-            val logDto = HistoryLog(
-                id = UUID.randomUUID().toString(),
-                entityType = EntityType.Mold,
-                entityId = id,
-                entityName = moldCode,
-                action = "Deleted",
-                changeSource = com.company.cavitrack.domain.model.ChangeSource.Manual,
-                performedBy = performer,
-                timestamp = System.currentTimeMillis()
-            ).copy(ownerId = uid).toDto()
-
-            val batch = firestore.batch()
-            batch.update(docRef, updateData)
-            batch.set(firestore.collection("history").document(logDto.id), logDto)
-            batch.commit().await()
-            invalidateAll()
-            DataResult.Success(Unit)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            DataResult.Error(e.message ?: "Failed to delete")
-        }
-    }
+    override suspend fun deleteMold(id: String): DataResult<Unit> =
+        deleteEntity("molds", id, EntityType.Mold, "moldCode", "Mold")
 
     // ──────────────────────────────────────────────
     // Data cleanup (resolves UID internally)

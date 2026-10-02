@@ -57,6 +57,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import coil.compose.AsyncImage
 import com.company.cavitrack.R
+import com.company.cavitrack.presentation.theme.*
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.Customer
 import com.company.cavitrack.domain.model.EntityType
@@ -100,7 +101,13 @@ fun InventoryScreen(
     val customers = viewModel.customersFlow.collectAsLazyPagingItems()
     val molds = viewModel.moldsFlow.collectAsLazyPagingItems()
 
+    var isFirstResume by remember { mutableStateOf(true) }
+
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        if (isFirstResume) {
+            isFirstResume = false
+            return@LifecycleEventEffect
+        }
         when (pagerState.currentPage) {
             0 -> components.refresh()
             1 -> customers.refresh()
@@ -122,8 +129,8 @@ fun InventoryScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.16f),
-                        Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                        AmbientGlowPrimary.copy(alpha = if (isDark) 0.08f else 0.16f),
+                        AmbientGlowSecondary.copy(alpha = if (isDark) 0.03f else 0.06f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.90f, size.height * 0.15f),
@@ -256,7 +263,7 @@ fun InventoryScreen(
             // Segmented Pill Tab Bar
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                color = if (isDark) SlateDark else SlateLightSurface,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
@@ -860,7 +867,7 @@ fun ComponentItem(component: Component, onClick: () -> Unit = {}) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                    color = if (isDark) SlateDark else SlateLightSurface,
                     modifier = Modifier.wrapContentSize()
                 ) {
                     Row(
@@ -1007,7 +1014,7 @@ fun CustomerItem(customer: Customer, onClick: () -> Unit = {}) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                    color = if (isDark) SlateDark else SlateLightSurface,
                     modifier = Modifier.wrapContentSize()
                 ) {
                     Row(
@@ -1106,7 +1113,7 @@ fun MoldItem(mold: Mold, onClick: () -> Unit = {}) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                    color = if (isDark) SlateDark else SlateLightSurface,
                     modifier = Modifier.wrapContentSize()
                 ) {
                     Row(

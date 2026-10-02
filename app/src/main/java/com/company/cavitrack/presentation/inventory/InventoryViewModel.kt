@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.company.cavitrack.domain.model.Component
 import com.company.cavitrack.domain.model.Customer
 import com.company.cavitrack.domain.model.Mold
-import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
+import com.company.cavitrack.domain.repository.InventoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import androidx.paging.PagingData
@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class InventoryViewModel @Inject constructor(
-    private val useCases: InventoryUseCases,
+    private val repository: InventoryRepository,
     sessionManager: com.company.cavitrack.util.SessionManager
 ) : ViewModel() {
 
@@ -54,7 +54,7 @@ class InventoryViewModel @Inject constructor(
     ) { uid, query, lowStock ->
         Triple(uid, query, lowStock)
     }.flatMapLatest { (uid, query, lowStock) ->
-        if (uid != null) useCases.getComponents(query, lowStock) else flowOf(PagingData.empty())
+        if (uid != null) repository.getComponents(query, lowStock) else flowOf(PagingData.empty())
     }.cachedIn(viewModelScope)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -64,7 +64,7 @@ class InventoryViewModel @Inject constructor(
     ) { uid, query ->
         Pair(uid, query)
     }.flatMapLatest { (uid, query) ->
-        if (uid != null) useCases.getCustomers(query) else flowOf(PagingData.empty())
+        if (uid != null) repository.getCustomers(query) else flowOf(PagingData.empty())
     }.cachedIn(viewModelScope)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -75,7 +75,7 @@ class InventoryViewModel @Inject constructor(
     ) { uid, query, status ->
         Triple(uid, query, status)
     }.flatMapLatest { (uid, query, status) ->
-        if (uid != null) useCases.getMolds(query, status?.name) else flowOf(PagingData.empty())
+        if (uid != null) repository.getMolds(query, status?.name) else flowOf(PagingData.empty())
     }.cachedIn(viewModelScope)
 }
 

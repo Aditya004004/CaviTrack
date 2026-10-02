@@ -19,7 +19,6 @@ data class Mold(
     val status: MoldStatus,
     val location: String,
     val ownerId: String = "",
-    val linkedComponentId: String? = null,
     val photoUrl: String? = null,
     val createdAt: Long,
     val updatedAt: Long

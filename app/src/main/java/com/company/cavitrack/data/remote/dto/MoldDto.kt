@@ -1,8 +1,10 @@
 package com.company.cavitrack.data.remote.dto
 
+import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.PropertyName
 import kotlinx.serialization.Serializable
 
+@IgnoreExtraProperties
 @Serializable
 data class MoldDto @JvmOverloads constructor(
     val id: String = "",
@@ -10,7 +12,6 @@ data class MoldDto @JvmOverloads constructor(
     val moldCode: String = "",
     val moldCodeLower: String = "",
     val cavityCount: Int = 0,
-    val linkedComponentId: String? = null,
     val status: String = "",
     val location: String = "",
     val photoUrl: String? = null,

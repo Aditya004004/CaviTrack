@@ -57,3 +57,18 @@ val SuccessLight = Color(0xFF16A34A)
 val SuccessDark = Color(0xFF4ADE80)
 val DisabledLight = Color(0xFF9AA1AC)
 val DisabledDark = Color(0xFF5C636B)
+
+// Ambient Glow Tokens
+val AmbientGlowPrimary = Color(0xFF818CF8)
+val AmbientGlowSecondary = Color(0xFFC7D2FE)
+val SoftBlue = Color(0xFF93C5FD)
+val SoftIndigo = Color(0xFFE0E7FF)
+val LightBlue = Color(0xFFBFDBFE)
+
+// Card & Container Tokens
+val SlateDark = Color(0xFF1E293B)
+val SlateLight = Color(0xFFF8FAFC)
+val SlateLightSurface = Color(0xFFF1F5F9)
+val BlueTintLight = Color(0xFFEFF6FF)
+val SlateDarkBorder = Color(0xFF334155)
+val BlueTintBorder = Color(0xFFDBEAFE)

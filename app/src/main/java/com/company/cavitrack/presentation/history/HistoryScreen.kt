@@ -38,6 +38,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.company.cavitrack.R
+import com.company.cavitrack.presentation.theme.*
 import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.presentation.components.ErrorState
 import com.company.cavitrack.presentation.components.SkeletonList
@@ -72,8 +73,8 @@ fun HistoryScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.16f),
-                        Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                        AmbientGlowPrimary.copy(alpha = if (isDark) 0.08f else 0.16f),
+                        AmbientGlowSecondary.copy(alpha = if (isDark) 0.03f else 0.06f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.90f, size.height * 0.15f),
@@ -114,7 +115,7 @@ fun HistoryScreen(
                 Surface(
                     onClick = { showFilterSheet = true },
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isDark) Color(0xFF1E293B) else Color(0xFFEFF6FF),
+                    color = if (isDark) SlateDark else BlueTintLight,
                     border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else Color(0xFFDBEAFE)),
                     modifier = Modifier.wrapContentSize()
                 ) {
@@ -133,7 +134,7 @@ fun HistoryScreen(
                             text = selectedAction ?: stringResource(R.string.label_filter_history),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isDark) Color(0xFFF1F5F9) else Color(0xFF1E293B)
+                            color = if (isDark) SlateLightSurface else SlateDark
                         )
                     }
                 }
@@ -364,7 +365,7 @@ private fun HistoryLogCard(
             Icons.Outlined.Edit
         )
         else -> Triple(
-            if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+            if (isDark) SlateDark else SlateLightSurface,
             if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
             Icons.Default.History
         )

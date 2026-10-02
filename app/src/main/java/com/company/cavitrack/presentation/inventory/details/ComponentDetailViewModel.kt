@@ -5,22 +5,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.company.cavitrack.domain.model.Component
-import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
+import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.presentation.components.UiState
 import com.company.cavitrack.presentation.navigation.Route
 import com.company.cavitrack.util.DataResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ComponentDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val useCases: InventoryUseCases
+    private val repository: InventoryRepository
 ) : ViewModel() {
 
     private val route: Route.ComponentDetail = savedStateHandle.toRoute()
@@ -29,9 +31,8 @@ class ComponentDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<Component>>(UiState.Loading)
     val uiState: StateFlow<UiState<Component>> = _uiState.asStateFlow()
 
-    init {
-        loadComponent()
-    }
+    private val _isDeleted = Channel<Unit>(Channel.BUFFERED)
+    val isDeleted = _isDeleted.receiveAsFlow()
 
     fun loadComponent(isRefresh: Boolean = false) {
         viewModelScope.launch {
@@ -39,7 +40,7 @@ class ComponentDetailViewModel @Inject constructor(
                 _uiState.value = UiState.Loading
             }
             try {
-                when (val result = useCases.getComponent(entityId)) {
+                when (val result = repository.getComponent(entityId)) {
                     is DataResult.Success -> _uiState.value = UiState.Success(result.data)
                     is DataResult.Error -> {
                         if (_uiState.value !is UiState.Success) {
@@ -60,12 +61,12 @@ class ComponentDetailViewModel @Inject constructor(
         loadComponent()
     }
 
-    fun deleteComponent(onSuccess: () -> Unit) {
+    fun deleteComponent() {
         viewModelScope.launch {
             try {
-                val result = useCases.deleteComponent(entityId)
+                val result = repository.deleteComponent(entityId)
                 if (result is DataResult.Success) {
-                    onSuccess()
+                    _isDeleted.send(Unit)
                 } else if (result is DataResult.Error) {
                     _uiState.value = UiState.Error(result.message)
                 }

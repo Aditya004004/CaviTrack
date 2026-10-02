@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.company.cavitrack.R
+import com.company.cavitrack.presentation.theme.*
 import com.company.cavitrack.domain.model.EntityType
 
 @Composable
@@ -83,7 +84,7 @@ fun AddUpdateActionScreen(
         if (entityType == null) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                color = if (isDark) SlateDark else SlateLightSurface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.10f)),
                 modifier = Modifier.fillMaxWidth()
             ) {

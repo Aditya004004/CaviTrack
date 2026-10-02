@@ -44,14 +44,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.company.cavitrack.BuildConfig
 import com.company.cavitrack.R
+import com.company.cavitrack.presentation.theme.*
 import com.company.cavitrack.presentation.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
-    val userName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
-    val userEmail = currentUser?.email ?: "No Email"
+    val defaultUserName = stringResource(R.string.default_user_name)
+    val defaultUserEmail = stringResource(R.string.default_user_email)
+    val userName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: defaultUserName
+    val userEmail = currentUser?.email ?: defaultUserEmail
     var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteAccountDialog by rememberSaveable { mutableStateOf(false) }
     val authError by authViewModel.authError.collectAsStateWithLifecycle()
@@ -95,8 +98,8 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF818CF8).copy(alpha = if (isDark) 0.08f else 0.16f),
-                        Color(0xFFC7D2FE).copy(alpha = if (isDark) 0.03f else 0.06f),
+                        AmbientGlowPrimary.copy(alpha = if (isDark) 0.08f else 0.16f),
+                        AmbientGlowSecondary.copy(alpha = if (isDark) 0.03f else 0.06f),
                         Color.Transparent
                     ),
                     center = Offset(size.width * 0.90f, size.height * 0.15f),

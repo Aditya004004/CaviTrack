@@ -1,8 +1,10 @@
 package com.company.cavitrack.data.remote.dto
 
+import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.PropertyName
 import kotlinx.serialization.Serializable
 
+@IgnoreExtraProperties
 @Serializable
 data class CustomerDto @JvmOverloads constructor(
     val id: String = "",
@@ -11,7 +13,6 @@ data class CustomerDto @JvmOverloads constructor(
     val phone: String = "",
     val email: String = "",
     val address: String = "",
-    val linkedComponentIds: List<String> = emptyList(),
     val notes: String = "",
     val photoUrl: String? = null,
     val createdAt: Long = 0L,

@@ -3,11 +3,12 @@ package com.company.cavitrack.presentation.addupdate.photo
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.company.cavitrack.domain.model.ChangeSource
 import com.company.cavitrack.domain.model.EntityType
 import com.company.cavitrack.domain.model.HistoryLog
 import com.company.cavitrack.domain.repository.AuthRepository
+import com.company.cavitrack.domain.repository.InventoryRepository
 import com.company.cavitrack.domain.repository.StorageRepository
-import com.company.cavitrack.domain.usecase.inventory.InventoryUseCases
 import com.company.cavitrack.util.DataResult
 import com.company.cavitrack.util.ImageUtil
 import com.company.cavitrack.util.UiText
@@ -25,11 +26,14 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
+import kotlinx.coroutines.CoroutineDispatcher
+
 @HiltViewModel
 class PhotoUpdateViewModel @Inject constructor(
-    private val useCases: InventoryUseCases,
+    private val repository: InventoryRepository,
     private val authRepository: AuthRepository,
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     private val _isSaved = Channel<Unit>(capacity = Channel.BUFFERED)
@@ -50,7 +54,7 @@ class PhotoUpdateViewModel @Inject constructor(
             entityId = entityId,
             entityName = entityName,
             action = "Photo Added",
-            changeSource = com.company.cavitrack.domain.model.ChangeSource.Photo,
+            changeSource = ChangeSource.Photo,
             photoUrl = photoUrl,
             performedBy = performer,
             timestamp = System.currentTimeMillis()
@@ -69,7 +73,7 @@ class PhotoUpdateViewModel @Inject constructor(
                     return@launch
                 }
 
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     ImageUtil.downscaleImage(photoFile)
                 }
 
@@ -87,34 +91,34 @@ class PhotoUpdateViewModel @Inject constructor(
                 var oldPhotoUrl: String? = null
                 val saveResult: DataResult<Unit> = when (entityType) {
                     EntityType.Component -> {
-                        when (val result = useCases.getComponent(entityId)) {
+                        when (val result = repository.getComponent(entityId)) {
                             is DataResult.Success -> {
                                 oldPhotoUrl = result.data.photoUrl
                                 val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
                                 val log = makeHistoryLog(entityType, updated.id, updated.name, downloadUrl)
-                                useCases.saveComponentWithHistory(updated, log)
+                                repository.saveComponentWithHistory(updated, log)
                             }
                             is DataResult.Error -> DataResult.Error(result.message)
                         }
                     }
                     EntityType.Customer -> {
-                        when (val result = useCases.getCustomer(entityId)) {
+                        when (val result = repository.getCustomer(entityId)) {
                             is DataResult.Success -> {
                                 oldPhotoUrl = result.data.photoUrl
                                 val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
                                 val log = makeHistoryLog(entityType, updated.id, updated.name, downloadUrl)
-                                useCases.saveCustomerWithHistory(updated, log)
+                                repository.saveCustomerWithHistory(updated, log)
                             }
                             is DataResult.Error -> DataResult.Error(result.message)
                         }
                     }
                     EntityType.Mold -> {
-                        when (val result = useCases.getMold(entityId)) {
+                        when (val result = repository.getMold(entityId)) {
                             is DataResult.Success -> {
                                 oldPhotoUrl = result.data.photoUrl
                                 val updated = result.data.copy(photoUrl = downloadUrl, updatedAt = now)
                                 val log = makeHistoryLog(entityType, updated.id, updated.moldCode, downloadUrl)
-                                useCases.saveMoldWithHistory(updated, log)
+                                repository.saveMoldWithHistory(updated, log)
                             }
                             is DataResult.Error -> DataResult.Error(result.message)
                         }
