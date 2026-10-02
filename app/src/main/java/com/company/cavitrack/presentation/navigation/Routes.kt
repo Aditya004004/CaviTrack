@@ -14,4 +14,5 @@ sealed interface Route {
     @Serializable data class MoldDetail(val id: String) : Route
     @Serializable data class ManualUpdate(val entityType: com.company.cavitrack.domain.model.EntityType, val entityId: String? = null) : Route
     @Serializable data class PhotoUpdate(val entityType: com.company.cavitrack.domain.model.EntityType, val entityId: String? = null) : Route
+    @Serializable data object ExportCenter : Route
 }

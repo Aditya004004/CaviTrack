@@ -11,7 +11,6 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-
 android {
     namespace = "com.company.cavitrack"
     compileSdk = 35
@@ -78,24 +77,24 @@ dependencies {
 
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
-    
+
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
-    
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
-    
+
     implementation(libs.coil.compose)
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
-    
+
     implementation(libs.kotlinx.serialization.json)
-    
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -106,7 +105,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -114,7 +113,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    
+
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)

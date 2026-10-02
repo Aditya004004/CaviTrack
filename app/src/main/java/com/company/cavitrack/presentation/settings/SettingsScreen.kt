@@ -49,7 +49,10 @@ import com.company.cavitrack.presentation.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onNavigateToExportCenter: () -> Unit = {},
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     val defaultUserName = stringResource(R.string.default_user_name)
     val defaultUserEmail = stringResource(R.string.default_user_email)
@@ -254,6 +257,39 @@ fun SettingsScreen(authViewModel: AuthViewModel = hiltViewModel()) {
                         }
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Data & Exports Section
+            Text(
+                text = "DATA & EXPORTS",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                letterSpacing = 1.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 6.dp)
+            )
+
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            ) {
+                SettingsItemRow(
+                    title = "Export Center & Reports",
+                    description = "Generate PDF, Excel, and CSV business reports",
+                    icon = Icons.Outlined.Policy,
+                    badgeBg = if (isDark) Color(0xFF3B1E00) else Color(0xFFFFF7ED),
+                    badgeTint = if (isDark) Color(0xFFF97316) else Color(0xFFEA580C),
+                    onClick = onNavigateToExportCenter
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

@@ -21,6 +21,7 @@ import com.company.cavitrack.presentation.inventory.details.ComponentDetailScree
 import com.company.cavitrack.presentation.inventory.details.CustomerDetailScreen
 import com.company.cavitrack.presentation.inventory.details.MoldDetailScreen
 import com.company.cavitrack.presentation.settings.SettingsScreen
+import com.company.cavitrack.presentation.settings.export.ExportCenterScreen
 
 @Composable
 fun CaviTrackNavGraph(
@@ -65,7 +66,18 @@ fun CaviTrackNavGraph(
                 }
             ) 
         }
-        composable<Route.Settings> { SettingsScreen(authViewModel = authViewModel) }
+
+        composable<Route.Settings> { 
+            SettingsScreen(
+                authViewModel = authViewModel,
+                onNavigateToExportCenter = { navController.navigate(Route.ExportCenter) { launchSingleTop = true } }
+            ) 
+        }
+        composable<Route.ExportCenter> {
+            ExportCenterScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
         
         composable<Route.ManualUpdate> { backStackEntry ->
             val route: Route.ManualUpdate = backStackEntry.toRoute()
