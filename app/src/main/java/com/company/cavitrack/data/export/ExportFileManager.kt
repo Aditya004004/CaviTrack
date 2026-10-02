@@ -22,13 +22,34 @@ class ExportFileManager @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
 
+    companion object {
+        /**
+         * Sanitizes user-supplied filenames to eliminate directory traversal attacks (CWE-22).
+         * Replaces path characters (.., /, \) and non-alphanumeric characters (except _ and -),
+         * truncating to 64 characters max.
+         */
+        fun sanitizeFileName(name: String): String {
+            if (name.isBlank()) return "Export_${System.currentTimeMillis()}"
+            val cleanName = name
+                .replace("\\", "_")
+                .replace("/", "_")
+                .replace("..", "_")
+                .replace(Regex("[^a-zA-Z0-9_\\-\\.]"), "_")
+                .replace(Regex("_+"), "_")
+                .trim('_', '.')
+            return if (cleanName.isBlank()) "Export_${System.currentTimeMillis()}" else cleanName.take(64)
+        }
+    }
+
     suspend fun saveExportToCache(
         fileName: String,
         format: ExportFormat,
         dataBytes: ByteArray
     ): Pair<File, Uri> = withContext(Dispatchers.IO) {
+        val safeBaseName = sanitizeFileName(fileName)
+        val fullFileName = "$safeBaseName${format.extension}"
+
         val exportDir = File(context.cacheDir, "exports").apply { if (!exists()) mkdirs() }
-        val fullFileName = if (fileName.endsWith(format.extension)) fileName else "$fileName${format.extension}"
         val file = File(exportDir, fullFileName)
 
         FileOutputStream(file).use { fos ->
@@ -46,7 +67,8 @@ class ExportFileManager @Inject constructor(
         format: ExportFormat,
         dataBytes: ByteArray
     ): Uri? = withContext(Dispatchers.IO) {
-        val fullFileName = if (fileName.endsWith(format.extension)) fileName else "$fileName${format.extension}"
+        val safeBaseName = sanitizeFileName(fileName)
+        val fullFileName = "$safeBaseName${format.extension}"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver

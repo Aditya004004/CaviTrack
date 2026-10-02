@@ -53,6 +53,9 @@ class PdfReportExportEngine @Inject constructor() {
         val borderPaint = Paint().apply { color = Color.parseColor("#E0E0E0"); style = Paint.Style.STROKE; strokeWidth = 1f }
         val alertPaint = Paint().apply { color = Color.parseColor("#D32F2F"); textSize = 9f; isFakeBoldText = true; isAntiAlias = true }
 
+        // Draw initial watermark
+        drawWatermark(canvas)
+
         var y = margin
 
         // 1. HEADER BANNER
@@ -153,6 +156,9 @@ class PdfReportExportEngine @Inject constructor() {
                 val newPageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
                 page = document.startPage(newPageInfo)
                 canvas = page.canvas
+
+                // Draw Watermark on new page
+                drawWatermark(canvas)
 
                 // Re-draw Mini Header
                 canvas.drawRect(0f, 0f, pageWidth.toFloat(), 30f, primaryPaint)
@@ -260,5 +266,18 @@ class PdfReportExportEngine @Inject constructor() {
         document.writeTo(baos)
         document.close()
         return baos.toByteArray()
+    }
+
+    private fun drawWatermark(canvas: Canvas) {
+        val watermarkPaint = Paint().apply {
+            color = Color.parseColor("#12000000") // 7% semi-transparent watermark
+            textSize = 22f
+            isFakeBoldText = true
+            isAntiAlias = true
+        }
+        canvas.save()
+        canvas.rotate(-35f, pageWidth / 2f, pageHeight / 2f)
+        canvas.drawText("CONFIDENTIAL • CAVITRACK AUDIT REPORT", 20f, pageHeight / 2f, watermarkPaint)
+        canvas.restore()
     }
 }

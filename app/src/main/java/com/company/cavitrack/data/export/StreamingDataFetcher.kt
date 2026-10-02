@@ -28,6 +28,8 @@ class StreamingDataFetcher @Inject constructor(
     private val currentUserId: String
         get() = firebaseAuth.currentUser?.uid ?: ""
 
+    private val maxBatchLimit = 5000L
+
     suspend fun getPreFlightSummary(
         dataSets: Set<DataSetType>,
         filterSpec: ExportFilterSpec
@@ -72,6 +74,7 @@ class StreamingDataFetcher @Inject constructor(
         val snapshot = firestore.collection("components")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
+            .limit(maxBatchLimit)
             .get()
             .await()
 
@@ -106,6 +109,7 @@ class StreamingDataFetcher @Inject constructor(
         val snapshot = firestore.collection("customers")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
+            .limit(maxBatchLimit)
             .get()
             .await()
 
@@ -131,6 +135,7 @@ class StreamingDataFetcher @Inject constructor(
         val snapshot = firestore.collection("molds")
             .whereEqualTo("ownerId", currentUserId)
             .whereEqualTo("isDeleted", false)
+            .limit(maxBatchLimit)
             .get()
             .await()
 
@@ -161,6 +166,7 @@ class StreamingDataFetcher @Inject constructor(
     suspend fun fetchHistoryLogs(filterSpec: ExportFilterSpec): List<HistoryLog> = withContext(Dispatchers.IO) {
         val snapshot = firestore.collection("history")
             .whereEqualTo("ownerId", currentUserId)
+            .limit(maxBatchLimit)
             .get()
             .await()
 

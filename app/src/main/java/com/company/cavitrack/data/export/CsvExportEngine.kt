@@ -33,12 +33,12 @@ class CsvExportEngine @Inject constructor() {
             sb.append("ID,Name,SKU,Category,Quantity,Unit,Min Threshold,Is Low Stock,Created At,Updated At\n")
             for (c in components) {
                 val isLowStock = if (c.qty <= c.minStockThreshold) "YES" else "NO"
-                sb.append("${escapeCsv(c.id)},")
-                    .append("${escapeCsv(c.name)},")
-                    .append("${escapeCsv(c.sku)},")
-                    .append("${escapeCsv(c.category)},")
+                sb.append("${sanitizeCsvCell(c.id)},")
+                    .append("${sanitizeCsvCell(c.name)},")
+                    .append("${sanitizeCsvCell(c.sku)},")
+                    .append("${sanitizeCsvCell(c.category)},")
                     .append("${c.qty},")
-                    .append("${escapeCsv(c.unit)},")
+                    .append("${sanitizeCsvCell(c.unit)},")
                     .append("${c.minStockThreshold},")
                     .append("$isLowStock,")
                     .append("${formatDate(c.createdAt)},")
@@ -51,12 +51,12 @@ class CsvExportEngine @Inject constructor() {
             sb.append("=== CUSTOMERS ===\n")
             sb.append("ID,Name,Email,Phone,Address,Notes,Created At,Updated At\n")
             for (cust in customers) {
-                sb.append("${escapeCsv(cust.id)},")
-                    .append("${escapeCsv(cust.name)},")
-                    .append("${escapeCsv(cust.email)},")
-                    .append("${escapeCsv(cust.phone)},")
-                    .append("${escapeCsv(cust.address)},")
-                    .append("${escapeCsv(cust.notes)},")
+                sb.append("${sanitizeCsvCell(cust.id)},")
+                    .append("${sanitizeCsvCell(cust.name)},")
+                    .append("${sanitizeCsvCell(cust.email)},")
+                    .append("${sanitizeCsvCell(cust.phone)},")
+                    .append("${sanitizeCsvCell(cust.address)},")
+                    .append("${sanitizeCsvCell(cust.notes)},")
                     .append("${formatDate(cust.createdAt)},")
                     .append("${formatDate(cust.updatedAt)}\n")
             }
@@ -67,11 +67,11 @@ class CsvExportEngine @Inject constructor() {
             sb.append("=== MOLDS ===\n")
             sb.append("ID,Mold Code,Cavity Count,Status,Location,Created At,Updated At\n")
             for (m in molds) {
-                sb.append("${escapeCsv(m.id)},")
-                    .append("${escapeCsv(m.moldCode)},")
+                sb.append("${sanitizeCsvCell(m.id)},")
+                    .append("${sanitizeCsvCell(m.moldCode)},")
                     .append("${m.cavityCount},")
-                    .append("${escapeCsv(m.status.name)},")
-                    .append("${escapeCsv(m.location)},")
+                    .append("${sanitizeCsvCell(m.status.name)},")
+                    .append("${sanitizeCsvCell(m.location)},")
                     .append("${formatDate(m.createdAt)},")
                     .append("${formatDate(m.updatedAt)}\n")
             }
@@ -82,19 +82,36 @@ class CsvExportEngine @Inject constructor() {
             sb.append("=== HISTORY LOGS & AUDIT TRAIL ===\n")
             sb.append("ID,Entity Type,Entity Name,Action,Source,Performed By,Before,After,Timestamp\n")
             for (h in historyLogs) {
-                sb.append("${escapeCsv(h.id)},")
-                    .append("${escapeCsv(h.entityType.name)},")
-                    .append("${escapeCsv(h.entityName)},")
-                    .append("${escapeCsv(h.action)},")
-                    .append("${escapeCsv(h.changeSource.name)},")
-                    .append("${escapeCsv(h.performedBy)},")
-                    .append("${escapeCsv(h.beforeValue ?: "")},")
-                    .append("${escapeCsv(h.afterValue ?: "")},")
+                sb.append("${sanitizeCsvCell(h.id)},")
+                    .append("${sanitizeCsvCell(h.entityType.name)},")
+                    .append("${sanitizeCsvCell(h.entityName)},")
+                    .append("${sanitizeCsvCell(h.action)},")
+                    .append("${sanitizeCsvCell(h.changeSource.name)},")
+                    .append("${sanitizeCsvCell(h.performedBy)},")
+                    .append("${sanitizeCsvCell(h.beforeValue ?: "")},")
+                    .append("${sanitizeCsvCell(h.afterValue ?: "")},")
                     .append("${formatDate(h.timestamp)}\n")
             }
         }
 
         return sb.toString().toByteArray(Charsets.UTF_8)
+    }
+
+    /**
+     * Sanitizes CSV cell values against CSV Formula Injection (CWE-1236).
+     * Neutralizes formula triggers (=, +, -, @, tab, CR) by prepending a single quote.
+     */
+    fun sanitizeCsvCell(value: String): String {
+        if (value.isEmpty()) return value
+        var cleaned = value
+
+        // Prepend single quote if field starts with formula execution triggers
+        val firstChar = cleaned[0]
+        if (firstChar == '=' || firstChar == '+' || firstChar == '-' || firstChar == '@' || firstChar == '\t' || firstChar == '\r') {
+            cleaned = "'$cleaned"
+        }
+
+        return escapeCsv(cleaned)
     }
 
     private fun escapeCsv(value: String): String {

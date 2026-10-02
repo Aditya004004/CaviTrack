@@ -2,9 +2,9 @@ package com.company.cavitrack.data.export
 
 import com.company.cavitrack.domain.export.DataSetType
 import com.company.cavitrack.domain.model.Component
-import com.company.cavitrack.domain.model.Customer
 import com.company.cavitrack.domain.model.Mold
 import com.company.cavitrack.domain.model.MoldStatus
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -44,6 +44,16 @@ class CsvExportEngineTest {
 
         val csvText = String(bytes, Charsets.UTF_8)
         assertTrue("Should contain escaped double quotes", csvText.contains("\"Special \"\"Heavy\"\" Bracket, Type A\""))
+    }
+
+    @Test
+    fun sanitizeCsvCell_neutralizesFormulaInjectionTriggers() {
+        // CWE-1236 CSV Formula Injection Security Tests
+        assertEquals("'=CMD|' /C calc'!A1", csvEngine.sanitizeCsvCell("=CMD|' /C calc'!A1"))
+        assertEquals("'+1+2", csvEngine.sanitizeCsvCell("+1+2"))
+        assertEquals("'-100", csvEngine.sanitizeCsvCell("-100"))
+        assertEquals("'@SUM(A1:A10)", csvEngine.sanitizeCsvCell("@SUM(A1:A10)"))
+        assertEquals("Normal Text", csvEngine.sanitizeCsvCell("Normal Text"))
     }
 
     @Test
